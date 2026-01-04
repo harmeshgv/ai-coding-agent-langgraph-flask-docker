@@ -1,7 +1,7 @@
 import logging
 
 from agent.state import AgentState
-from agent.utils import load_system_prompt
+from agent.utils import load_system_prompt, filter_messages_for_llm
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,9 @@ def create_coder_node(llm, tools, repo_url, agent_stack):
     sys_msg = load_system_prompt(agent_stack, "coder")
 
     async def coder_node(state: AgentState):
-        current_messages = [SystemMessage(content=sys_msg)] + state["messages"]
+        # Filter messages to keep only recent relevant context (original task + last 15 messages)
+        filtered_messages = filter_messages_for_llm(state["messages"], max_messages=15)
+        current_messages = [SystemMessage(content=sys_msg)] + filtered_messages
 
         current_tool_choice = "auto"
 

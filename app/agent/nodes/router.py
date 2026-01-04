@@ -6,6 +6,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
 from agent.state import AgentState
+from agent.utils import filter_messages_for_llm
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,9 @@ def create_router_node(llm):
     structured_llm = llm.with_structured_output(RouterDecision)
 
     async def router_node(state: AgentState) -> Dict[str, str]:
-        base_messages = [SystemMessage(content=ROUTER_SYSTEM)] + state["messages"]
+        # Router only needs the original task to make routing decision
+        filtered_messages = filter_messages_for_llm(state["messages"], max_messages=3)
+        base_messages = [SystemMessage(content=ROUTER_SYSTEM)] + filtered_messages
         current_messages = list(base_messages)
 
         for attempt in range(3):

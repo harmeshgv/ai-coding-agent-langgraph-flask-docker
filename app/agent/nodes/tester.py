@@ -3,7 +3,7 @@ from typing import Literal
 
 from agent.local_tools import report_test_result
 from agent.state import AgentState
-from agent.utils import load_system_prompt
+from agent.utils import load_system_prompt, filter_messages_for_llm
 from langchain_core.messages import SystemMessage
 from pydantic import BaseModel, Field
 
@@ -28,7 +28,9 @@ def create_tester_node(llm, tools, repo_url, agent_stack):
     llm_with_tools = llm.bind_tools(tools + [report_test_result])
 
     async def tester_node(state: AgentState):
-        current_messages = [SystemMessage(content=sys_msg)] + state["messages"]
+        # Filter messages to keep only recent relevant context (original task + last 15 messages)
+        filtered_messages = filter_messages_for_llm(state["messages"], max_messages=15)
+        current_messages = [SystemMessage(content=sys_msg)] + filtered_messages
 
         # LLM Aufruf
         response = await llm_with_tools.ainvoke(current_messages)
