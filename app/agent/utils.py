@@ -49,6 +49,91 @@ def _estimate_tokens(messages: list[BaseMessage]) -> int:
     return total_chars // 4
 
 
+def _find_first_human_message(messages: list[BaseMessage]) -> int:
+    """Find index of first HumanMessage (original task)."""
+    # Scan through messages to locate the first HumanMessage
+    # This represents the original user task/request
+    for idx, msg in enumerate(messages):
+        if isinstance(msg, HumanMessage):
+            return idx
+    return None
+
+
+def _find_safe_start_boundary(messages: list[BaseMessage], recent_start_idx: int) -> int:
+    """
+    Find a safe starting point by scanning forward from the cutoff.
+    Safe boundaries are:
+    - HumanMessage (always safe)
+    - AIMessage without tool_calls (stands alone)
+    - AIMessage with tool_calls only if all ToolMessages follow
+    """
+    adjusted_start_idx = recent_start_idx
+    
+    # Scan forward from the naive cutoff point to find a valid conversation boundary
+    for idx in range(recent_start_idx, len(messages)):
+        msg = messages[idx]
+        
+        # HumanMessages are always safe starting points (no dependent tool responses)
+        if isinstance(msg, HumanMessage):
+            adjusted_start_idx = idx
+            break
+        elif isinstance(msg, AIMessage):
+            has_tool_calls = bool(getattr(msg, 'tool_calls', None))
+            # AIMessage without tool calls is safe (stands alone)
+            if not has_tool_calls:
+                adjusted_start_idx = idx
+                break
+            else:
+                # AIMessage with tool calls: verify all ToolMessages are present
+                # This prevents breaking AI→Tool pairs which would violate API constraints
+                num_tool_calls = len(getattr(msg, 'tool_calls', []))
+                all_tools_present = True
+                # Check if the next N messages are all ToolMessages
+                for j in range(1, num_tool_calls + 1):
+                    if idx + j >= len(messages) or not isinstance(messages[idx + j], ToolMessage):
+                        all_tools_present = False
+                        break
+                
+                # Only use this AI message as start if all its tool responses follow
+                if all_tools_present:
+                    adjusted_start_idx = idx
+                    break
+    
+    return adjusted_start_idx
+
+
+def _trim_trailing_invalid_ai_messages(messages: list[BaseMessage]) -> list[BaseMessage]:
+    """
+    Remove trailing AIMessages without tool_calls.
+    Mistral API requires last message to be User, Tool, or Assistant with tool_calls.
+    """
+    # Remove any trailing AI messages that don't have tool calls
+    # Mistral API enforces: last message must be user/tool/assistant-with-tool-calls
+    while messages and isinstance(messages[-1], AIMessage):
+        ai_msg = messages[-1]
+        # If this AI message has tool calls, it's valid as the last message
+        if getattr(ai_msg, 'tool_calls', None):
+            break
+        # Otherwise, remove it and check the previous message
+        messages = messages[:-1]
+    return messages
+
+
+def _log_token_savings(original_count: int, original_tokens: int, 
+                       filtered_count: int, filtered_tokens: int) -> None:
+    """Log token savings statistics."""
+    # Calculate absolute and percentage token savings
+    saved_tokens = original_tokens - filtered_tokens
+    saved_percentage = (saved_tokens / original_tokens * 100) if original_tokens > 0 else 0
+    
+    # Log the filtering results for monitoring token optimization
+    logger.info(
+        f"Message filter: {original_count} → {filtered_count} messages "
+        f"(~{original_tokens} → ~{filtered_tokens} tokens, "
+        f"saved ~{saved_tokens} tokens / {saved_percentage:.1f}%)"
+    )
+
+
 def filter_messages_for_llm(messages: list[BaseMessage], max_messages: int = 10) -> list[BaseMessage]:
     """
     Filters messages to keep only the most recent and relevant ones for LLM context.
@@ -64,100 +149,50 @@ def filter_messages_for_llm(messages: list[BaseMessage], max_messages: int = 10)
     :param max_messages: Maximum number of messages to keep (excluding first task message)
     :return: Filtered list of messages
     """
+    # Early exit for empty list
     if not messages:
         return []
     
+    # Track original metrics for logging
     original_count = len(messages)
     original_tokens = _estimate_tokens(messages)
     
+    # Skip filtering if message count is already within limits
     if len(messages) <= max_messages + 1:
         logger.debug(f"Message filter: {original_count} messages, ~{original_tokens} tokens (no filtering needed)")
         return messages
     
-    # Find the first HumanMessage (original task)
-    first_human_idx = None
-    for idx, msg in enumerate(messages):
-        if isinstance(msg, HumanMessage):
-            first_human_idx = idx
-            break
+    # Step 1: Find the original user task (first HumanMessage)
+    first_human_idx = _find_first_human_message(messages)
     
-    # Start from the desired cutoff point
+    # Step 2: Calculate naive cutoff and find safe conversation boundary
     recent_start_idx = max(0, len(messages) - max_messages)
+    adjusted_start_idx = _find_safe_start_boundary(messages, recent_start_idx)
     
-    # Find a safe cut point by scanning forward to find a complete conversation boundary
-    # Safe boundaries are: before HumanMessage, or before AIMessage that doesn't have tool_calls
-    adjusted_start_idx = recent_start_idx
-    
-    for idx in range(recent_start_idx, len(messages)):
-        msg = messages[idx]
-        
-        # Check if this is a safe starting point
-        if isinstance(msg, HumanMessage):
-            # Always safe to start from a HumanMessage
-            adjusted_start_idx = idx
-            break
-        elif isinstance(msg, AIMessage):
-            # Check if this AI message has tool calls
-            has_tool_calls = bool(getattr(msg, 'tool_calls', None))
-            if not has_tool_calls:
-                # Safe to start from AIMessage without tool calls
-                adjusted_start_idx = idx
-                break
-            else:
-                # AIMessage with tool calls - need to check if all tool responses follow
-                # Count expected tool responses
-                num_tool_calls = len(getattr(msg, 'tool_calls', []))
-                # Check if the next num_tool_calls messages are ToolMessages
-                all_tools_present = True
-                for j in range(1, num_tool_calls + 1):
-                    if idx + j >= len(messages) or not isinstance(messages[idx + j], ToolMessage):
-                        all_tools_present = False
-                        break
-                
-                # If all tool responses are present, we can start from this AIMessage
-                if all_tools_present:
-                    adjusted_start_idx = idx
-                    break
-    
+    # Step 3: Extract recent messages and trim invalid trailing AI messages
     recent_messages = messages[adjusted_start_idx:]
+    recent_messages = _trim_trailing_invalid_ai_messages(recent_messages)
     
-    # Ensure the message list doesn't end with an AIMessage without tool_calls
-    # Mistral API requires the last message to be User or Tool (or Assistant with tool_calls)
-    while recent_messages and isinstance(recent_messages[-1], AIMessage):
-        ai_msg = recent_messages[-1]
-        # If AIMessage has tool_calls, it's valid as last message
-        if getattr(ai_msg, 'tool_calls', None):
-            break
-        # Otherwise, remove it
-        recent_messages = recent_messages[:-1]
-    
-    # If we filtered everything out, return at least the last HumanMessage
+    # Step 4: Fallback if everything was filtered out
     if not recent_messages and messages:
+        # Try to return at least the last HumanMessage
         for msg in reversed(messages):
             if isinstance(msg, HumanMessage):
                 return [msg]
-        # Fallback: return last message if no HumanMessage found
+        # Ultimate fallback: return last message
         return [messages[-1]] if messages else []
     
-    # Keep first human message and recent messages
+    # Step 5: Prepend original task if it was filtered out
     if first_human_idx is not None and first_human_idx < adjusted_start_idx:
-        # Include the first task message if it's not already in recent messages
         first_task = [messages[first_human_idx]]
         filtered_messages = first_task + recent_messages
     else:
         filtered_messages = recent_messages
     
-    # Log token savings
+    # Step 6: Log token savings
     filtered_count = len(filtered_messages)
     filtered_tokens = _estimate_tokens(filtered_messages)
-    saved_tokens = original_tokens - filtered_tokens
-    saved_percentage = (saved_tokens / original_tokens * 100) if original_tokens > 0 else 0
-    
-    logger.info(
-        f"Message filter: {original_count} → {filtered_count} messages "
-        f"(~{original_tokens} → ~{filtered_tokens} tokens, "
-        f"saved ~{saved_tokens} tokens / {saved_percentage:.1f}%)"
-    )
+    _log_token_savings(original_count, original_tokens, filtered_count, filtered_tokens)
     
     return filtered_messages
 
