@@ -1,6 +1,6 @@
-# Contributing to "Autonomous Containerized AI Coding Agent" (acAIca)
+# Contributing to "Autonomous Containerized AI Coding Agent" (CAIASE)
 
-First off, thank you for considering contributing to acAIca. It's people like you that make acAIca a useful tool.
+First off, thank you for considering contributing to CAIASE. It's people like you that make CAIASE a useful tool.
 We welcome contributions from everyone. 
 
 ## 📋 Table of Contents
@@ -94,7 +94,7 @@ We follow the standard Python style conventions (PEP 8).
 ---
 
 ## License & Legal
-By contributing to acAIca, you agree that your contributions will be licensed under the project's Apache 2.0 License.
+By contributing to CAIASE, you agree that your contributions will be licensed under the project's Apache 2.0 License.
 
 This means:
 
