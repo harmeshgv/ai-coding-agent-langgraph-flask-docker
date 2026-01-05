@@ -49,6 +49,46 @@ def _truncate_tool_output(output: str, limit: int = MAX_TOOL_OUTPUT_CHARS) -> st
 
 
 @tool
+def change_directory(directory: str):
+    """
+    Changes the current working directory for subsequent commands.
+    Only allows changing to directories within the workspace for security.
+    Use relative paths like 'src/main/java' or absolute paths within workspace.
+    Returns the new current directory.
+    """
+    WORKSPACE = get_workspace()
+    try:
+        # Remove leading slashes to treat as relative to workspace
+        clean_dir = directory.lstrip("/")
+        target_dir = os.path.join(WORKSPACE, clean_dir)
+        
+        # Resolve to absolute path and verify it's within workspace
+        abs_target = os.path.abspath(target_dir)
+        if not abs_target.startswith(os.path.abspath(WORKSPACE)):
+            return f"ERROR: Access denied. Directory must be within workspace: {WORKSPACE}"
+        
+        # Check if directory exists
+        if not os.path.exists(abs_target):
+            return f"ERROR: Directory does not exist: {clean_dir}"
+        
+        if not os.path.isdir(abs_target):
+            return f"ERROR: Path is not a directory: {clean_dir}"
+        
+        # Change directory (this affects the Python process)
+        os.chdir(abs_target)
+        
+        # Get relative path from workspace for cleaner output
+        rel_path = os.path.relpath(abs_target, WORKSPACE)
+        logger.info("Changed directory to: " + rel_path)
+        logger.info("Absolute path: " + abs_target)
+        logger.info("Current directory: " + os.getcwd())
+        return f"✅ Changed directory to: {rel_path}\nAbsolute path: {abs_target}"
+        
+    except Exception as e:
+        return f"ERROR changing directory: {str(e)}"
+
+
+@tool
 def run_java_command(command: str):
     """
     Führt einen Shell-Befehl im Java-Container aus.

@@ -3,7 +3,12 @@ from typing import Literal
 
 from agent.local_tools import report_test_result
 from agent.state import AgentState
-from agent.utils import load_system_prompt, filter_messages_for_llm
+from agent.utils import (
+    filter_messages_for_llm,
+    load_system_prompt,
+    log_agent_response,
+)
+from agent.local_tools import report_test_result
 from langchain_core.messages import SystemMessage
 from pydantic import BaseModel, Field
 
@@ -22,7 +27,6 @@ class TesterResult(BaseModel):
         description="A short summary of what happened (e.g. 'PR created at xyz' or 'Tests failed because of NPE').",
     )
 
-
 def create_tester_node(llm, tools, repo_url, agent_stack):
     sys_msg = load_system_prompt(agent_stack, "tester")
     llm_with_tools = llm.bind_tools(tools + [report_test_result])
@@ -39,11 +43,8 @@ def create_tester_node(llm, tools, repo_url, agent_stack):
         has_tool_calls = bool(getattr(response, "tool_calls", []))
 
         if has_content or has_tool_calls:
-            logger.info(f"\n=== TESTER RESPONSE ===\nTool Calls: {response.tool_calls}")
-            logger.debug(f"\nContent: '{response.content}")
-            return {"messages": [response]}
+            log_agent_response(logger, "tester", response)
 
-        # Wir geben die Message zurück. LangGraph kümmert sich um den Rest.
         return {"messages": [response]}
 
     return tester_node

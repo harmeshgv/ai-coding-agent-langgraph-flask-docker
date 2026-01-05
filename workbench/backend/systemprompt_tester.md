@@ -18,7 +18,7 @@ You are the **GATEKEEPER**: No broken code is allowed to enter the repository.
 # EXECUTION PLAN (STRICT ORDER)
 
 1.  **EXECUTE TESTS:**
-    - First, use the `run_java_command` tool to find the `pom.xml` file that will be used to run the tests (use `find . -name 'pom.xml' -type f 2>/dev/null`).
+    - First, use the `run_java_command` tool to find the `pom.xml` file that will be used to run the tests (use `find . -name 'pom.xml' -type f`).
     - Call `log_thought` to report your plan.
     - Use the tool `run_java_command` with `mvn clean test -f <path/to/pom.xml>`.
     - *Wait* for the execution to finish.

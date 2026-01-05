@@ -1,7 +1,11 @@
 import logging
 
 from agent.state import AgentState
-from agent.utils import load_system_prompt, filter_messages_for_llm
+from agent.utils import (
+    filter_messages_for_llm,
+    load_system_prompt,
+    log_agent_response,
+)
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 logger = logging.getLogger(__name__)
@@ -26,8 +30,11 @@ def create_bugfixer_node(llm, tools, repo_url, agent_stack):
                 has_tool_calls = bool(getattr(response, "tool_calls", []))
 
                 if has_content or has_tool_calls:
-                    logger.info(
-                        f"\n=== BUGFIXER RESPONSE (Attempt {attempt + 1}) ===\nContent: '{response.content}'\nTool Calls: {response.tool_calls}\n============================="
+                    log_agent_response(
+                        logger,
+                        "bugfixer",
+                        response,
+                        attempt=attempt + 1,
                     )
                     return {"messages": [response]}
 

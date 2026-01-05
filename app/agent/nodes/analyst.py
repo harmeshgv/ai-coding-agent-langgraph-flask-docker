@@ -1,7 +1,12 @@
 import logging
 
 from agent.state import AgentState
-from agent.utils import load_system_prompt, sanitize_response, filter_messages_for_llm
+from agent.utils import (
+    filter_messages_for_llm,
+    load_system_prompt,
+    log_agent_response,
+    sanitize_response,
+)
 from langchain.chat_models import BaseChatModel
 from langchain_core.messages import SystemMessage
 
@@ -23,9 +28,12 @@ def create_analyst_node(llm: BaseChatModel, tools, repo_url, agent_stack):
 
         response = await chain.ainvoke(current_messages)
         response = sanitize_response(response)
-        logger.info(
-            f"\n=== ANALYST RESPONSE ===\nContent: '{response.content}'\nTool Calls: {response.tool_calls}\n============================"
-        )
+
+        has_content = bool(response.content)
+        has_tool_calls = bool(getattr(response, "tool_calls", []))
+
+        if has_content or has_tool_calls:
+            log_agent_response(logger, "analyst", response)
 
         return {"messages": [response]}
 

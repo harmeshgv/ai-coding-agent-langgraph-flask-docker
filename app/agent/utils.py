@@ -2,11 +2,55 @@ import logging
 import os
 import re
 import shutil
+from typing import Any, Optional
 
 from git import Repo
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
 
 logger = logging.getLogger(__name__)
+
+
+def safe_truncate(value: Any, length: int = 100) -> str:
+    """
+    Converts any value to string, truncates it to the desired length,
+    and replaces newlines for cleaner log output.
+    """
+    string_value = str(value)
+    if len(string_value) > length:
+        return string_value[:length] + "..."
+    return string_value.replace("\n", "\\n")
+
+
+def log_agent_response(
+    logger_obj: logging.Logger,
+    agent_name: str,
+    response: AIMessage,
+    attempt: Optional[int] = None,
+    content_limit: int = 150,
+    arg_limit: int = 250,
+) -> None:
+    """
+    Logs LLM responses consistently across nodes, including tool calls and content.
+    """
+    header = f"\n=== {agent_name.upper()} RESPONSE"
+    if attempt is not None:
+        header += f" (Attempt {attempt})"
+    header += " ==="
+    logger_obj.info(header)
+
+    tool_calls = getattr(response, "tool_calls", []) or []
+    if tool_calls:
+        for tool_call in tool_calls:
+            name = tool_call.get("name", "unknown")
+            logger_obj.info("Tool Call: %s", name)
+            args = tool_call.get("args", {}) or {}
+            for key, value in args.items():
+                logger_obj.info(
+                    " └─ %s: %s", key, safe_truncate(value, length=arg_limit)
+                )
+
+    if getattr(response, "content", None):
+        logger_obj.info("Content: %s", safe_truncate(response.content, content_limit))
 
 
 # Hilfsfunktion, um Redundanz zu vermeiden
