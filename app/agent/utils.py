@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 from typing import Any, Optional
+from urllib.parse import urlparse, urlunparse
 
 from git import Repo
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
@@ -324,22 +325,83 @@ def save_graph_as_mermaid(graph):
     print("Graph wurde als 'workflow_graph.mmd' gespeichert.")
 
 
+def normalize_git_url(url):
+    """
+    Normalize a Git URL by removing credentials (username/password/token).
+    This allows comparing repository URLs without being affected by authentication differences.
+    """
+    try:
+        parsed = urlparse(url)
+        normalized = parsed._replace(netloc=parsed.hostname + (f":{parsed.port}" if parsed.port else ""))
+        return urlunparse(normalized)
+    except Exception:
+        return url.split('@')[-1] if '@' in url else url
+
+
 def ensure_repository_exists(repo_url, work_dir):
     """
-    Stellt sicher, dass work_dir ein valides Git-Repo ist.
+    Ensure that work_dir contains the repository from repo_url.
+    - Re-clone when a different repository is detected.
+    - Otherwise, commit local changes, fetch origin, and leave a clean checkout.
     """
-    # 1. Inhalt löschen, aber NICHT den Ordner selbst (wegen Mount)
-    for filename in os.listdir(work_dir):
-        file_path = os.path.join(work_dir, filename)
-        try:
-            if os.path.isfile(file_path) or os.path.islink(file_path):
-                os.unlink(file_path)
-            elif os.path.isdir(file_path):
-                shutil.rmtree(file_path)
-        except Exception as e:
-            print(f"Failed to delete {file_path}. Reason: {e}")
+    def clean_and_clone():
+        for filename in os.listdir(work_dir):
+            file_path = os.path.join(work_dir, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            except Exception as e:
+                logger.warning(f"Failed to delete {file_path}. Reason: {e}")
+        logger.info(f"Cloning repository {repo_url} into {work_dir}")
+        Repo.clone_from(repo_url, work_dir)
 
-    # 2. In das nun leere Verzeichnis klonen
-    # Der Punkt '.' ist wichtig, damit git nicht einen Unterordner erstellt
-    logger.info(f"Cloning repository {repo_url} into {work_dir}")
-    Repo.clone_from(repo_url, work_dir)
+    git_dir = os.path.join(work_dir, '.git')
+    
+    if not os.path.isdir(git_dir):
+        logger.info(f"No git repository found in {work_dir}, cloning...")
+        clean_and_clone()
+        return
+    
+    try:
+        repo = Repo(work_dir)
+        
+        try:
+            origin_url = repo.remotes.origin.url
+        except AttributeError:
+            logger.warning(f"No origin remote found in {work_dir}, re-cloning...")
+            clean_and_clone()
+            return
+        
+        normalized_origin = normalize_git_url(origin_url)
+        normalized_requested = normalize_git_url(repo_url)
+        
+        if normalized_origin != normalized_requested:
+            logger.info(f"Different repository detected (current: {normalized_origin}, requested: {normalized_requested}), re-cloning...")
+            clean_and_clone()
+            return
+        
+        logger.info(f"Repository {repo_url} already exists in {work_dir}, updating...")
+        
+        if repo.is_dirty(untracked_files=True):
+            logger.info("Committing local changes...")
+            repo.git.add(A=True)
+            repo.index.commit("Auto-commit: local changes before fetch")
+        
+        logger.info("Fetching origin...")
+        repo.remotes.origin.fetch()
+        
+        try:
+            default_branch = repo.remotes.origin.refs.HEAD.ref.name.replace('origin/', '')
+            logger.info(f"Checking out default branch: {default_branch}")
+            repo.git.checkout(default_branch)
+            repo.git.reset("--hard", f"origin/{default_branch}")
+        except Exception as e:
+            logger.warning(f"Could not checkout default branch: {e}, staying on current branch")
+        
+        logger.info("Repository is ready with clean checkout")
+        
+    except Exception as e:
+        logger.error(f"Error managing repository in {work_dir}: {e}, re-cloning...")
+        clean_and_clone()
