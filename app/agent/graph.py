@@ -180,8 +180,8 @@ def create_workflow(
 
     analyst_tools = read_tools + base_tools
     coder_tools = git_local_tools_coder + read_tools + write_tools + base_tools
-    # Tester braucht Java + Git
-    tester_tools = git_local_tools_tester + [run_java_command]
+    # Tester needs Java + Git + Directory Navigation
+    tester_tools = git_local_tools_tester + [log_thought, run_java_command]
 
     # --- Graph Nodes ---
     workflow = StateGraph(AgentState)

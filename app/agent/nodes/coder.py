@@ -1,20 +1,14 @@
 import logging
 
 from agent.state import AgentState
-from agent.utils import load_system_prompt, filter_messages_for_llm
+from agent.utils import (
+    filter_messages_for_llm,
+    load_system_prompt,
+    log_agent_response,
+)
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 logger = logging.getLogger(__name__)
-
-
-def safe_truncate(value, length=100):
-    # 1. Alles erst in String umwandeln (verhindert Fehler bei int/bool/list)
-    s_val = str(value)
-    # 2. Kürzen und "..." anhängen, wenn zu lang
-    if len(s_val) > length:
-        return s_val[:length] + "..."
-    # 3. Zeilenumbrüche für das Log entfernen (optional, macht es lesbarer)
-    return s_val.replace("\n", "\\n")
 
 
 def create_coder_node(llm, tools, repo_url, agent_stack):
@@ -33,27 +27,15 @@ def create_coder_node(llm, tools, repo_url, agent_stack):
                 response = await chain.ainvoke(current_messages)
 
                 has_content = bool(response.content)
-                tool_calls = getattr(response, "tool_calls", []) or []
                 has_tool_calls = bool(getattr(response, "tool_calls", []))
 
                 if has_content or has_tool_calls:
-                    logger.info(f"\n=== CODER RESPONSE (Attempt {attempt + 1}) ===")
-
-                    if has_tool_calls:
-                        for tc in tool_calls:
-                            name = tc.get("name", "unknown")
-                            args = tc.get("args", {})
-
-                            logger.info(f"Tool Call: {name}")
-
-                            # Hier war dein Fehler: Wir nutzen jetzt safe_truncate
-                            for k, v in args.items():
-                                logger.info(f" └─ {k}: {safe_truncate(v, 100)}")
-
-                    if has_content:
-                        # Auch den Content kürzen, falls er riesig ist
-                        logger.info(f"Content: {safe_truncate(response.content, 100)}")
-
+                    log_agent_response(
+                        logger,
+                        "coder",
+                        response,
+                        attempt=attempt + 1,
+                    )
                     return {"messages": [response]}
 
                 logger.warning(
