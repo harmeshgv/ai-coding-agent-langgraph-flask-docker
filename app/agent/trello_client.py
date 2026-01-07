@@ -129,3 +129,38 @@ async def add_comment_to_trello_card(card_id: str, comment: str, sys_config: dic
 
     if response.status_code != 200:
         raise Exception(f"Failed to add a comment to card {card_id}: {response.text}")
+
+
+async def get_trello_card_comments(card_id: str, sys_config: dict) -> list[dict]:
+    """
+    Fetches all comments for the provided Trello card ID.
+    """
+    env = sys_config.get("env")
+    if not env:
+        raise ValueError("Environment not found in sys_config")
+
+    url = f"https://api.trello.com/1/cards/{card_id}/actions"
+    headers = {"Accept": "application/json"}
+    query = {
+        "filter": "commentCard",
+        "key": env.get("TRELLO_API_KEY"),
+        "token": env.get("TRELLO_TOKEN"),
+    }
+
+    logger.info(f"Trello GET: {get_safe_url(url, query)}")
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, headers=headers, params=query)
+
+    if response.status_code != 200:
+        raise Exception(f"Failed to fetch comments for card {card_id}: {response.text}")
+
+    data = response.json()
+    return [
+        {
+            "id": action.get("id"),
+            "text": action.get("data", {}).get("text", ""),
+            "member_creator": action.get("memberCreator", {}).get("fullName"),
+            "date": action.get("date"),
+        }
+        for action in data
+    ]

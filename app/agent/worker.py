@@ -109,6 +109,7 @@ async def run_agent_cycle_async(app: Flask, encryption_key: Fernet) -> None:
                     "next_step": "",
                     "trello_card_id": None,
                     "trello_list_id": None,
+                    "trello_in_progress": False,
                     "agent_stack": agent_stack,
                 },
                 {"recursion_limit": 100},
