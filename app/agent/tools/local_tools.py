@@ -261,10 +261,31 @@ def git_push_origin():
         return f"ERROR: {str(e)}"
 
 
+def _find_existing_pr(owner: str, repo: str, branch: str, headers: dict) -> dict | None:
+    """
+    Helper to find an existing open PR for the given branch.
+    Returns PR data dict if found, None otherwise.
+    """
+    try:
+        url = f"https://api.github.com/repos/{owner}/{repo}/pulls"
+        params = {"head": f"{owner}:{branch}", "state": "open"}
+        response = requests.get(url, headers=headers, params=params)
+        
+        if response.status_code == 200:
+            pulls = response.json()
+            if pulls:
+                return pulls[0]
+        return None
+    except Exception as e:
+        logger.warning(f"Failed to check for existing PR: {e}")
+        return None
+
+
 @tool
-def create_github_pr(title: str, body: str):
+def create_or_update_github_pr(title: str, body: str):
     """
     Creates a Pull Request on GitHub for the current branch.
+    If a PR already exists for this branch, adds a comment instead.
     Target is usually 'main' or 'master'.
     """
     WORKSPACE = get_workspace()
@@ -273,20 +294,18 @@ def create_github_pr(title: str, body: str):
         return "ERROR: GITHUB_TOKEN missing."
 
     try:
-        # 1. Repo-Infos aus der Remote-URL parsen
-        # URL Formate: https://github.com/OWNER/REPO.git oder mit Token
+        # 1. Get remote URL
         remote_url = subprocess.check_output(
             ["git", "remote", "get-url", "origin"], cwd=WORKSPACE, text=True
         ).strip()
 
-        # Regex um Owner und Repo zu finden (ignoriert Token und .git am Ende)
         match = re.search(r"github\.com[:/](.+)/(.+?)(\.git)?$", remote_url)
         if not match:
             return f"ERROR: Could not parse Owner/Repo from URL: {remote_url}"
 
         owner, repo = match.group(1), match.group(2)
 
-        # 2. Aktuellen Branch Namen holen
+        # 2. Get current branch name
         current_branch = subprocess.check_output(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=WORKSPACE, text=True
         ).strip()
@@ -294,19 +313,36 @@ def create_github_pr(title: str, body: str):
         if current_branch in ["main", "master"]:
             return "ERROR: You are on main/master. Create a feature branch first!"
 
-        # 3. API Request an GitHub senden
-        url = f"https://api.github.com/repos/{owner}/{repo}/pulls"
         headers = {
             "Authorization": f"token {token}",
             "Accept": "application/vnd.github.v3+json",
         }
 
-        # Wir versuchen erst 'main', wenn das nicht geht 'master' als Ziel
+        # 3. Check for existing PR
+        existing_pr = _find_existing_pr(owner, repo, current_branch, headers)
+        
+        # 4. If PR exists, update it
+        if existing_pr:
+            pr_number = existing_pr.get("number")
+            pr_url = existing_pr.get("html_url")
+            
+            comment_url = f"https://api.github.com/repos/{owner}/{repo}/issues/{pr_number}/comments"
+            comment_payload = {"body": f"**Automated Update:**\n\n{body}"}
+            
+            comment_response = requests.post(comment_url, json=comment_payload, headers=headers)
+            
+            if comment_response.status_code == 201:
+                return f"SUCCESS: Added comment to existing PR: {pr_url}"
+            else:
+                return f"ERROR adding comment to PR: {comment_response.status_code} - {comment_response.text}"
+
+        # 5. Create new PR if none exists
+        url = f"https://api.github.com/repos/{owner}/{repo}/pulls"
         payload = {"title": title, "body": body, "head": current_branch, "base": "main"}
 
         response = requests.post(url, json=payload, headers=headers)
 
-        # Fallback: Wenn 'main' nicht existiert (422 Error), probiere 'master'
+        # 6. If 'main' not found, try 'master'
         if response.status_code == 422:
             logger.info("Target 'main' not found, trying 'master'...")
             payload["base"] = "master"

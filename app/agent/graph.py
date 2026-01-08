@@ -8,7 +8,7 @@ from agent.nodes.trello_fetch_node import create_trello_fetch_node
 from agent.nodes.trello_update_node import create_trello_update_node
 from agent.state import AgentState
 from agent.tools.local_tools import (
-    create_github_pr,
+    create_or_update_github_pr,
     finish_task,
     git_add,
     git_commit,
@@ -170,7 +170,7 @@ def create_workflow(
         git_status,
         git_commit,
         git_push_origin,
-        create_github_pr,
+        create_or_update_github_pr,
     ]
 
     analyst_tools = read_tools + base_tools
