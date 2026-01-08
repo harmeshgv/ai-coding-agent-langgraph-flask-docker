@@ -2,7 +2,8 @@
 
 ![Status](https://img.shields.io/badge/Status-POC-yellow)
 ![Tech](https://img.shields.io/badge/Built%20With-Python%20%7C%20LangGraph%20%7C%20Mistral%20%7C%20Docker%20%7C%20MCP-blue)
-[![Python][Python]][Python-url]
+
+[![Python][Python]][Python-url] [![LangChain][LangChain]][LangChain-url]
 
 This project demonstrates a POC for an autonomous, containerized AI coding agent (CAIASE) that lives in your Docker environment. 
 It operates completely unsupervised to:
@@ -187,3 +188,10 @@ Found a bug or have a feature idea? Check our [Contributing Guide](CONTRIBUTING.
 
 ## POC Results
 [Results of the First POC](poc-results.md)
+
+<!-- MARKDOWN LINKS & IMAGES -->
+<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[Python]: https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white
+[Python-url]: https://www.python.org/
+[LangChain]: https://img.shields.io/badge/LangChain-3A3A3A?style=for-the-badge&logo=chainlink&logoColor=white
+[LangChain-url]: https://www.langchain.com/
