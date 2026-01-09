@@ -47,6 +47,8 @@ class AgentConfig(db.Model):
 
 
 class Issue(db.Model):
+    """Model for tracking issues"""
+
     __tablename__ = "issue"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -58,6 +60,9 @@ class Issue(db.Model):
     updated_at = db.Column(
         db.DateTime, server_default=db.func.now(), onupdate=db.func.now()
     )
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def __repr__(self):
         return f"<Issue card={self.trello_card_id} branch={self.branch_name}>"

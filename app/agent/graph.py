@@ -1,3 +1,17 @@
+"""
+Defines the main agent workflow using LangGraph.
+
+This module constructs a stateful graph that represents the agent's decision-making
+process. It defines the nodes (different specialist agents like Coder, Tester),
+the edges (the transitions between nodes), and the conditional logic that
+routes the flow of execution based on the current state.
+"""
+
+from langchain.chat_models import BaseChatModel
+from langchain_core.messages import AIMessage
+from langgraph.graph import END, StateGraph
+from langgraph.prebuilt import ToolNode
+
 from agent.nodes.analyst import create_analyst_node
 from agent.nodes.bugfixer import create_bugfixer_node
 from agent.nodes.coder import create_coder_node
@@ -21,10 +35,6 @@ from agent.tools.local_tools import (
     run_java_command,
     write_to_file,
 )
-from langchain.chat_models import BaseChatModel
-from langchain_core.messages import AIMessage
-from langgraph.graph import END, StateGraph
-from langgraph.prebuilt import ToolNode
 
 
 def router_tester_old(state):
@@ -45,9 +55,8 @@ def router_tester_old(state):
 
             if decision == "pass":
                 return "pass"
-            else:
-                # Gibt z.B. "coder failed" oder "bugfixer failed" zurück
-                return state.get("next_step") + " failed"
+            # Gibt z.B. "coder failed" oder "bugfixer failed" zurück
+            return state.get("next_step") + " failed"
 
         return "tools"
 
@@ -55,6 +64,7 @@ def router_tester_old(state):
 
 
 def router_tester(state):
+    """Routes traffic from the tester agent. Always directs to the tester's tool node."""
     last_msg = state["messages"][-1]
 
     # Wenn der Tester Tools nutzen will (egal ob git, java oder report_result)
@@ -66,6 +76,11 @@ def router_tester(state):
 
 
 def route_after_tools_tester(state: AgentState):
+    """
+    Routes flow after the tester's tools have run. Checks for a 'pass' result
+    to finish, a 'fail' result to loop back to the coder/bugfixer, or loops
+    back to the tester if other tools were used.
+    """
     messages = state["messages"]
 
     # Sicherstellen, dass wir genug Nachrichten haben
@@ -84,10 +99,9 @@ def route_after_tools_tester(state: AgentState):
 
                 if result == "pass":
                     return "pass"  # Erfolg -> Ende
-                else:
-                    # Fehlgeschlagen -> Zurück zum Bearbeiter
-                    previous_agent = state.get("next_step", "coder")
-                    return f"{previous_agent} failed"
+                # Fehlgeschlagen -> Zurück zum Bearbeiter
+                previous_agent = state.get("next_step", "coder")
+                return f"{previous_agent} failed"
 
     # Wenn kein 'report_test_result' dabei war (z.B. nur 'run_java_command' oder 'git_add')
     # dann geht es zurück zum Tester (Loop), damit er weitermachen kann.
@@ -152,31 +166,29 @@ def route_after_tools_analyst(state: AgentState) -> str:
 def create_workflow(
     llm_large: BaseChatModel,
     llm_small: BaseChatModel,
-    git_tools: list,
-    task_tools: list,
-    repo_url: str,
     sys_config: dict,
     agent_stack: str,
 ) -> StateGraph:
+    """Creates and configures the main LangGraph workflow."""
     # --- Tool Sets ---
-    base_tools = [log_thought, finish_task]
-    read_tools = [list_files, read_file]
-    write_tools = [write_to_file]
-
-    # Git Tools lokal definieren
-    git_local_tools_coder = [git_create_branch]
-    git_local_tools_tester = [
+    analyst_tools = [list_files, read_file, log_thought, finish_task]
+    coder_tools = [
+        git_create_branch,
+        list_files,
+        read_file,
+        write_to_file,
+        log_thought,
+        finish_task,
+    ]
+    tester_tools = [
         git_add,
         git_status,
         git_commit,
         git_push_origin,
         create_or_update_github_pr,
+        log_thought,
+        run_java_command,
     ]
-
-    analyst_tools = read_tools + base_tools
-    coder_tools = git_local_tools_coder + read_tools + write_tools + base_tools
-    # Tester needs Java + Git + Directory Navigation
-    tester_tools = git_local_tools_tester + [log_thought, run_java_command]
 
     # --- Graph Nodes ---
     workflow = StateGraph(AgentState)
@@ -184,9 +196,7 @@ def create_workflow(
     workflow.add_node("task_fetch", create_trello_fetch_node(sys_config))
     workflow.add_node("router", create_router_node(llm_small))
 
-    workflow.add_node(
-        "coder", create_coder_node(llm_large, coder_tools, agent_stack)
-    )
+    workflow.add_node("coder", create_coder_node(llm_large, coder_tools, agent_stack))
     workflow.add_node(
         "bugfixer", create_bugfixer_node(llm_large, coder_tools, agent_stack)
     )

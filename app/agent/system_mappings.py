@@ -15,7 +15,7 @@ def parse_trello_response(data):
     Robustly parses a Trello API response to extract a flat list of cards.
     Handles responses that are board dictionaries or lists of cards.
     """
-    logger.info(f"Trello response parser received data: {data}")
+    logger.info("Trello response parser received data: %s", data)
 
     raw_cards = []
     if isinstance(data, list):
@@ -53,9 +53,7 @@ def parse_trello_response(data):
 # A lambda function to parse the Trello card format into our canonical task format
 trello_response_parser = parse_trello_response
 
-SERVERS_PATH = os.environ.get(
-    "SERVERS_PATH", "/coding-agent/servers"
-)
+SERVERS_PATH = os.environ.get("SERVERS_PATH", "/coding-agent/servers")
 
 
 SYSTEM_DEFINITIONS = {

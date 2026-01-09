@@ -1,3 +1,7 @@
+"""
+Utility functions for the AI Coding Agent.
+"""
+
 import logging
 import os
 import re
@@ -24,9 +28,9 @@ def safe_truncate(value: Any, length: int = 100) -> str:
 
 
 def log_agent_response(
-    logger_obj: logging.Logger,
     agent_name: str,
     response: AIMessage,
+    *,
     attempt: Optional[int] = None,
     content_limit: int = 150,
     arg_limit: int = 250,
@@ -38,25 +42,71 @@ def log_agent_response(
     if attempt is not None:
         header += f" (Attempt {attempt})"
     header += " ==="
-    logger_obj.info(header)
+    logger.info(header)
 
     tool_calls = getattr(response, "tool_calls", []) or []
     if tool_calls:
         for tool_call in tool_calls:
             name = tool_call.get("name", "unknown")
-            logger_obj.info("Tool Call: %s", name)
+            logger.info("Tool Call: %s", name)
             args = tool_call.get("args", {}) or {}
             for key, value in args.items():
-                logger_obj.info(
-                    " └─ %s: %s", key, safe_truncate(value, length=arg_limit)
-                )
+                logger.info(" └─ %s: %s", key, safe_truncate(value, length=arg_limit))
 
     if getattr(response, "content", None):
-        logger_obj.info("Content: %s", safe_truncate(response.content, content_limit))
+        logger.info("Content: %s", safe_truncate(response.content, content_limit))
+
+
+def _log_message_detail(
+    idx,
+    message,
+    content_limit: int,
+):
+    logger.info(
+        "[%02d] %s",
+        idx,
+        getattr(message, "type", message.__class__.__name__).upper(),
+    )
+    content = getattr(message, "content", None)
+    if content is not None:
+        logger.info("     content      : %s", safe_truncate(content, content_limit))
+
+    name = getattr(message, "name", None)
+    if name:
+        logger.info("     name         : %s", name)
+
+    tool_call_id = getattr(message, "tool_call_id", None)
+    if tool_call_id:
+        logger.info("     tool_call_id : %s", tool_call_id)
+
+
+def _log_additional_kwargs(
+    message,
+    arg_limit: int,
+):
+    additional_kwargs = getattr(message, "additional_kwargs", {})
+    if additional_kwargs:
+        logger.info("     additional_kwargs:")
+        for key, value in additional_kwargs.items():
+            logger.info("         %s: %s", key, safe_truncate(value, arg_limit))
+
+
+def _log_tool_calls(
+    message,
+    arg_limit: int,
+):
+    tool_calls = getattr(message, "tool_calls", [])
+    if tool_calls:
+        logger.info("     tool_calls:")
+        for tool_idx, tool_call in enumerate(tool_calls, start=1):
+            tool_name = tool_call.get("name", "unknown")
+            logger.info("         (%d) %s", tool_idx, tool_name)
+            args = tool_call.get("args", {})
+            for key, value in args.items():
+                logger.info("             %s: %s", key, safe_truncate(value, arg_limit))
 
 
 def log_agent_state(
-    logger_obj: logging.Logger,
     state: dict,
     content_limit: int = 100,
     arg_limit: int = 250,
@@ -64,65 +114,34 @@ def log_agent_state(
     """
     Logs a snapshot of the AgentState, including a detailed message dump.
     """
-    logger_obj.info("\n=== AGENT STATE SNAPSHOT ===")
-    logger_obj.info("next_step         : %s", state.get("next_step"))
-    logger_obj.info("agent_stack       : %s", state.get("agent_stack"))
-    logger_obj.info("retry_count       : %s", state.get("retry_count"))
-    logger_obj.info("test_result       : %s", state.get("test_result"))
-    logger_obj.info("error_log         : %s", state.get("error_log"))
-    logger_obj.info("trello_card_id    : %s", state.get("trello_card_id"))
-    logger_obj.info("trello_list_id    : %s", state.get("trello_list_id"))
-    logger_obj.info("trello_in_progress: %s", state.get("trello_in_progress"))
+    logger.info("\n=== AGENT STATE SNAPSHOT ===")
+    logger.info("next_step         : %s", state.get("next_step"))
+    logger.info("agent_stack       : %s", state.get("agent_stack"))
+    logger.info("retry_count       : %s", state.get("retry_count"))
+    logger.info("test_result       : %s", state.get("test_result"))
+    logger.info("error_log         : %s", state.get("error_log"))
+    logger.info("trello_card_id    : %s", state.get("trello_card_id"))
+    logger.info("trello_list_id    : %s", state.get("trello_list_id"))
+    logger.info("trello_in_progress: %s", state.get("trello_in_progress"))
 
     messages = state.get("messages", [])
-    logger_obj.info("\n--- Messages (%d) ---", len(messages))
+    logger.info("\n--- Messages (%d) ---", len(messages))
     for idx, message in enumerate(messages, start=1):
-        msg_type = getattr(message, "type", message.__class__.__name__)
-        logger_obj.info("[%02d] %s", idx, msg_type.upper())
+        _log_message_detail(idx, message, content_limit)
+        _log_additional_kwargs(message, arg_limit)
+        _log_tool_calls(message, arg_limit)
 
-        content = getattr(message, "content", None)
-        if content is not None:
-            logger_obj.info(
-                "     content      : %s", safe_truncate(content, content_limit)
-            )
-
-        name = getattr(message, "name", None)
-        if name:
-            logger_obj.info("     name         : %s", name)
-
-        tool_call_id = getattr(message, "tool_call_id", None)
-        if tool_call_id:
-            logger_obj.info("     tool_call_id : %s", tool_call_id)
-
-        additional_kwargs = getattr(message, "additional_kwargs", {})
-        if additional_kwargs:
-            logger_obj.info("     additional_kwargs:")
-            for key, value in additional_kwargs.items():
-                logger_obj.info("         %s: %s", key, safe_truncate(value, arg_limit))
-
-        tool_calls = getattr(message, "tool_calls", [])
-        if tool_calls:
-            logger_obj.info("     tool_calls:")
-            for tool_idx, tool_call in enumerate(tool_calls, start=1):
-                tool_name = tool_call.get("name", "unknown")
-                logger_obj.info("         (%d) %s", tool_idx, tool_name)
-                args = tool_call.get("args", {})
-                for key, value in args.items():
-                    logger_obj.info(
-                        "             %s: %s", key, safe_truncate(value, arg_limit)
-                    )
-
-    logger_obj.info("=== END OF STATE SNAPSHOT ===")
+    logger.info("=== END OF STATE SNAPSHOT ===")
 
 
 # Hilfsfunktion, um Redundanz zu vermeiden
 def get_workspace():
-    # Holt den Pfad aus der Env-Var, die wir im Docker-Compose gesetzt haben
+    """Get the workspace path from the environment variable."""
     return os.environ.get("WORKSPACE", "/coding-agent-workspace")
 
 
 def get_workbench():
-    # Holt den Pfad aus der Env-Var, die wir im Docker-Compose gesetzt haben
+    """Get the workbench path from the environment variable."""
     return os.environ.get("WORKBENCH", "")
 
 
@@ -134,13 +153,13 @@ def load_system_prompt(stack: str, role: str) -> str:
 
     file_path = os.path.join("workbench", stack, f"systemprompt_{role}.md")
 
-    logger.info(f"Loading system prompt: {file_path}")
+    logger.info("Loading system prompt: %s", file_path)
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
         # Fallback, falls Datei fehlt (wichtig für Robustheit!)
-        logger.warning(f"WARNUNG: System Prompt not found: {file_path}")
+        logger.warning("WARNUNG: System Prompt not found: %s", file_path)
         return "You are a helpful coding assistent."
 
 
@@ -151,7 +170,7 @@ def _estimate_tokens(messages: list[BaseMessage]) -> int:
         if hasattr(msg, "content") and msg.content:
             total_chars += len(str(msg.content))
 
-        if type(msg) is AIMessage:
+        if isinstance(msg, AIMessage):
             if hasattr(msg, "tool_calls") and msg.tool_calls:
                 tool_calls = getattr(msg, "tool_calls", []) or []
                 total_chars += len(str(tool_calls))
@@ -182,7 +201,7 @@ def _find_safe_start_boundary(
         msg = messages[idx]
 
         # HumanMessages are always safe starting points (no dependent tool responses)
-        if isinstance(msg, HumanMessage) or isinstance(msg, AIMessage):
+        if isinstance(msg, (HumanMessage, AIMessage)):
             adjusted_start_idx = idx
             break
 
@@ -220,9 +239,13 @@ def _log_token_savings(
 
     # Log the filtering results for monitoring token optimization
     logger.info(
-        f"Message filter: {original_count} → {filtered_count} messages "
-        f"(~{original_tokens} → ~{filtered_tokens} tokens, "
-        f"saved ~{saved_tokens} tokens / {saved_percentage:.1f}%)"
+        "Message filter: %d → %d messages (~%d → ~%d tokens, saved ~%d tokens / %.1f%%)",
+        original_count,
+        filtered_count,
+        original_tokens,
+        filtered_tokens,
+        saved_tokens,
+        saved_percentage,
     )
 
 
@@ -254,7 +277,9 @@ def filter_messages_for_llm(
     # Skip filtering if message count is already within limits
     if len(messages) <= max_messages + 1:
         logger.debug(
-            f"Message filter: {original_count} messages, ~{original_tokens} tokens (no filtering needed)"
+            "Message filter: %s messages, ~%s tokens (no filtering needed)",
+            original_count,
+            original_tokens,
         )
         return messages
 
@@ -312,7 +337,7 @@ def sanitize_response(response: AIMessage) -> AIMessage:
         if name_pattern.match(name) and len(name) < 64:
             valid_tools.append(tc)
         else:
-            logger.warning(f"SANITIZER: Removed invalid tool call with name: '{name}'")
+            logger.warning("SANITIZER: Removed invalid tool call with name: '%s'", name)
 
     # Das manipulierte Objekt zurückgeben
     response.tool_calls = valid_tools
@@ -320,10 +345,9 @@ def sanitize_response(response: AIMessage) -> AIMessage:
 
 
 def save_graph_as_png(graph):
-    # 1. Die Bilddaten in einer Variable speichern (es sind Bytes)
+    """Save the graph as a PNG file."""
     png_bytes = graph.get_graph().draw_mermaid_png()
 
-    # 2. Datei im 'write binary' Modus ("wb") öffnen und speichern
     with open("workflow_graph.png", "wb") as f:
         f.write(png_bytes)
 
@@ -331,11 +355,10 @@ def save_graph_as_png(graph):
 
 
 def save_graph_as_mermaid(graph):
-    # 1. Die Bilddaten in einer Variable speichern (es sind Bytes)
+    """Save the graph as a Mermaid file."""
     mermaid_code = graph.get_graph().draw_mermaid()
 
-    # 2. Datei im 'write binary' Modus ("wb") öffnen und speichern
-    with open("workflow_graph.mmd", "w") as f:
+    with open("workflow_graph.mmd", "w", encoding="utf-8") as f:
         f.write(mermaid_code)
 
     print("Graph wurde als 'workflow_graph.mmd' gespeichert.")
@@ -352,7 +375,7 @@ def normalize_git_url(url):
             netloc=parsed.hostname + (f":{parsed.port}" if parsed.port else "")
         )
         return urlunparse(normalized)
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         return url.split("@")[-1] if "@" in url else url
 
 
@@ -371,15 +394,15 @@ def ensure_repository_exists(repo_url, work_dir):
                     os.unlink(file_path)
                 elif os.path.isdir(file_path):
                     shutil.rmtree(file_path)
-            except Exception as e:
-                logger.warning(f"Failed to delete {file_path}. Reason: {e}")
-        logger.info(f"Cloning repository {repo_url} into {work_dir}")
+            except Exception as e:  # pylint: disable=broad-exception-caught
+                logger.warning("Failed to delete %s. Reason: %s", file_path, e)
+        logger.info("Cloning repository %s into %s", repo_url, work_dir)
         Repo.clone_from(repo_url, work_dir)
 
     git_dir = os.path.join(work_dir, ".git")
 
     if not os.path.isdir(git_dir):
-        logger.info(f"No git repository found in {work_dir}, cloning...")
+        logger.info("No git repository found in %s, cloning...", work_dir)
         clean_and_clone()
         return
 
@@ -389,7 +412,7 @@ def ensure_repository_exists(repo_url, work_dir):
         try:
             origin_url = repo.remotes.origin.url
         except AttributeError:
-            logger.warning(f"No origin remote found in {work_dir}, re-cloning...")
+            logger.warning("No origin remote found in %s, re-cloning...", work_dir)
             clean_and_clone()
             return
 
@@ -398,12 +421,16 @@ def ensure_repository_exists(repo_url, work_dir):
 
         if normalized_origin != normalized_requested:
             logger.info(
-                f"Different repository detected (current: {normalized_origin}, requested: {normalized_requested}), re-cloning..."
+                "Different repository detected (current: %s, requested: %s), re-cloning...",
+                normalized_origin,
+                normalized_requested,
             )
             clean_and_clone()
             return
 
-        logger.info(f"Repository {repo_url} already exists in {work_dir}, updating...")
+        logger.info(
+            "Repository %s already exists in %s, updating...", repo_url, work_dir
+        )
 
         if repo.is_dirty(untracked_files=True):
             logger.info("Committing local changes...")
@@ -417,18 +444,18 @@ def ensure_repository_exists(repo_url, work_dir):
             default_branch = repo.remotes.origin.refs.HEAD.ref.name.replace(
                 "origin/", ""
             )
-            logger.info(f"Checking out default branch: {default_branch}")
+            logger.info("Checking out default branch: %s", default_branch)
             repo.git.checkout(default_branch)
             repo.git.reset("--hard", f"origin/{default_branch}")
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.warning(
-                f"Could not checkout default branch: {e}, staying on current branch"
+                "Could not checkout default branch: %s, staying on current branch", e
             )
 
         logger.info("Repository is ready with clean checkout")
 
-    except Exception as e:
-        logger.error(f"Error managing repository in {work_dir}: {e}, re-cloning...")
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.error("Error managing repository in %s: %s, re-cloning...", work_dir, e)
         clean_and_clone()
 
 
@@ -448,30 +475,34 @@ def checkout_branch(repo_url: str, branch_name: str, work_dir: str) -> None:
     try:
         repo = Repo(work_dir)
     except Exception as exc:
-        logger.error(f"Failed to load repository at {work_dir}: {exc}")
+        logger.error("Failed to load repository at %s: %s", work_dir, exc)
         raise
 
     try:
         if branch_name in repo.heads:
-            logger.info(f"Checking out existing local branch '{branch_name}'.")
+            logger.info("Checking out existing local branch '%s'.", branch_name)
             repo.git.checkout(branch_name)
             return
 
         logger.info(
-            f"Local branch '{branch_name}' not found. Fetching from origin for repository {repo_url}."
+            "Local branch '%s' not found. Fetching from origin for repository %s.",
+            branch_name,
+            repo_url,
         )
         repo.remotes.origin.fetch(branch_name)
         remote_ref = f"origin/{branch_name}"
         if remote_ref in repo.refs:
             repo.git.checkout("-b", branch_name, remote_ref)
-            logger.info(f"Checked out tracking branch '{branch_name}' from origin.")
+            logger.info("Checked out tracking branch '%s' from origin.", branch_name)
             return
 
         logger.info(
-            f"Remote branch '{remote_ref}' not found. Creating new local branch '{branch_name}' from current HEAD."
+            "Remote branch '%s' not found. Creating new local branch '%s' from current HEAD.",
+            remote_ref,
+            branch_name,
         )
         repo.git.checkout("-b", branch_name)
-        logger.info(f"Created new local branch '{branch_name}'.")
+        logger.info("Created new local branch '%s'.", branch_name)
     except GitCommandError as exc:
-        logger.error(f"Failed to checkout branch '{branch_name}': {exc}")
+        logger.error("Failed to checkout branch '%s': %s", branch_name, exc)
         raise

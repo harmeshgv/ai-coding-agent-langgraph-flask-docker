@@ -1,3 +1,21 @@
+"""
+This module serves as a bridge between MCP (Multi-Tool Co-routine Protocol)
+servers and the LangChain framework.
+
+It provides the `McpServerClient` class, which performs the following main functions:
+- Starts any MCP-compliant server as a subprocess via standard I/O (stdio).
+- Establishes an asynchronous session with the server.
+- Retrieves the tools provided by the MCP server.
+- Dynamically converts these tools into LangChain-compatible `StructuredTool` objects.
+  During this process, argument schemas (Pydantic models) are generated at runtime
+  from the JSON schemas of the MCP tools.
+- Encapsulates tool calls so they can be executed asynchronously within LangChain agents,
+  delegating the calls to the MCP server.
+
+The main purpose is to make external tools, written in any language that adheres to the
+MCP standard, seamlessly usable within a Python-based LangChain agent.
+"""
+
 import json
 import os
 from contextlib import AsyncExitStack
@@ -46,7 +64,7 @@ class McpServerClient:
             await self.exit_stack.aclose()
             raise RuntimeError(
                 f"Failed to start MCP Server ({self.server_params.command}): {e}"
-            )
+            ) from e
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Räumt auf und stoppt den Server."""
@@ -94,7 +112,7 @@ class McpServerClient:
                 content_item = result.content[0]
                 if content_item.type == "application/json":
                     return content_item.json
-                elif content_item.type == "text":
+                if content_item.type == "text":
                     try:
                         # Attempt to parse the text as JSON
                         return json.loads(content_item.text)
@@ -139,13 +157,14 @@ class McpServerClient:
                     Field(default=None, description=field_info.get("description", "")),
                 )
 
-        ArgsModel = create_model(f"{tool_name}Args", **fields)
+        args_model = create_model(f"{tool_name}Args", **fields)
 
         async def tool_func(**kwargs):
             try:
                 if not self.session:
                     raise RuntimeError(
-                        "MCP Session not connected. Ensure the client is used within an 'async with' block."
+                        "MCP Session not connected. Ensure the client is used within "
+                        + "an 'async with' block."
                     )
 
                 # Pfad-Injection für Git Server (Spezialfall, könnte man auch auslagern)
@@ -172,7 +191,7 @@ class McpServerClient:
                     else f"Tool {tool_name} executed successfully."
                 )
 
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-exception-caught
                 return f"EXCEPTION in tool {tool_name}: {str(e)}"
 
         return StructuredTool.from_function(
@@ -180,5 +199,5 @@ class McpServerClient:
             coroutine=tool_func,
             name=tool_name,
             description=tool_desc,
-            args_schema=ArgsModel,
+            args_schema=args_model,
         )

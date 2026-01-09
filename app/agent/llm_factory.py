@@ -1,17 +1,29 @@
-import os
+"""
+Factory module for creating LangChain LLM instances.
+
+This module provides a centralized way to instantiate different chat models
+(LLMs) from various providers like OpenAI, Google, Mistral, etc.
+It uses a configuration dictionary to determine which provider and model
+to use, and handles API key retrieval from environment variables.
+
+The main function is `get_llm`, which takes a configuration and returns
+an appropriate `BaseChatModel` instance.
+"""
+
 import logging
+import os
 from typing import Callable, Dict
 
+from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_mistralai import ChatMistralAI
-from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama
-from langchain_anthropic import ChatAnthropic
+from langchain_openai import ChatOpenAI
 from pydantic import SecretStr
 
-
 logger = logging.getLogger(__name__)
+
 
 def _get_api_key(env_var_name: str) -> str:
     api_key = os.environ.get(env_var_name)
@@ -22,19 +34,13 @@ def _get_api_key(env_var_name: str) -> str:
 
 def _create_openai_llm(model: str, temperature: float) -> BaseChatModel:
     api_key = _get_api_key("OPENAI_API_KEY")
-    return ChatOpenAI(
-        model=model,
-        temperature=temperature,
-        api_key=SecretStr(api_key)
-    )
+    return ChatOpenAI(model=model, temperature=temperature, api_key=SecretStr(api_key))
 
 
 def _create_mistral_llm(model: str, temperature: float) -> BaseChatModel:
     api_key = _get_api_key("MISTRAL_API_KEY")
     return ChatMistralAI(
-        model_name=model,
-        temperature=temperature,
-        api_key=SecretStr(api_key)
+        model_name=model, temperature=temperature, api_key=SecretStr(api_key)
     )
 
 
@@ -54,8 +60,9 @@ def _create_openrouter_llm(model: str, temperature: float) -> BaseChatModel:
         model=model,
         temperature=temperature,
         base_url="https://openrouter.ai/api/v1",
-        api_key=SecretStr(api_key)
+        api_key=SecretStr(api_key),
     )
+
 
 def _create_anthropic_llm(model: str, temperature: float) -> BaseChatModel:
     api_key = _get_api_key("ANTHROPIC_API_KEY")
@@ -65,16 +72,18 @@ def _create_anthropic_llm(model: str, temperature: float) -> BaseChatModel:
         api_key=api_key,
     )
 
+
 def _create_ollama_llm(model: str, temperature: float) -> BaseChatModel:
     base_url = os.environ.get("OLLAMA_BASE_URL", "http://host.docker.internal:11434")
     api_key = os.environ.get("OLLAMA_API_KEY")
-    logger.info(f"Using Ollama base URL: {base_url}")
+    logger.info("Using Ollama base URL: %s", base_url)
     return ChatOllama(
         model=model,
         temperature=temperature,
         base_url=base_url,
         api_key=api_key,
     )
+
 
 LLM_PROVIDERS: Dict[str, Callable[[str, float], BaseChatModel]] = {
     "openai": _create_openai_llm,
@@ -84,7 +93,7 @@ LLM_PROVIDERS: Dict[str, Callable[[str, float], BaseChatModel]] = {
     "openrouter": _create_openrouter_llm,
     "ollama": _create_ollama_llm,
     "anthropic": _create_anthropic_llm,
-}  
+}
 
 
 def get_llm(config: dict, large: bool = True) -> BaseChatModel:
@@ -112,5 +121,10 @@ def get_llm(config: dict, large: bool = True) -> BaseChatModel:
     if not provider_factory:
         raise ValueError(f"Unknown LLM provider: {provider}")
 
-    logger.info(f"Creating LLM: provider={provider}, model={model}, temperature={temperature}")
+    logger.info(
+        "Creating LLM: provider=%s, model=%s, temperature=%s",
+        provider,
+        model,
+        temperature,
+    )
     return provider_factory(model, temperature)
