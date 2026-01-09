@@ -8,7 +8,7 @@ from agent.nodes.trello_fetch_node import create_trello_fetch_node
 from agent.nodes.trello_update_node import create_trello_update_node
 from agent.state import AgentState
 from agent.tools.local_tools import (
-    create_github_pr,
+    create_or_update_github_pr,
     finish_task,
     git_add,
     git_commit,
@@ -170,7 +170,7 @@ def create_workflow(
         git_status,
         git_commit,
         git_push_origin,
-        create_github_pr,
+        create_or_update_github_pr,
     ]
 
     analyst_tools = read_tools + base_tools
@@ -185,17 +185,17 @@ def create_workflow(
     workflow.add_node("router", create_router_node(llm_small))
 
     workflow.add_node(
-        "coder", create_coder_node(llm_large, coder_tools, repo_url, agent_stack)
+        "coder", create_coder_node(llm_large, coder_tools, agent_stack)
     )
     workflow.add_node(
-        "bugfixer", create_bugfixer_node(llm_large, coder_tools, repo_url, agent_stack)
+        "bugfixer", create_bugfixer_node(llm_large, coder_tools, agent_stack)
     )
     workflow.add_node(
-        "analyst", create_analyst_node(llm_large, analyst_tools, repo_url, agent_stack)
+        "analyst", create_analyst_node(llm_large, analyst_tools, agent_stack)
     )
 
     workflow.add_node(
-        "tester", create_tester_node(llm_large, tester_tools, repo_url, agent_stack)
+        "tester", create_tester_node(llm_large, tester_tools, agent_stack)
     )
 
     # Tool Nodes

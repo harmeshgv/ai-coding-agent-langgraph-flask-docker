@@ -1,14 +1,20 @@
 import asyncio
+from gettext import install
 import json
 import logging
 import os
 import sys
 from contextlib import AsyncExitStack
 
+from cryptography.fernet import Fernet
+from flask import Flask
+from langchain.chat_models import BaseChatModel
+from langgraph.graph import StateGraph
+from core.models import AgentConfig
+
 from agent.graph import create_workflow
 from agent.llm_factory import get_llm
 from agent.mcp_adapter import McpServerClient
-from agent.state import AgentState
 from agent.system_mappings import SYSTEM_DEFINITIONS
 from agent.utils import (
     ensure_repository_exists,
@@ -18,11 +24,7 @@ from agent.utils import (
     save_graph_as_mermaid,
     save_graph_as_png,
 )
-from core.models import AgentConfig
-from cryptography.fernet import Fernet
-from flask import Flask
-from langchain.chat_models import BaseChatModel
-from langgraph.graph import StateGraph
+from agent.state import AgentState
 
 logger = logging.getLogger(__name__)
 
@@ -109,12 +111,12 @@ async def run_agent_cycle_async(app: Flask, encryption_key: Fernet) -> None:
                     "next_step": "",
                     "trello_card_id": None,
                     "trello_list_id": None,
+                    "trello_in_progress": False,
                     "agent_stack": agent_stack,
                 },
-                {"recursion_limit": 100},
+                {"recursion_limit": 200},
             )
-            if type(final_state) is AgentState:
-                log_agent_state(logger, final_state)
+            log_agent_state(logger, final_state)
 
 
 def run_agent_cycle(app: Flask, encryption_key: Fernet) -> None:

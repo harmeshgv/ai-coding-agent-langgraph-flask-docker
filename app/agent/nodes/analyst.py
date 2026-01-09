@@ -13,7 +13,7 @@ from langchain_core.messages import SystemMessage
 logger = logging.getLogger(__name__)
 
 
-def create_analyst_node(llm: BaseChatModel, tools, repo_url, agent_stack):
+def create_analyst_node(llm: BaseChatModel, tools, agent_stack):
     sys_msg = load_system_prompt(agent_stack, "analyst")
 
     async def analyst_node(state: AgentState):

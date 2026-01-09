@@ -11,7 +11,7 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 logger = logging.getLogger(__name__)
 
 
-def create_bugfixer_node(llm, tools, repo_url, agent_stack):
+def create_bugfixer_node(llm, tools, agent_stack):
     sys_msg = load_system_prompt(agent_stack, "bugfixer")
 
     async def bugfixer_node(state: AgentState):

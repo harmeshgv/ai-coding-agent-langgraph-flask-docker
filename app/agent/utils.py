@@ -5,8 +5,8 @@ import shutil
 from typing import Any, Optional
 from urllib.parse import urlparse, urlunparse
 
-from agent.state import AgentState
 from git import Repo
+from git.exc import GitCommandError
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 
 logger = logging.getLogger(__name__)
@@ -57,7 +57,7 @@ def log_agent_response(
 
 def log_agent_state(
     logger_obj: logging.Logger,
-    state: AgentState,
+    state: dict,
     content_limit: int = 100,
     arg_limit: int = 250,
 ) -> None:
@@ -430,3 +430,48 @@ def ensure_repository_exists(repo_url, work_dir):
     except Exception as e:
         logger.error(f"Error managing repository in {work_dir}: {e}, re-cloning...")
         clean_and_clone()
+
+
+def checkout_branch(repo_url: str, branch_name: str, work_dir: str) -> None:
+    """
+    Ensure the requested branch is checked out in work_dir.
+    If the branch does not exist locally, attempt to fetch it from origin.
+    """
+    if not branch_name:
+        raise ValueError("branch_name is required to checkout a branch.")
+
+    if not os.path.isdir(os.path.join(work_dir, ".git")):
+        raise RuntimeError(
+            f"No git repository found in {work_dir}. Run ensure_repository_exists first."
+        )
+
+    try:
+        repo = Repo(work_dir)
+    except Exception as exc:
+        logger.error(f"Failed to load repository at {work_dir}: {exc}")
+        raise
+
+    try:
+        if branch_name in repo.heads:
+            logger.info(f"Checking out existing local branch '{branch_name}'.")
+            repo.git.checkout(branch_name)
+            return
+
+        logger.info(
+            f"Local branch '{branch_name}' not found. Fetching from origin for repository {repo_url}."
+        )
+        repo.remotes.origin.fetch(branch_name)
+        remote_ref = f"origin/{branch_name}"
+        if remote_ref in repo.refs:
+            repo.git.checkout("-b", branch_name, remote_ref)
+            logger.info(f"Checked out tracking branch '{branch_name}' from origin.")
+            return
+
+        logger.info(
+            f"Remote branch '{remote_ref}' not found. Creating new local branch '{branch_name}' from current HEAD."
+        )
+        repo.git.checkout("-b", branch_name)
+        logger.info(f"Created new local branch '{branch_name}'.")
+    except GitCommandError as exc:
+        logger.error(f"Failed to checkout branch '{branch_name}': {exc}")
+        raise

@@ -27,7 +27,7 @@ class TesterResult(BaseModel):
     )
 
 
-def create_tester_node(llm, tools, repo_url, agent_stack):
+def create_tester_node(llm, tools, agent_stack):
     sys_msg = load_system_prompt(agent_stack, "tester")
     llm_with_tools = llm.bind_tools(tools + [report_test_result])
 
