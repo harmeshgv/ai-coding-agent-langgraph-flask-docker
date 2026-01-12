@@ -1,4 +1,15 @@
+"""
+Defines the Analyst agent node for the agent graph.
+
+The Analyst is a specialist agent responsible for analyzing code, answering
+questions about the codebase, and providing explanations without making
+any modifications.
+"""
+
 import logging
+
+from langchain.chat_models import BaseChatModel
+from langchain_core.messages import SystemMessage
 
 from agent.state import AgentState
 from agent.utils import (
@@ -7,13 +18,23 @@ from agent.utils import (
     log_agent_response,
     sanitize_response,
 )
-from langchain.chat_models import BaseChatModel
-from langchain_core.messages import SystemMessage
 
 logger = logging.getLogger(__name__)
 
 
 def create_analyst_node(llm: BaseChatModel, tools, agent_stack):
+    """
+    Factory function that creates the Analyst agent node.
+
+    Args:
+        llm: The language model to be used by the analyst.
+        tools: A list of tools available to the analyst.
+        agent_stack: The technology stack (e.g., 'backend', 'frontend')
+                     to load the correct system prompt.
+
+    Returns:
+        A function that represents the analyst node.
+    """
     sys_msg = load_system_prompt(agent_stack, "analyst")
 
     async def analyst_node(state: AgentState):
@@ -33,7 +54,7 @@ def create_analyst_node(llm: BaseChatModel, tools, agent_stack):
         has_tool_calls = bool(getattr(response, "tool_calls", []))
 
         if has_content or has_tool_calls:
-            log_agent_response(logger, "analyst", response)
+            log_agent_response("analyst", response)
 
         return {"messages": [response]}
 

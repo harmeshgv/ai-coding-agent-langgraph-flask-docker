@@ -1,9 +1,10 @@
 # Autonomous Coding Agents to scale reliable Software Engineering - CAIASE
 
-![Status](https://img.shields.io/badge/Status-POC-yellow)
-![Tech](https://img.shields.io/badge/Built%20With-LangGraph%20%7C%20Mistral%20%7C%20Docker%20%7C%20MCP-blue)
+![Status][Status] 
 
-This project demonstrates a POC for an autonomous, containerized AI coding agent (CAIASE) that lives in your Docker environment. 
+[![Python][Python]][Python-url] [![LangChain][LangChain]][LangChain-url] [![Docker][Docker]][Docker-url] [![Flask][Flask]][Flask-url]
+
+This project demonstrates a POC for an autonomous, containerized AI coding agent that lives in your Docker environment. 
 It operates completely unsupervised to:
 
 - **Connect** to your task management system (Trello is currently supported).
@@ -11,7 +12,7 @@ It operates completely unsupervised to:
 - **Analyze/Write** code or fix bugs
 - **Push** changes via pull requests to your remote repository
 
-Containerization using Docker makes it possible to run the AI Agent anywhere: in the cloud, in the company network, or even locally on your computer.
+Containerization using Docker makes it possible to run the AI Agent anywhere: in the cloud as managed Service (SaaS), in the company network (as Enterprise Edition), or even locally on your computer.
 
 ## The Lean Startup Vision
 The CAIASE addresses the skills shortage in software development through the automation of software development with autonomous agents. Strategically, CAIASE focuses on the maintenance and scaling of existing systems (brownfield projects), in clear contrast to assistance-based competitors (Vibe Coding / Copilot), which focus on greenfield projects. The key unique selling proposition (USP) is the agent's autonomy as a "robot" that works independently, in accordance with processes, and around the clock. The key to acceptance is the "trust-first" strategy, in which the agent starts as a "tireless junior developer" who initially performs low-threshold, routine tasks and delivers only technically validated code.
@@ -42,6 +43,7 @@ Key milestones for professionalization include:
 - [ ] **Active Code Reviews:** Agents will evolve from pure contributors to reviewers. They will analyze open Pull Requests, provide constructive feedback on code quality and security, and suggest optimizations—acting as an automated senior developer.
 - [ ] **Collaborative Swarm Intelligence:** Moving beyond isolated tasks, agents will be capable of communicating and collaborating with each other. This "swarm" capability will allow multiple agents to work jointly on complex, large-scale features, ensuring architectural consistency across the codebase.
 - [X] **Choose your preferred LLM** Support of other LLM providers, included open source models that run locally. 
+- [ ] **Memory** to be able to refer back to past events and **learn** from feedback. 
 
 **Commercialization & Next Steps** To realize this vision, we are transitioning this project into a dedicated startup. We plan to accelerate development through an upcoming crowdfunding campaign.
 
@@ -142,7 +144,9 @@ Supported providers:
 |Ollama|`OLLAMA_API_KEY` (optional for local setups)|`OLLAMA_BASE_URL` - default http://host.docker.internal:11434|
 
 ```bash
-MISTRAL_API_KEY=<your-mistral-api-key> GHCR_AI_CODING_AGENT_TOKEN=<your-github-token> docker compose up -d --build
+MISTRAL_API_KEY=<your-mistral-api-key>
+GHCR_AI_CODING_AGENT_TOKEN=<your-github-token>
+docker compose up -d --build
 ```
 
 To support more Providers add the key in the environment variables.
@@ -183,3 +187,16 @@ Found a bug or have a feature idea? Check our [Contributing Guide](CONTRIBUTING.
 
 ## POC Results
 [Results of the First POC](poc-results.md)
+
+<!-- MARKDOWN LINKS & IMAGES -->
+<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[Status]: https://img.shields.io/badge/Status-POC-yellow?style=for-the-badge
+[Build]: https://img.shields.io/badge/Built-passing-brightgreen?style=for-the-badge
+[Python]: https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white
+[Python-url]: https://www.python.org/
+[LangChain]: https://img.shields.io/badge/LangChain-3A3A3A?style=for-the-badge&logo=chainlink&logoColor=white
+[LangChain-url]: https://www.langchain.com/
+[Docker]: https://img.shields.io/badge/docker-257bd6?style=for-the-badge&logo=docker&logoColor=white
+[Docker-url]: https://www.docker.com/
+[Flask]: https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=Flask&logoColor=white
+[Flask-url]: https://www.flask.palletsprojects.com/

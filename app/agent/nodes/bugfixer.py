@@ -1,4 +1,13 @@
+"""
+Defines the Bugfixer agent node for the agent graph.
+
+The Bugfixer is a specialist agent responsible for debugging code, analyzing
+errors, and implementing fixes for identified issues.
+"""
+
 import logging
+
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from agent.state import AgentState
 from agent.utils import (
@@ -6,12 +15,23 @@ from agent.utils import (
     load_system_prompt,
     log_agent_response,
 )
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 logger = logging.getLogger(__name__)
 
 
 def create_bugfixer_node(llm, tools, agent_stack):
+    """
+    Factory function that creates the Bugfixer agent node.
+
+    Args:
+        llm: The language model to be used by the bugfixer.
+        tools: A list of tools available to the bugfixer.
+        agent_stack: The technology stack (e.g., 'backend', 'frontend')
+                     to load the correct system prompt.
+
+    Returns:
+        A function that represents the bugfixer node.
+    """
     sys_msg = load_system_prompt(agent_stack, "bugfixer")
 
     async def bugfixer_node(state: AgentState):
@@ -21,6 +41,7 @@ def create_bugfixer_node(llm, tools, agent_stack):
 
         current_tool_choice = "auto"
 
+        # pylint: disable=duplicate-code
         for attempt in range(3):
             try:
                 chain = llm.bind_tools(tools, tool_choice=current_tool_choice)
@@ -31,24 +52,24 @@ def create_bugfixer_node(llm, tools, agent_stack):
 
                 if has_content or has_tool_calls:
                     log_agent_response(
-                        logger,
                         "bugfixer",
                         response,
                         attempt=attempt + 1,
                     )
                     return {"messages": [response]}
 
-                logger.warning(f"Attempt {attempt + 1}: Empty response. Escalating...")
+                logger.warning("Attempt %d: Empty response. Escalating...", attempt + 1)
                 current_tool_choice = "any"
                 current_messages.append(AIMessage(content="Thinking..."))
                 current_messages.append(
                     HumanMessage(content="ERROR: Empty response. Use a tool!")
                 )
 
-            except Exception as e:
-                logger.error(f"Error in LLM call (Attempt {attempt + 1}): {e}")
+            except Exception as e:  # pylint: disable=broad-exception-caught
+                logger.error("Error in LLM call (Attempt %d): %s", attempt + 1, e)
 
         # Fallback
+        # pylint: disable=duplicate-code
         return {
             "messages": [
                 AIMessage(

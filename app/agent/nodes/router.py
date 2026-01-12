@@ -1,3 +1,11 @@
+"""
+Defines the router node for the agent graph.
+
+This node is responsible for the initial analysis of a task. It uses a
+specialized LLM call to classify the user's request and decide which
+specialist agent (e.g., Coder, Bugfixer, Analyst) should handle it next.
+"""
+
 import logging
 from typing import Dict, Literal
 
@@ -31,6 +39,15 @@ class RouterDecision(BaseModel):
 
 
 def create_router_node(llm):
+    """
+    Factory function that creates the router node for the agent graph.
+
+    Args:
+        llm: The language model to be used for routing decisions.
+
+    Returns:
+        A function that represents the router node.
+    """
     structured_llm = llm.with_structured_output(RouterDecision)
 
     async def router_node(state: AgentState) -> Dict[str, str]:
@@ -42,11 +59,14 @@ def create_router_node(llm):
         for attempt in range(3):
             try:
                 response = await structured_llm.ainvoke(current_messages)
-                logger.info(f"Router decided: {response.role}")
+                logger.info("Router decided: %s", response.role)
                 return {"next_step": response.role}
             except OutputParserException as exc:
                 logger.warning(
-                    "Router invalid JSON attempt %d/3: %s", attempt + 1, exc, exc_info=True
+                    "Router invalid JSON attempt %d/3: %s",
+                    attempt + 1,
+                    exc,
+                    exc_info=True,
                 )
                 correction = HumanMessage(
                     content=(
@@ -57,6 +77,6 @@ def create_router_node(llm):
                 current_messages.append(correction)
 
         logger.error("Router failed to produce valid JSON after retries.")
-        raise
+        raise RuntimeError("Router failed to produce valid JSON after 3 retries.")
 
     return router_node

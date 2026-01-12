@@ -1,3 +1,12 @@
+"""
+Asynchronous Trello API client.
+
+This module provides a set of asynchronous functions to interact with the
+Trello API for common operations like fetching lists and cards, moving cards,
+and adding comments. It uses `httpx` for async HTTP requests and is
+designed to be used within the agent's workflow.
+"""
+
 import logging
 
 import httpx
@@ -26,6 +35,7 @@ def get_safe_url(url: str, params: dict) -> str:
 
 
 async def get_all_trello_lists(sys_config: dict) -> list[dict]:
+    """Fetches all lists for the configured Trello board."""
     env = sys_config.get("env")
     if not env:
         raise ValueError("Environment not found in sys_config")
@@ -34,18 +44,19 @@ async def get_all_trello_lists(sys_config: dict) -> list[dict]:
     headers = {"Accept": "application/json"}
     query = {"key": env.get("TRELLO_API_KEY"), "token": env.get("TRELLO_TOKEN")}
 
-    logger.info(f"Trello GET: {get_safe_url(url, query)}")
+    logger.info("Trello GET: %s", get_safe_url(url, query))
     async with httpx.AsyncClient() as client:
         response = await client.get(url, headers=headers, params=query)
 
     if response.status_code != 200:
-        raise Exception(f"Failed to fetch lists: {response.text}")
+        raise RuntimeError(f"Failed to fetch lists: {response.text}")
 
     data = response.json()
     return [{"name": list_item["name"], "id": list_item["id"]} for list_item in data]
 
 
 async def get_all_trello_cards(list_id: str, sys_config: dict) -> list[dict]:
+    """Fetches all cards from a specific Trello list."""
     env = sys_config.get("env")
     if not env:
         raise ValueError("Environment not found in sys_config")
@@ -54,12 +65,12 @@ async def get_all_trello_cards(list_id: str, sys_config: dict) -> list[dict]:
     headers = {"Accept": "application/json"}
     query = {"key": env.get("TRELLO_API_KEY"), "token": env.get("TRELLO_TOKEN")}
 
-    logger.info(f"Trello GET: {get_safe_url(url, query)}")
+    logger.info("Trello GET: %s", get_safe_url(url, query))
     async with httpx.AsyncClient() as client:
         response = await client.get(url, headers=headers, params=query)
 
     if response.status_code != 200:
-        raise Exception(f"Failed to fetch cards: {response.text}")
+        raise RuntimeError(f"Failed to fetch cards: {response.text}")
 
     data = response.json()
     return [
@@ -68,6 +79,18 @@ async def get_all_trello_cards(list_id: str, sys_config: dict) -> list[dict]:
 
 
 async def move_trello_card_to_list(card_id: str, list_id: str, sys_config: dict):
+    """
+    Move a Trello card to a specified list.
+
+    Args:
+        card_id (str): The ID of the card to move.
+        list_id (str): The ID of the target list.
+        sys_config (dict): The system configuration containing Trello API credentials.
+
+    Raises:
+        ValueError: If the environment is not found in sys_config.
+        RuntimeError: If the card move operation fails.
+    """
     env = sys_config.get("env")
     if not env:
         raise ValueError("Environment not found in sys_config")
@@ -80,12 +103,12 @@ async def move_trello_card_to_list(card_id: str, list_id: str, sys_config: dict)
         "token": env.get("TRELLO_TOKEN"),
     }
 
-    logger.info(f"Trello PUT: {get_safe_url(url, query)}")
+    logger.info("Trello PUT: %s", get_safe_url(url, query))
     async with httpx.AsyncClient() as client:
         response = await client.put(url, headers=headers, params=query)
 
     if response.status_code != 200:
-        raise Exception(
+        raise RuntimeError(
             f"Failed to move card {card_id} to list {list_id}: {response.text}"
         )
 
@@ -98,19 +121,22 @@ async def move_trello_card_to_named_list(
     given card to that list. Returns the resolved list ID.
     """
     trello_lists = await get_all_trello_lists(sys_config)
-    target_list = next((data for data in trello_lists if data["name"] == list_name), None)
+    target_list = next(
+        (data for data in trello_lists if data["name"] == list_name), None
+    )
 
     if not target_list:
         raise ValueError(f"Trello list '{list_name}' not found on configured board")
 
     target_list_id = target_list["id"]
-    logger.info(f"Found {list_name} list id: {target_list_id}")
+    logger.info("Found %s list id: %s", list_name, target_list_id)
     await move_trello_card_to_list(card_id, target_list_id, sys_config)
 
     return target_list_id
 
 
 async def add_comment_to_trello_card(card_id: str, comment: str, sys_config: dict):
+    """Adds a comment to a specified Trello card."""
     env = sys_config.get("env")
     if not env:
         raise ValueError("Environment not found in sys_config")
@@ -123,12 +149,14 @@ async def add_comment_to_trello_card(card_id: str, comment: str, sys_config: dic
         "token": env.get("TRELLO_TOKEN"),
     }
 
-    logger.info(f"Trello POST: {get_safe_url(url, query)}")
+    logger.info("Trello POST: %s", get_safe_url(url, query))
     async with httpx.AsyncClient() as client:
         response = await client.post(url, headers=headers, params=query)
 
     if response.status_code != 200:
-        raise Exception(f"Failed to add a comment to card {card_id}: {response.text}")
+        raise RuntimeError(
+            f"Failed to add a comment to card {card_id}: {response.text}"
+        )
 
 
 async def get_trello_card_comments(card_id: str, sys_config: dict) -> list[dict]:
@@ -147,12 +175,14 @@ async def get_trello_card_comments(card_id: str, sys_config: dict) -> list[dict]
         "token": env.get("TRELLO_TOKEN"),
     }
 
-    logger.info(f"Trello GET: {get_safe_url(url, query)}")
+    logger.info("Trello GET: %s", get_safe_url(url, query))
     async with httpx.AsyncClient() as client:
         response = await client.get(url, headers=headers, params=query)
 
     if response.status_code != 200:
-        raise Exception(f"Failed to fetch comments for card {card_id}: {response.text}")
+        raise RuntimeError(
+            f"Failed to fetch comments for card {card_id}: {response.text}"
+        )
 
     data = response.json()
     return [
@@ -182,12 +212,12 @@ async def get_trello_card_list_moves(card_id: str, sys_config: dict) -> list[dic
         "token": env.get("TRELLO_TOKEN"),
     }
 
-    logger.info(f"Trello GET: {get_safe_url(url, query)}")
+    logger.info("Trello GET: %s", get_safe_url(url, query))
     async with httpx.AsyncClient() as client:
         response = await client.get(url, headers=headers, params=query)
 
     if response.status_code != 200:
-        raise Exception(
+        raise RuntimeError(
             f"Failed to fetch list moves for card {card_id}: {response.text}"
         )
 
@@ -196,9 +226,7 @@ async def get_trello_card_list_moves(card_id: str, sys_config: dict) -> list[dic
         {
             "id": action.get("id"),
             "date": action.get("date"),
-            "list_before": action.get("data", {})
-            .get("listBefore", {})
-            .get("name"),
+            "list_before": action.get("data", {}).get("listBefore", {}).get("name"),
             "list_after": action.get("data", {}).get("listAfter", {}).get("name"),
         }
         for action in data

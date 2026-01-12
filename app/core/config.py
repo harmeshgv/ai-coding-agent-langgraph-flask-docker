@@ -1,3 +1,17 @@
+"""Flask application configuration.
+
+This module defines the configuration variables for the Flask application.
+It follows a common pattern of sourcing values from environment variables
+for production-readiness, while providing sensible defaults for local
+development.
+
+Attributes:
+    SECRET_KEY (str): A secret key for signing session cookies.
+    SQLALCHEMY_DATABASE_URI (str): The connection URI for the database.
+    SQLALCHEMY_TRACK_MODIFICATIONS (bool): Disables a SQLAlchemy feature.
+    SCHEDULER_API_ENABLED (bool): Enables the built-in scheduler API.
+"""
+
 import os
 from pathlib import Path
 

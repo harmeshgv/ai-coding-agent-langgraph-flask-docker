@@ -1,8 +1,16 @@
+"""Flask application factory.
+
+This module contains the `create_app` function that is responsible for
+initializing the Flask application, configuring it, setting up extensions like
+SQLAlchemy and APScheduler, and registering blueprints.
+"""
+
 import os
 
 from core.extensions import db, scheduler
 from cryptography.fernet import Fernet
 from flask import Flask
+
 from web.routes import web_bp
 
 

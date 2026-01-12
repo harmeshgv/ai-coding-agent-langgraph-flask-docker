@@ -1,3 +1,5 @@
+"""This is the main entry point of the application."""
+
 import os
 
 from agent.worker import run_agent_cycle
@@ -23,9 +25,9 @@ if __name__ == "__main__":
     def _log_secret(env_name: str) -> str:
         value = os.environ.get(env_name, "")
         if value:
-            logger.info(f"{env_name}: {_mask_secret(value)}")
+            logger.info("%s: %s", env_name, _mask_secret(value))
         else:
-            logger.info(f"{env_name} is not set")
+            logger.info("%s is not set", env_name)
         return value
 
     logging.basicConfig(
@@ -45,7 +47,7 @@ if __name__ == "__main__":
     OLLAMA_API_KEY = _log_secret("OLLAMA_API_KEY")
 
     OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL")
-    logger.info(f"OLLAMA_BASE_URL: {OLLAMA_BASE_URL}")
+    logger.info("OLLAMA_BASE_URL: %s", OLLAMA_BASE_URL)
     if not OLLAMA_BASE_URL:
         logger.info("OLLAMA_BASE_URL is not set")
 

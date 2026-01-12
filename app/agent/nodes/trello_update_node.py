@@ -1,3 +1,11 @@
+"""
+Defines the Trello update node for the agent graph.
+
+This node is responsible for finalizing a task in Trello. It adds a summary
+comment to the Trello card and moves it to a "done" or "completed" list,
+based on the agent's configuration.
+"""
+
 import logging
 
 from langchain_core.messages import AIMessage
@@ -32,6 +40,17 @@ def get_agent_result(messages):
 
 
 def create_trello_update_node(sys_config: dict):
+    """
+    Factory function that creates the Trello update node.
+
+    Args:
+        sys_config: A dictionary containing the system configuration,
+                    including Trello API credentials and board/list details.
+
+    Returns:
+        A function that represents the Trello update node.
+    """
+
     async def trello_update(state: AgentState) -> dict:
         """
         Updates the Trello card with a comment and moves it to the specified list.
@@ -42,7 +61,9 @@ def create_trello_update_node(sys_config: dict):
             return {}
 
         logger.info(
-            f"Updating Trello card {card_id} on board id: {sys_config['trello_board_id']}"
+            "Updating Trello card %s on board id: %s",
+            card_id,
+            sys_config["trello_board_id"],
         )
 
         # add comment to card
@@ -50,8 +71,8 @@ def create_trello_update_node(sys_config: dict):
             final_comment = get_agent_result(state["messages"])
             comment_text = f"**Agent Update:**\n{final_comment}"
             await add_comment_to_trello_card(card_id, comment_text, sys_config)
-        except Exception as e:
-            logger.error(f"Failed to add comment to Trello card: {e}")
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.error("Failed to add comment to Trello card: %s", e)
 
         # move card to list
         try:
@@ -66,8 +87,8 @@ def create_trello_update_node(sys_config: dict):
         except ValueError as exc:
             logger.warning(str(exc))
             return {"trello_card_id": None}
-        except Exception as e:
-            logger.error(f"Error moving card to list: {e}")
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.error("Error moving card to list: %s", e)
             return {"trello_card_id": None}
 
     return trello_update

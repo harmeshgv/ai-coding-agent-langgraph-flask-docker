@@ -1,7 +1,22 @@
+"""Defines the SQLAlchemy database models for the application.
+
+This module contains the class definitions for all database models used by
+SQLAlchemy. Each class corresponds to a table in the database.
+"""
+
 from core.extensions import db
 
 
+# pylint: disable=too-few-public-methods
 class AgentConfig(db.Model):
+    """Represents the configuration for the AI agent.
+
+    This model stores settings required for the agent to operate, including
+    connections to task management systems (like Trello), version control
+    repositories (like GitHub), and its own operational parameters like
+    polling frequency.
+    """
+
     __tablename__ = "agent_config"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -25,13 +40,15 @@ class AgentConfig(db.Model):
     is_active = db.Column(db.Boolean, nullable=False, default=False)
 
     def __init__(self, **kwargs):
-        super(AgentConfig, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __repr__(self):
         return f"<AgentConfig {self.id}>"
 
 
 class Issue(db.Model):
+    """Model for tracking issues"""
+
     __tablename__ = "issue"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -43,6 +60,9 @@ class Issue(db.Model):
     updated_at = db.Column(
         db.DateTime, server_default=db.func.now(), onupdate=db.func.now()
     )
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def __repr__(self):
         return f"<Issue card={self.trello_card_id} branch={self.branch_name}>"

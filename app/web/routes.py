@@ -1,9 +1,21 @@
-import json
-import os
+"""The routes for the web application.
 
+This module uses a Flask Blueprint to organize the routes. It includes
+the main route for the application, which displays and handles the
+configuration form for the AI agent. This includes logic for saving
+and retrieving settings for task management systems, repositories,
+and LLM providers, as well as handling encryption of sensitive data.
+"""
+
+import json
+import logging
+import os
+from typing import Any
+
+from core.constants import LLM_PROVIDER_API_ENV
 from core.extensions import db, scheduler
 from core.models import AgentConfig
-from cryptography.fernet import InvalidToken
+from cryptography.fernet import Fernet, InvalidToken
 from flask import (
     Blueprint,
     current_app,
@@ -14,20 +26,12 @@ from flask import (
     url_for,
 )
 
+logger = logging.getLogger(__name__)
+
 # 1. Blueprint erstellen
 # 'web' = Name des Blueprints (für url_for('web.index'))
 # __name__ = Damit Flask weiß, wo Templates/Static files für diesen Blueprint liegen
 web_bp = Blueprint("web", __name__, template_folder="templates")
-
-LLM_PROVIDER_API_ENV = {
-    "mistral": "MISTRAL_API_KEY",
-    "openai": "OPENAI_API_KEY",
-    "google": "GOOGLE_API_KEY",
-    "gemini": "GOOGLE_API_KEY",
-    "openrouter": "OPENROUTER_API_KEY",
-    "ollama": "OLLAMA_API_KEY",
-    "anthropic": "ANTHROPIC_API_KEY",
-}
 
 
 def _missing_provider_env(provider: str) -> str | None:
@@ -41,102 +45,149 @@ def _missing_provider_env(provider: str) -> str | None:
     return env_name
 
 
-# 2. Routen definieren (ACHTUNG: @web_bp statt @app)
-@web_bp.route("/", methods=["GET", "POST"])
-def index():
-    encryption_key = current_app.config["FERNET_KEY"]
-    config = AgentConfig.query.first()
-    if not config:
-        config = AgentConfig(task_system_type="TRELLO", system_config_json="{}")
+def get_trello_data() -> dict[str, Any]:
+    """Get Trello data from form"""
+    return {
+        "env": {
+            "TRELLO_API_KEY": request.form.get("trello_api_key"),
+            "TRELLO_TOKEN": request.form.get("trello_api_token"),
+            "TRELLO_BASE_URL": request.form.get(
+                "trello_base_url", "https://api.trello.com/1"
+            ),
+        },
+        "trello_board_id": request.form.get("trello_board_id"),
+        "trello_readfrom_list": request.form.get("trello_readfrom_list"),
+        "trello_progress_list": request.form.get("trello_progress_list"),
+        "trello_moveto_list": request.form.get("trello_moveto_list"),
+    }
 
-    if request.method == "POST":
-        # Update generic fields
-        config.task_system_type = request.form.get("task_system_type")
-        config.repo_type = request.form.get("repo_type")
-        config.github_repo_url = request.form.get("github_repo_url")
-        config.is_active = "is_active" in request.form
-        try:
-            polling_interval = int(request.form.get("polling_interval_seconds", 60))
-            config.polling_interval_seconds = polling_interval
-        except (ValueError, TypeError):
-            flash("Invalid polling interval. Please enter a number.", "danger")
-            polling_interval = 60  # Fallback
 
-        # Create JSON from the specific fields for the selected system
+def get_custom_data() -> dict[str, Any]:
+    """Get custom data from form"""
+    return {
+        "agent_username": request.form.get("custom_username"),
+        "agent_password": request.form.get("custom_password"),
+        "target_project_id": request.form.get("custom_project_id"),
+    }
 
-        # Decrypt and load existing data first, to not lose settings from other cards
-        try:
-            decrypted_json = encryption_key.decrypt(
-                config.system_config_json.encode()
-            ).decode()
-            new_config_data = json.loads(decrypted_json or "{}")
-        except (InvalidToken, TypeError, AttributeError, json.JSONDecodeError):
-            new_config_data = {}  # Start fresh if decryption fails or data is invalid
 
-        system_type = config.task_system_type
+def get_jira_data() -> dict[str, Any]:
+    """Get Jira data from form"""
+    return {
+        "env": {
+            "JIRA_URL": os.environ.get("JIRA_URL"),  # Assuming this is set elsewhere
+            "JIRA_USERNAME": request.form.get("jira_username"),
+            "JIRA_API_TOKEN": request.form.get("jira_api_token"),
+        },
+        "jql": request.form.get("jira_jql_query"),
+    }
 
-        if system_type == "TRELLO":
-            trello_data = {
-                "env": {
-                    "TRELLO_API_KEY": request.form.get("trello_api_key"),
-                    "TRELLO_TOKEN": request.form.get("trello_api_token"),
-                    "TRELLO_BASE_URL": request.form.get(
-                        "trello_base_url", "https://api.trello.com"
-                    ),
-                },
-                "trello_board_id": request.form.get("trello_board_id"),
-                "trello_readfrom_list": request.form.get("trello_readfrom_list"),
-                "trello_progress_list": request.form.get("trello_progress_list"),
-                "trello_moveto_list": request.form.get("trello_moveto_list"),
-            }
-            new_config_data.update(trello_data)
-        elif system_type == "JIRA":
-            jira_data = {
-                "env": {
-                    "JIRA_URL": os.environ.get(
-                        "JIRA_URL"
-                    ),  # Assuming this is set elsewhere
-                    "JIRA_USERNAME": request.form.get("jira_username"),
-                    "JIRA_API_TOKEN": request.form.get("jira_api_token"),
-                },
-                "jql": request.form.get("jira_jql_query"),
-            }
-            new_config_data.update(jira_data)
-        elif system_type == "CUSTOM":
-            custom_data = {
-                "agent_username": request.form.get("custom_username"),
-                "agent_password": request.form.get("custom_password"),
-                "target_project_id": request.form.get("custom_project_id"),
-            }
-            new_config_data.update(custom_data)
 
-        llm_config = {
-            "llm_provider": request.form.get("llm_provider"),
-            "llm_model_large": request.form.get("llm_model_large"),
-            "llm_model_small": request.form.get("llm_model_small"),
-            "llm_temperature": request.form.get("llm_temperature"),
-        }
-        new_config_data.update(llm_config)
+def get_llm_config() -> dict[str, Any]:
+    """Get LLM config from form"""
+    return {
+        "llm_provider": request.form.get("llm_provider"),
+        "llm_model_large": request.form.get("llm_model_large"),
+        "llm_model_small": request.form.get("llm_model_small"),
+        "llm_temperature": request.form.get("llm_temperature"),
+    }
 
-        # Encrypt the JSON configuration
-        json_config_str = json.dumps(new_config_data, indent=2)
-        encrypted_config = encryption_key.encrypt(json_config_str.encode()).decode()
-        config.system_config_json = encrypted_config
 
-        if not config.id:
-            db.session.add(config)
-        db.session.commit()
+def index_post(config: AgentConfig, encryption_key: Fernet):
+    """Update agent configuration from form"""
+    # Update generic fields
+    config.task_system_type = request.form.get("task_system_type")
+    config.repo_type = request.form.get("repo_type")
+    config.github_repo_url = request.form.get("github_repo_url")
+    config.is_active = "is_active" in request.form
+    try:
+        polling_interval = int(request.form.get("polling_interval_seconds", 60))
+        config.polling_interval_seconds = polling_interval
+    except (ValueError, TypeError):
+        flash("Invalid polling interval. Please enter a number.", "danger")
+        polling_interval = 60  # Fallback
 
-        # Reschedule job
-        if scheduler.get_job("agent_job"):
-            scheduler.scheduler.reschedule_job(
-                "agent_job", trigger="interval", seconds=polling_interval
-            )
+    # Create JSON from the specific fields for the selected system
 
-        flash("Configuration saved successfully!", "success")
-        return redirect(url_for("index"))
+    # Decrypt and load existing data first, to not lose settings from other cards
+    try:
+        decrypted_json = encryption_key.decrypt(
+            config.system_config_json.encode()
+        ).decode()
+        new_config_data = json.loads(decrypted_json or "{}")
+    except (InvalidToken, TypeError, AttributeError, json.JSONDecodeError):
+        new_config_data = {}  # Start fresh if decryption fails or data is invalid
 
-    # GET Request: Decrypt and parse JSON to populate form
+    system_type = config.task_system_type
+
+    if system_type == "TRELLO":
+        new_config_data.update(get_trello_data())
+    elif system_type == "JIRA":
+        new_config_data.update(get_jira_data())
+    elif system_type == "CUSTOM":
+        new_config_data.update(get_custom_data())
+
+    new_config_data.update(get_llm_config())
+
+    # Encrypt the JSON configuration
+    json_config_str = json.dumps(new_config_data, indent=2)
+    encrypted_config = encryption_key.encrypt(json_config_str.encode()).decode()
+    config.system_config_json = encrypted_config
+
+    if not config.id:
+        db.session.add(config)
+    db.session.commit()
+
+    # Reschedule job
+    if scheduler.get_job("agent_job"):
+        scheduler.scheduler.reschedule_job(
+            "agent_job", trigger="interval", seconds=polling_interval
+        )
+
+    flash("Configuration saved successfully!", "success")
+    return redirect(url_for("web.index"))
+
+
+def set_trello_form_data(saved_data: dict[str, Any], form_data: dict):
+    """Set Trello form data."""
+    form_data["trello_api_key"] = saved_data.get("env", {}).get("TRELLO_API_KEY")
+    form_data["trello_api_token"] = saved_data.get("env", {}).get("TRELLO_TOKEN")
+    form_data["trello_board_id"] = saved_data.get("trello_board_id")
+    form_data["trello_readfrom_list"] = saved_data.get("trello_readfrom_list")
+    form_data["trello_progress_list"] = saved_data.get("trello_progress_list")
+    form_data["trello_moveto_list"] = saved_data.get("trello_moveto_list")
+    form_data["trello_base_url"] = saved_data.get("env", {}).get(
+        "TRELLO_BASE_URL", "https://api.trello.com/1"
+    )
+
+
+def set_jira_form_data(saved_data: dict[str, Any], form_data: dict):
+    """Set Jira form data."""
+    form_data["jira_username"] = saved_data.get("env", {}).get("JIRA_USERNAME")
+    form_data["jira_api_token"] = saved_data.get("env", {}).get("JIRA_API_TOKEN")
+    form_data["jira_jql_query"] = saved_data.get("jql")
+
+
+def set_custom_form_data(saved_data: dict[str, Any], form_data: dict):
+    """Set custom form data."""
+    form_data["custom_username"] = saved_data.get("agent_username")
+    form_data["custom_password"] = saved_data.get("agent_password")
+    form_data["custom_project_id"] = saved_data.get("target_project_id")
+
+
+def set_llm_form_data(saved_data: dict[str, Any], form_data: dict):
+    """Set LLM form data."""
+    form_data["llm_provider"] = saved_data.get("llm_provider", "mistral")
+    form_data["llm_model_large"] = saved_data.get("llm_model_large")
+    form_data["llm_model_small"] = saved_data.get("llm_model_small")
+    form_data["llm_temperature"] = saved_data.get("llm_temperature", 0.0)
+
+
+def index_get(config: AgentConfig, encryption_key: Fernet) -> str:
+    """
+    Get agent configuration from form.
+    Decrypt and parse JSON to populate form
+    """
     form_data = {}
     if config.system_config_json:
         try:
@@ -147,44 +198,23 @@ def index():
 
             # Populate form_data with prefixed keys for the template
             # Trello data
-            form_data["trello_api_key"] = saved_data.get("env", {}).get(
-                "TRELLO_API_KEY"
-            )
-            form_data["trello_api_token"] = saved_data.get("env", {}).get(
-                "TRELLO_TOKEN"
-            )
-            form_data["trello_board_id"] = saved_data.get("trello_board_id")
-            form_data["trello_readfrom_list"] = saved_data.get("trello_readfrom_list")
-            form_data["trello_progress_list"] = saved_data.get("trello_progress_list")
-            form_data["trello_moveto_list"] = saved_data.get("trello_moveto_list")
-            form_data["trello_base_url"] = saved_data.get("env", {}).get(
-                "TRELLO_BASE_URL", "https://api.trello.com/1"
-            )
+            set_trello_form_data(saved_data, form_data)
 
             # Jira data
-            form_data["jira_username"] = saved_data.get("env", {}).get("JIRA_USERNAME")
-            form_data["jira_api_token"] = saved_data.get("env", {}).get(
-                "JIRA_API_TOKEN"
-            )
-            form_data["jira_jql_query"] = saved_data.get("jql")
+            set_jira_form_data(saved_data, form_data)
 
             # Custom data
-            form_data["custom_username"] = saved_data.get("agent_username")
-            form_data["custom_password"] = saved_data.get("agent_password")
-            form_data["custom_project_id"] = saved_data.get("target_project_id")
+            set_custom_form_data(saved_data, form_data)
 
             # LLM data
-            form_data["llm_provider"] = saved_data.get("llm_provider", "mistral")
-            form_data["llm_model_large"] = saved_data.get("llm_model_large")
-            form_data["llm_model_small"] = saved_data.get("llm_model_small")
-            form_data["llm_temperature"] = saved_data.get("llm_temperature", 0.0)
+            set_llm_form_data(saved_data, form_data)
 
         except (InvalidToken, TypeError, AttributeError, json.JSONDecodeError):
             flash(
-                "Could not parse or decrypt existing configuration. It may be legacy data. Re-saving will fix it.",
+                "Could not parse or decrypt existing configuration. It may be legacy data. "
+                + "Re-saving will fix it.",
                 "warning",
             )
-
     if not form_data.get("llm_provider"):
         form_data["llm_provider"] = "mistral"
 
@@ -202,3 +232,18 @@ def index():
         missing_provider_env=missing_provider_env,
         show_ollama_warning=show_ollama_warning,
     )
+
+
+# 2. Routen definieren (ACHTUNG: @web_bp statt @app)
+@web_bp.route("/", methods=["GET", "POST"])
+def index():
+    """Handles the main configuration page."""
+    encryption_key = current_app.config["FERNET_KEY"]
+    config = AgentConfig.query.first()
+    if not config:
+        config = AgentConfig(task_system_type="TRELLO", system_config_json="{}")
+
+    if request.method == "POST":
+        return index_post(config, encryption_key)
+
+    return index_get(config, encryption_key)

@@ -1,5 +1,15 @@
+"""
+Defines the Tester agent node for the agent graph.
+
+The Tester is a specialist agent responsible for verifying code changes,
+running tests, and reporting the results.
+"""
+
 import logging
 from typing import Literal
+
+from langchain_core.messages import SystemMessage
+from pydantic import BaseModel, Field
 
 from agent.state import AgentState
 from agent.tools.local_tools import report_test_result
@@ -8,8 +18,6 @@ from agent.utils import (
     load_system_prompt,
     log_agent_response,
 )
-from langchain_core.messages import SystemMessage
-from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
@@ -23,11 +31,23 @@ class TesterResult(BaseModel):
     )
     summary: str = Field(
         ...,
-        description="A short summary of what happened (e.g. 'PR created at xyz' or 'Tests failed because of NPE').",
+        description="A short summary of what happened (e.g. 'PR created at xyz' "
+        + "or 'Tests failed because of NPE').",
     )
 
 
 def create_tester_node(llm, tools, agent_stack):
+    """
+    Factory function that creates the Tester agent node.
+
+    Args:
+        llm: The language model to be used by the tester.
+        tools: A list of tools available to the tester.
+        agent_stack: The technology stack to load the correct system prompt.
+
+    Returns:
+        A function that represents the tester node.
+    """
     sys_msg = load_system_prompt(agent_stack, "tester")
     llm_with_tools = llm.bind_tools(tools + [report_test_result])
 
@@ -43,7 +63,7 @@ def create_tester_node(llm, tools, agent_stack):
         has_tool_calls = bool(getattr(response, "tool_calls", []))
 
         if has_content or has_tool_calls:
-            log_agent_response(logger, "tester", response)
+            log_agent_response("tester", response)
 
         return {"messages": [response]}
 
