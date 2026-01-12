@@ -7,7 +7,7 @@ errors, and implementing fixes for identified issues.
 
 import logging
 
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
 from agent.state import AgentState
 from agent.utils import (
@@ -17,6 +17,28 @@ from agent.utils import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def build_create_branch_prompt(card_id: str | None, card_name: str | None) -> str:
+    """Constructs a dynamic prompt instructing the agent to create a git branch."""
+    lines = ["No git branch is currently set for this Trello card."]
+    if card_name:
+        lines.append(f"- card_name: {card_name}")
+    if card_id:
+        lines.append(f"- card_id: {card_id}")
+    lines.append(
+        "Call git_create_branch(branch_name, card_id, card_name) with the values above "
+        "to create and switch to a dedicated branch before coding."
+    )
+    return "\n".join(lines)
+
+
+def build_branch_already_set_prompt(branch_name: str) -> str:
+    """Constructs guidance when a git branch is already assigned to the card."""
+    return (
+        f"Git branch '{branch_name}' is already associated with this Trello card. "
+        "Continue working on this branch and do NOT call git_create_branch."
+    )
 
 
 def create_bugfixer_node(llm, tools, agent_stack):
@@ -37,7 +59,24 @@ def create_bugfixer_node(llm, tools, agent_stack):
     async def bugfixer_node(state: AgentState):
         # Filter messages to keep only recent relevant context (original task + last 15 messages)
         filtered_messages = filter_messages_for_llm(state["messages"], max_messages=15)
-        current_messages = [SystemMessage(content=sys_msg)] + filtered_messages
+        current_messages: list[BaseMessage | SystemMessage] = [
+            SystemMessage(content=sys_msg)
+        ]
+
+        # Check if the current card is already associated with a git branch (database)
+        git_branch = state.get("git_branch")
+        if not git_branch:
+            create_card_branch_prompt = build_create_branch_prompt(
+                state.get("trello_card_id"),
+                state.get("trello_card_name"),
+            )
+            current_messages.append(HumanMessage(content=create_card_branch_prompt))
+        else:
+            current_messages.append(
+                HumanMessage(content=build_branch_already_set_prompt(git_branch))
+            )
+
+        current_messages += filtered_messages
 
         current_tool_choice = "auto"
 

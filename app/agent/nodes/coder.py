@@ -33,6 +33,14 @@ def build_create_branch_prompt(card_id: str | None, card_name: str | None) -> st
     return "\n".join(lines)
 
 
+def build_branch_already_set_prompt(branch_name: str) -> str:
+    """Constructs guidance when a git branch is already assigned to the card."""
+    return (
+        f"Git branch '{branch_name}' is already associated with this Trello card. "
+        "Continue working on this branch and do NOT call git_create_branch."
+    )
+
+
 def create_coder_node(llm, tools, agent_stack):
     """
     Factory function that creates the Coder agent node.
@@ -62,6 +70,10 @@ def create_coder_node(llm, tools, agent_stack):
                 state.get("trello_card_name"),
             )
             current_messages.append(HumanMessage(content=create_card_branch_prompt))
+        else:
+            current_messages.append(
+                HumanMessage(content=build_branch_already_set_prompt(git_branch))
+            )
 
         current_messages += filtered_messages
 

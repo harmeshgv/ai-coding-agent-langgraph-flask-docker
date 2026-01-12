@@ -249,6 +249,16 @@ def git_push_origin():
         return "ERROR: GITHUB_TOKEN missing."
 
     try:
+        # Check current branch name
+        current_branch = subprocess.check_output(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=get_workspace(), text=True
+        ).strip()
+
+        # Prevent pushing to default branches
+        if current_branch in ["main", "master"]:
+            logger.warning("Attempted to push to default branch '%s'", current_branch)
+            return f"ERROR: Cannot push to default branch '{current_branch}'. Create a feature branch first!"
+
         # URL Auth Logic (wie vorher)
         current_url = subprocess.check_output(
             ["git", "remote", "get-url", "origin"], cwd=get_workspace(), text=True
