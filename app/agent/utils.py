@@ -29,7 +29,7 @@ def _format_agent_summary_entry(role: str, summary: str) -> Optional[str]:
         return None
 
     role_prefix = role.capitalize()
-    return f"[{role_prefix}] {clean_summary}"
+    return f"**[{role_prefix}]** {clean_summary}"
 
 
 def append_agent_summary(state: AgentState, role: str, summary: str) -> None:
@@ -45,11 +45,49 @@ def append_agent_summary(state: AgentState, role: str, summary: str) -> None:
     state["agent_summary"] = existing
 
 
-def collect_finish_task_summaries(message: BaseMessage) -> list[str]:
+def record_finish_task_summary(
+    state: AgentState,
+    role: str,
+    ai_message: BaseMessage,
+) -> bool:
+    """
+    Store any finish_task summaries emitted by the given role.
+    """
+    if not isinstance(ai_message, AIMessage) or not getattr(ai_message, "tool_calls", None):
+        return False
+
+    recorded = False
+    for tool_call in ai_message.tool_calls:
+        if tool_call.get("name") != "finish_task":
+            continue
+
+        args = tool_call.get("args") or {}
+        summary = args.get("summary", "")
+        # Persist the normalized summary so downstream nodes can reuse the cached list
+        append_agent_summary(state, role, summary)
+        # Also stash the role on the tool call to allow reconstruction when the cache is absent
+        args["agent_role"] = role
+        tool_call["args"] = args
+        recorded = True
+
+    return recorded
+
+
+def has_finish_task_call(message: BaseMessage) -> bool:
+    """
+    Check whether the given message includes a finish_task tool call.
+    """
+    if not isinstance(message, AIMessage) or not getattr(message, "tool_calls", None):
+        return False
+
+    return any(tool_call.get("name") == "finish_task" for tool_call in message.tool_calls)
+
+
+def collect_finish_task_summaries(message: BaseMessage) -> list[tuple[Optional[str], str]]:
     """
     Extract the summary strings from any finish_task tool calls within a message.
     """
-    summaries: list[str] = []
+    summaries: list[tuple[Optional[str], str]] = []
     if not isinstance(message, AIMessage) or not getattr(message, "tool_calls", None):
         return summaries
 
@@ -60,7 +98,8 @@ def collect_finish_task_summaries(message: BaseMessage) -> list[str]:
         args = tool_call.get("args") or {}
         summary = args.get("summary")
         if summary:
-            summaries.append(str(summary))
+            role = args.get("agent_role")
+            summaries.append((role, str(summary)))
 
     return summaries
 
@@ -76,6 +115,31 @@ def build_agent_summary_text(
     if not entries:
         return None
     return separator.join(entries)
+
+
+def build_agent_summary_markdown(
+    state: AgentState,
+    *,
+    heading: Optional[str] = None,
+    bullet_prefix: str = "- ",
+    line_separator: str = "\n",
+) -> Optional[str]:
+    """
+    Build a Markdown-friendly block with bulleted summary entries.
+    """
+    entries = _get_normalized_agent_summary_entries(state)
+    if not entries:
+        return None
+
+    bullet_lines = [f"{bullet_prefix}{entry}" for entry in entries]
+    body = line_separator.join(bullet_lines)
+
+    if heading:
+        normalized_heading = heading.strip()
+        if normalized_heading:
+            return f"{normalized_heading}\n\n{body}"
+
+    return body
 
 
 def _get_normalized_agent_summary_entries(state: AgentState) -> list[str]:
@@ -99,8 +163,8 @@ def _derive_summaries_from_messages(messages: Sequence[BaseMessage]) -> list[str
     derived: list[str] = []
     for message in messages:
         summaries = collect_finish_task_summaries(message)
-        for summary in summaries:
-            entry = _format_agent_summary_entry("agent", summary)
+        for role, summary in summaries:
+            entry = _format_agent_summary_entry(role or "agent", summary)
             if entry:
                 derived.append(entry)
     return derived
@@ -595,4 +659,3 @@ def checkout_branch(repo_url: str, branch_name: str, work_dir: str) -> None:
     except GitCommandError as exc:
         logger.error("Failed to checkout branch '%s': %s", branch_name, exc)
         raise
-    

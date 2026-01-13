@@ -15,7 +15,7 @@ from agent.trello_client import (
     add_comment_to_trello_card,
     move_trello_card_to_named_list,
 )
-from agent.utils import build_agent_summary_text
+from agent.utils import build_agent_summary_markdown
 
 AGENT_DEFAULT_COMMENT = "Task completed by AI Agent."
 
@@ -44,13 +44,19 @@ def _build_final_agent_comment(state: AgentState) -> str:
     """
     Prefer the aggregated agent summary, fallback to the last finish_task summary.
     """
-    summary_text = build_agent_summary_text(state)
-    if summary_text:
-        logger.info(f"Using aggregated agent summary: {summary_text}")
-        return summary_text
+    summary_markdown = build_agent_summary_markdown(
+        state,
+        heading="**Agent Update:**",
+        bullet_prefix="- ",
+        line_separator="\n",
+    )
+    if summary_markdown:
+        logger.info("Using aggregated agent summary: %s", summary_markdown)
+        return summary_markdown
 
     logger.info("Using last finish_task summary")
-    return get_agent_result(state["messages"])
+    latest_summary = get_agent_result(state["messages"])
+    return f"**Agent Update:**\n\n- {latest_summary}"
 
 
 def create_trello_update_node(sys_config: dict):
@@ -83,8 +89,7 @@ def create_trello_update_node(sys_config: dict):
         # add comment to card
         try:
             final_comment = _build_final_agent_comment(state)
-            comment_text = f"**Agent Update:**\n{final_comment}"
-            await add_comment_to_trello_card(card_id, comment_text, sys_config)
+            await add_comment_to_trello_card(card_id, final_comment, sys_config)
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Failed to add comment to Trello card: %s", e)
 

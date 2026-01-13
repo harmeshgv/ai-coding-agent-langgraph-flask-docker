@@ -6,6 +6,7 @@ errors, and implementing fixes for identified issues.
 """
 
 import logging
+from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
@@ -14,6 +15,7 @@ from agent.utils import (
     filter_messages_for_llm,
     load_system_prompt,
     log_agent_response,
+    record_finish_task_summary,
 )
 
 logger = logging.getLogger(__name__)
@@ -59,7 +61,11 @@ def create_bugfixer_node(llm, tools, agent_stack):
                         response,
                         attempt=attempt + 1,
                     )
-                    return {"messages": [response]}
+                    recorded = record_finish_task_summary(state, "bugfixer", response)
+                    result = {"messages": [response]}
+                    if recorded:
+                        result["agent_summary"] = list(state.get("agent_summary") or [])
+                    return result
 
                 logger.warning("Attempt %d: Empty response. Escalating...", attempt + 1)
                 current_tool_choice = "any"
@@ -72,20 +78,21 @@ def create_bugfixer_node(llm, tools, agent_stack):
                 logger.error("Error in LLM call (Attempt %d): %s", attempt + 1, e)
 
         # Fallback
-        return {
-            "messages": [
-                AIMessage(
-                    content="Stuck.",
-                    tool_calls=[
-                        {
-                            "name": "finish_task",
-                            "args": {"summary": "Agent stuck."},
-                            "id": "call_emergency",
-                            "type": "tool_call",
-                        }
-                    ],
-                )
-            ]
-        }
+        fallback_message = AIMessage(
+            content="Stuck.",
+            tool_calls=[
+                {
+                    "name": "finish_task",
+                    "args": {"summary": "Agent stuck."},
+                    "id": "call_emergency",
+                    "type": "tool_call",
+                }
+            ],
+        )
+        recorded = record_finish_task_summary(state, "bugfixer", fallback_message)
+        result: dict[str, Any] = {"messages": [fallback_message]}
+        if recorded:
+            result["agent_summary"] = list(state.get("agent_summary") or [])
+        return result
 
     return bugfixer_node

@@ -18,11 +18,12 @@ from pydantic import BaseModel, Field
 from agent.state import AgentState
 from agent.tools.local_tools import report_test_result
 from agent.utils import (
+    append_agent_summary,
+    build_agent_summary_markdown,
     filter_messages_for_llm,
     get_workspace,
     load_system_prompt,
     log_agent_response,
-    build_agent_summary_text,
 )
 
 logger = logging.getLogger(__name__)
@@ -72,6 +73,7 @@ def create_tester_node(llm, tools, agent_stack):
             log_agent_response("tester", response)
 
         report_args = _get_report_result_args(response)
+        summary_updated = False
         if tests_passed(report_args):
             summary = report_args.get("summary", "")
             detail = f": {summary}" if summary else ""
@@ -88,17 +90,37 @@ def create_tester_node(llm, tools, agent_stack):
                 else:
                     push_success, push_msg = _execute_git_push()
                     if push_success:
-                        aggregated_summary = build_agent_summary_text(state)
+                        aggregated_summary = build_agent_summary_markdown(
+                            state,
+                            heading="## Agent Update",
+                            bullet_prefix="- ",
+                            line_separator="\n",
+                        )
                         pr_body_summary = aggregated_summary or summary
                         issue_title = state.get("trello_card_name") or ""
                         pr_title = issue_title or "Automated Fix"
-                        pr_success, pr_msg = _execute_create_pull_request(
+                        pr_body = "Automated changes after successful tests."
+                        if pr_body_summary:
+                            pr_body += f"\n\n{pr_body_summary}"
+
+                        pr_success, pr_msg, pr_url = _execute_create_pull_request(
                             title=pr_title,
-                            body="Automated changes after successful tests."
-                            + (f"\n\n{pr_body_summary}" if pr_body_summary else ""),
+                            body=pr_body,
                         )
                         if pr_success:
                             logger.info("Git workflow completed successfully: %s", pr_msg)
+                            if pr_url:
+                                append_agent_summary(
+                                    state,
+                                    "tester",
+                                    f"Pull request available at {pr_url}",
+                                )
+                                summary_updated = True
+                            else:
+                                logger.warning(
+                                    "PR creation succeeded but no URL was returned: %s",
+                                    pr_msg,
+                                )
                         else:
                             logger.error("PR creation failed: %s", pr_msg)
                     else:
@@ -106,7 +128,10 @@ def create_tester_node(llm, tools, agent_stack):
             else:
                 logger.info("No changes detected, skipping Git workflow")
 
-        return {"messages": [response]}
+        result: dict[str, Any] = {"messages": [response]}
+        if summary_updated:
+            result["agent_summary"] = list(state.get("agent_summary") or [])
+        return result
 
     return tester_node
 
@@ -278,8 +303,10 @@ def _get_github_repo_info() -> tuple[Optional[str], Optional[str], Optional[str]
         return None, None, None
 
 
-def _update_existing_pr(owner: str, repo: str, pr_data: dict, body: str, headers: dict) -> tuple[bool, str]:
-    """Add comment to existing PR. Returns (success, message)."""
+def _update_existing_pr(
+    owner: str, repo: str, pr_data: dict, body: str, headers: dict
+) -> tuple[bool, str, Optional[str]]:
+    """Add comment to existing PR. Returns (success, message, pr_url)."""
     pr_number = pr_data.get("number")
     pr_url = pr_data.get("html_url")
     comment_url = f"https://api.github.com/repos/{owner}/{repo}/issues/{pr_number}/comments"
@@ -289,12 +316,14 @@ def _update_existing_pr(owner: str, repo: str, pr_data: dict, body: str, headers
     
     if response.status_code == 201:
         logger.info("Added comment to existing PR: %s", pr_url)
-        return True, f"SUCCESS: Added comment to existing PR: {pr_url}"
-    return False, f"ERROR adding comment: {response.status_code}"
+        return True, f"SUCCESS: Added comment to existing PR: {pr_url}", pr_url
+    return False, f"ERROR adding comment: {response.status_code}", pr_url
 
 
-def _create_new_pr(owner: str, repo: str, title: str, body: str, branch: str, headers: dict) -> tuple[bool, str]:
-    """Create new PR. Returns (success, message)."""
+def _create_new_pr(
+    owner: str, repo: str, title: str, body: str, branch: str, headers: dict
+) -> tuple[bool, str, Optional[str]]:
+    """Create new PR. Returns (success, message, pr_url)."""
     url = f"https://api.github.com/repos/{owner}/{repo}/pulls"
     payload = {"title": title, "body": body, "head": branch, "base": "main"}
     response = requests.post(url, json=payload, headers=headers, timeout=10)
@@ -307,15 +336,15 @@ def _create_new_pr(owner: str, repo: str, title: str, body: str, branch: str, he
     if response.status_code == 201:
         pr_url = response.json().get("html_url")
         logger.info("Pull Request created: %s", pr_url)
-        return True, f"SUCCESS: Pull Request created: {pr_url}"
+        return True, f"SUCCESS: Pull Request created: {pr_url}", pr_url
 
-    return False, f"ERROR creating PR: {response.status_code} - {response.text}"
+    return False, f"ERROR creating PR: {response.status_code} - {response.text}", None
 
 
-def _execute_create_pull_request(title: str, body: str) -> tuple[bool, str]:
+def _execute_create_pull_request(title: str, body: str) -> tuple[bool, str, Optional[str]]:
     """
     Creates or updates a GitHub Pull Request.
-    Returns (success, message).
+    Returns (success, message, pr_url).
     """
     token = os.environ.get("GITHUB_TOKEN")
     if not token:
@@ -347,4 +376,4 @@ def _execute_create_pull_request(title: str, body: str) -> tuple[bool, str]:
         return _create_new_pr(owner, repo, title, body, current_branch, headers)
     except Exception as e: # pylint: disable=broad-exception-caught
         logger.error("PR creation failed: %s", str(e))
-        return False, f"ERROR: {str(e)}"
+        return False, f"ERROR: {str(e)}", None
