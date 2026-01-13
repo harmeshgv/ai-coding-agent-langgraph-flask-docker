@@ -44,7 +44,7 @@ def _get_agent_config():
     return config
 
 
-def get_sys_config(config, encryption_key: Fernet) -> dict[str, Any] | None:
+def _get_sys_config(config, encryption_key: Fernet) -> dict[str, Any] | None:
     """Loads and decrypts the agent configuration."""
 
     logger.info("Starting agent cycle for system: %s", config.task_system_type)
@@ -71,7 +71,7 @@ async def run_agent_cycle_async(app: Flask, encryption_key: Fernet) -> None:
         if not config:
             return
 
-        sys_config = get_sys_config(config, encryption_key)
+        sys_config = _get_sys_config(config, encryption_key)
         if not sys_config:
             return
 
@@ -132,6 +132,8 @@ async def run_agent_cycle_async(app: Flask, encryption_key: Fernet) -> None:
                     "trello_list_id": None,
                     "trello_in_progress": False,
                     "agent_stack": agent_stack,
+                    "agent_skill_level": config.agent_skill_level,
+                    "task_skill_level": None,
                 },
                 {"recursion_limit": 200},
             )

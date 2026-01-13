@@ -33,3 +33,5 @@ class AgentState(TypedDict):
     trello_list_id: Optional[str]
     trello_in_progress: bool
     git_branch: Optional[str]
+    agent_skill_level: Optional[str]
+    task_skill_level: Optional[str]

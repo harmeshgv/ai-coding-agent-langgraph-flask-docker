@@ -292,6 +292,57 @@
                                                 >Activate Agent Polling</label
                                             >
                                         </div>
+                                        <div class="mb-3">
+                                            <label class="form-label"
+                                                >Agent Skill level</label
+                                            >
+                                            <div>
+                                                <div
+                                                    class="form-check form-check-inline"
+                                                >
+                                                    <input
+                                                        class="form-check-input"
+                                                        type="radio"
+                                                        name="agent_skill_level"
+                                                        id="agent_skill_level_junior"
+                                                        value="junior"
+                                                        {%
+                                                        if
+                                                        form_data.agent_skill_level=="junior"
+                                                        %}checked{%
+                                                        endif
+                                                        %}
+                                                    />
+                                                    <label
+                                                        class="form-check-label"
+                                                        for="agent_skill_level_junior"
+                                                        >Junior</label
+                                                    >
+                                                </div>
+                                                <div
+                                                    class="form-check form-check-inline"
+                                                >
+                                                    <input
+                                                        class="form-check-input"
+                                                        type="radio"
+                                                        name="agent_skill_level"
+                                                        id="agent_skill_level_senior"
+                                                        value="senior"
+                                                        {%
+                                                        if
+                                                        form_data.agent_skill_level=="senior"
+                                                        %}checked{%
+                                                        endif
+                                                        %}
+                                                    />
+                                                    <label
+                                                        class="form-check-label"
+                                                        for="agent_skill_level_senior"
+                                                        >Senior</label
+                                                    >
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

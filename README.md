@@ -15,7 +15,7 @@ It operates completely unsupervised to:
 Containerization using Docker makes it possible to run the AI Agent anywhere: in the cloud as managed Service (SaaS), in the company network (as Enterprise Edition), or even locally on your computer.
 
 ## The Lean Startup Vision
-The CAIASE addresses the skills shortage in software development through the automation of software development with autonomous agents. Strategically, CAIASE focuses on the maintenance and scaling of existing systems (brownfield projects), in clear contrast to assistance-based competitors (Vibe Coding / Copilot), which focus on greenfield projects. The key unique selling proposition (USP) is the agent's autonomy as a "robot" that works independently, in accordance with processes, and around the clock. The key to acceptance is the "trust-first" strategy, in which the agent starts as a "tireless junior developer" who initially performs low-threshold, routine tasks and delivers only technically validated code.
+The CAIASE (Autonomous **C**oding **A**gents to scale rel**ia**ble **S**oftware **E**ngineering) addresses the skills shortage in software development through the automation of software development with autonomous agents. Strategically, CAIASE focuses on the maintenance and scaling of existing systems (brownfield projects), in clear contrast to assistance-based competitors (Vibe Coding / Copilot), which focus on greenfield projects. The key unique selling proposition (USP) is the agent's autonomy as a "robot" that works independently, in accordance with processes, and around the clock. The key to acceptance is the "trust-first" strategy, in which the agent starts as a "tireless junior developer" who initially performs low-threshold, routine tasks and delivers only technically validated code.
 
 The full strategy paper can be found here: [VISION and STRATEGY](VISION.md)
 
@@ -27,11 +27,12 @@ As a **Proof of Concept (POC)**, the system demonstrates the following advanced 
 
 - **Multi-Agent Architecture:** Uses **LangGraph** to route tasks to specialized sub-agents (`Coder`, `Bugfixer`, `Analyst`, `Tester`).
 - **Autonomous Git Operations:** Manages the full Git lifecycle—cloning, branching, committing, pushing, and pull requests—using the **Model Context Protocol (MCP)**.
-- **Task Management Integration:** Connects to external task/issue management systems (e.g. Trello, JIRA) to retrieve assignments and report status updates automatically.
+- **Task Management Integration:** Connects to external task/issue management systems (e.g. Trello, JIRA) to retrieve assignments and report status updates automatically. This also controls the **Human in the Loop** process.
 - **Resilient AI Logic:** Features advanced **self-healing mechanisms** with retry loops and iterative prompting to prevent stalling and minimize hallucinations.
 - **Dockerized & Scalable:** Runs in secure, isolated containers, allowing for effortless horizontal scaling—simply spin up additional instances to expand your virtual workforce on demand.
 - **LLM Selection:** Choose AI provider (OpenAI, Google, Mistral) and select a large LLMs for complex tasks and a small LLM for simple tasks, ensuring high-quality and precise results at optimized costs.
 - **Workbench Integration:** Integrates workbenches to provide a development environment for the Coding Agent executing unit tests.
+- **Trust-First Strategy:** The Coding Agent initially takes on repetitive tasks until trust in its work is established. Only then are more complex tasks addressed. 
 
 ## Future Roadmap: From POC to Professional SaaS
 
@@ -43,6 +44,7 @@ Key milestones for professionalization include:
 - [ ] **Active Code Reviews:** Agents will evolve from pure contributors to reviewers. They will analyze open Pull Requests, provide constructive feedback on code quality and security, and suggest optimizations—acting as an automated senior developer.
 - [ ] **Collaborative Swarm Intelligence:** Moving beyond isolated tasks, agents will be capable of communicating and collaborating with each other. This "swarm" capability will allow multiple agents to work jointly on complex, large-scale features, ensuring architectural consistency across the codebase.
 - [X] **Choose your preferred LLM** Support of other LLM providers, included open source models that run locally. 
+- [ ] **Context Engineering** Optimize the agent's input with additional information (system prompt, coding plan, test results) that he needs to effectively perform his task.
 - [ ] **Memory** to be able to refer back to past events and **learn** from feedback. 
 
 **Commercialization & Next Steps** To realize this vision, we are transitioning this project into a dedicated startup. We plan to accelerate development through an upcoming crowdfunding campaign.
@@ -50,7 +52,7 @@ Key milestones for professionalization include:
 ---
 
 ## System Architecture
-The **acAIca** is designed as a modular, dockerized system that automates the software development lifecycle. The architecture separates the "reasoning engine" (the AI Agent) from the "execution environment" (the Workbench) to ensure security and stability.
+The **CAIASE** is designed as a modular, dockerized system that automates the software development lifecycle. The architecture separates the "reasoning engine" (the AI Agent) from the "execution environment" (the Workbench) to ensure security and stability.
 The system interacts with several external services to fulfill the end-to-end workflow:
 - Task Management System (e.g., Trello): Serves as the source of truth for incoming coding tasks. The agent fetches tasks from the backlog and updates their status upon completion.
 - LLM Provider (e.g., Mistral, OpenAI): The inference engine used by the agents to generate code, reason about bugs, and analyze requirements.
@@ -77,6 +79,8 @@ The system is built upon a stateful, multi-agent architecture powered by LangGra
 ![LangGraph Workflow](./images/workflow_graph.png)
 
 * **Router Node:** The Routing workflows process inputs and then directs them to context-specific agents. It acts as the entry point. It analyzes the incoming ticket context and determines the optimal execution strategy by selecting the appropriate specialist. 
+
+* **Agent Skill Level Node:** The Agent Skill Level Node evaluates the complexity of the task and checks if the skill level of the agent is suitable for the task. This establishes the trust-first strategy, ensuring that agents are only assigned tasks they can handle effectively.
 
 * **Specialist Nodes (Agents):**
 
@@ -144,8 +148,6 @@ Supported providers:
 |Ollama|`OLLAMA_API_KEY` (optional for local setups)|`OLLAMA_BASE_URL` - default http://host.docker.internal:11434|
 
 ```bash
-MISTRAL_API_KEY=<your-mistral-api-key>
-GHCR_AI_CODING_AGENT_TOKEN=<your-github-token>
 docker compose up -d --build
 ```
 

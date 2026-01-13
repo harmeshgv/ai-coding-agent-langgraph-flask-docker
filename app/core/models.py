@@ -22,7 +22,7 @@ class AgentConfig(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     # Generic Task System Fields
     task_system_type = db.Column(
-        db.String(50), nullable=False, default="CUSTOM"
+        db.String(50), nullable=False, default="TRELLO"
     )  # e.g., "TRELLO", "JIRA", "CUSTOM"
     system_config_json = db.Column(
         db.Text, nullable=True
@@ -38,6 +38,7 @@ class AgentConfig(db.Model):
     )
     polling_interval_seconds = db.Column(db.Integer, nullable=False, default=60)
     is_active = db.Column(db.Boolean, nullable=False, default=False)
+    agent_skill_level = db.Column(db.String(50), nullable=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
