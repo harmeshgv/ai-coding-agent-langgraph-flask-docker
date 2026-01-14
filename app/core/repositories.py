@@ -50,3 +50,23 @@ def get_issue_by_card_id(card_id: str) -> Optional[Issue]:
     Returns None if no mapping exists.
     """
     return Issue.query.filter_by(trello_card_id=card_id).first()
+
+
+def remove_issue_from_db(card_id: str) -> bool:
+    """
+    Removes an Issue record from the database by Trello card ID.
+
+    Args:
+        card_id (str): The Trello card ID of the issue to remove.
+
+    Returns:
+        bool: True if an issue was found and deleted, False otherwise.
+    """
+    issue = Issue.query.filter_by(trello_card_id=card_id).first()
+
+    if issue:
+        db.session.delete(issue)
+        db.session.commit()
+        return True
+
+    return False

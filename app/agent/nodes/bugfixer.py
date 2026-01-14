@@ -6,6 +6,7 @@ errors, and implementing fixes for identified issues.
 """
 
 import logging
+from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
@@ -14,31 +15,10 @@ from agent.utils import (
     filter_messages_for_llm,
     load_system_prompt,
     log_agent_response,
+    record_finish_task_summary,
 )
 
 logger = logging.getLogger(__name__)
-
-
-def build_create_branch_prompt(card_id: str | None, card_name: str | None) -> str:
-    """Constructs a dynamic prompt instructing the agent to create a git branch."""
-    lines = ["No git branch is currently set for this Trello card."]
-    if card_name:
-        lines.append(f"- card_name: {card_name}")
-    if card_id:
-        lines.append(f"- card_id: {card_id}")
-    lines.append(
-        "Call git_create_branch(branch_name, card_id, card_name) with the values above "
-        "to create and switch to a dedicated branch before coding."
-    )
-    return "\n".join(lines)
-
-
-def build_branch_already_set_prompt(branch_name: str) -> str:
-    """Constructs guidance when a git branch is already assigned to the card."""
-    return (
-        f"Git branch '{branch_name}' is already associated with this Trello card. "
-        "Continue working on this branch and do NOT call git_create_branch."
-    )
 
 
 def create_bugfixer_node(llm, tools, agent_stack):
@@ -58,29 +38,15 @@ def create_bugfixer_node(llm, tools, agent_stack):
 
     async def bugfixer_node(state: AgentState):
         # Filter messages to keep only recent relevant context (original task + last 15 messages)
+        # pylint: disable=duplicate-code
         filtered_messages = filter_messages_for_llm(state["messages"], max_messages=15)
         current_messages: list[BaseMessage | SystemMessage] = [
             SystemMessage(content=sys_msg)
         ]
-
-        # Check if the current card is already associated with a git branch (database)
-        git_branch = state.get("git_branch")
-        if not git_branch:
-            create_card_branch_prompt = build_create_branch_prompt(
-                state.get("trello_card_id"),
-                state.get("trello_card_name"),
-            )
-            current_messages.append(HumanMessage(content=create_card_branch_prompt))
-        else:
-            current_messages.append(
-                HumanMessage(content=build_branch_already_set_prompt(git_branch))
-            )
-
         current_messages += filtered_messages
 
         current_tool_choice = "auto"
 
-        # pylint: disable=duplicate-code
         for attempt in range(3):
             try:
                 chain = llm.bind_tools(tools, tool_choice=current_tool_choice)
@@ -95,7 +61,15 @@ def create_bugfixer_node(llm, tools, agent_stack):
                         response,
                         attempt=attempt + 1,
                     )
-                    return {"messages": [response]}
+                    recorded, agent_summary = record_finish_task_summary(
+                        state,
+                        "bugfixer",
+                        response,
+                    )
+                    result = {"messages": [response]}
+                    if recorded:
+                        result["agent_summary"] = agent_summary
+                    return result
 
                 logger.warning("Attempt %d: Empty response. Escalating...", attempt + 1)
                 current_tool_choice = "any"
@@ -108,21 +82,25 @@ def create_bugfixer_node(llm, tools, agent_stack):
                 logger.error("Error in LLM call (Attempt %d): %s", attempt + 1, e)
 
         # Fallback
-        # pylint: disable=duplicate-code
-        return {
-            "messages": [
-                AIMessage(
-                    content="Stuck.",
-                    tool_calls=[
-                        {
-                            "name": "finish_task",
-                            "args": {"summary": "Agent stuck."},
-                            "id": "call_emergency",
-                            "type": "tool_call",
-                        }
-                    ],
-                )
-            ]
-        }
+        fallback_message = AIMessage(
+            content="Stuck.",
+            tool_calls=[
+                {
+                    "name": "finish_task",
+                    "args": {"summary": "Agent stuck."},
+                    "id": "call_emergency",
+                    "type": "tool_call",
+                }
+            ],
+        )
+        recorded, agent_summary = record_finish_task_summary(
+            state,
+            "bugfixer",
+            fallback_message,
+        )
+        result: dict[str, Any] = {"messages": [fallback_message]}
+        if recorded:
+            result["agent_summary"] = agent_summary
+        return result
 
     return bugfixer_node
