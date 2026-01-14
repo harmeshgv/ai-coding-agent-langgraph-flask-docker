@@ -12,9 +12,9 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, System
 
 from agent.services.logging import log_agent_response
 from agent.services.message_processing import filter_messages_for_llm
+from agent.services.prompts import load_system_prompt
 from agent.services.summaries import record_finish_task_summary
 from agent.core.state import AgentState
-from agent.utils import load_system_prompt
 
 logger = logging.getLogger(__name__)
 

@@ -20,8 +20,9 @@ from agent.core.graph import create_workflow
 from agent.core.runtime import AgentRuntimeContext, prepare_runtime
 from agent.services.logging import log_agent_state
 from agent.services.llm_factory import get_llm
+from agent.services.graph_assets import save_graph_as_mermaid, save_graph_as_png
 from agent.integrations.mcp.adapter import McpServerClient
-from agent.utils import get_workspace, save_graph_as_mermaid, save_graph_as_png
+from agent.utils import get_workspace
 
 logger = logging.getLogger(__name__)
 

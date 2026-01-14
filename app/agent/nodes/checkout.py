@@ -6,8 +6,9 @@ import subprocess
 from typing import Any, Dict
 
 from agent.core.state import AgentState
-from agent.utils import checkout_branch, get_workspace
-from core.repositories import get_branch_for_issue, upsert_issue
+from agent.services.git_workspace import checkout_branch
+from agent.utils import get_workspace
+from core.trello_repository import get_branch_for_issue, upsert_issue
 from flask import current_app
 from git import Repo
 

@@ -18,7 +18,7 @@ from agent.integrations.trello_client import (
     get_trello_card_list_moves,
     move_trello_card_to_named_list,
 )
-from core.repositories import remove_issue_from_db
+from core.trello_repository import remove_issue_from_db
 
 logger = logging.getLogger(__name__)
 

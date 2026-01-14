@@ -13,10 +13,10 @@ from pydantic import BaseModel, Field
 
 from agent.services.logging import log_agent_response
 from agent.services.message_processing import filter_messages_for_llm
+from agent.services.prompts import load_system_prompt
 from agent.services.summaries import append_agent_summary
 from agent.core.state import AgentState
 from agent.tools.local_tools import report_test_result
-from agent.utils import load_system_prompt
 
 logger = logging.getLogger(__name__)
 

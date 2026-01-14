@@ -12,7 +12,8 @@ from core.models import AgentConfig
 from cryptography.fernet import Fernet
 
 from agent.core.system_mappings import SYSTEM_DEFINITIONS
-from agent.utils import ensure_repository_exists, get_workbench, get_workspace
+from agent.services.git_workspace import ensure_repository_exists
+from agent.utils import get_workbench, get_workspace
 
 logger = logging.getLogger(__name__)
 
