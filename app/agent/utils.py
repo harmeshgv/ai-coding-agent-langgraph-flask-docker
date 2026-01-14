@@ -116,7 +116,7 @@ def build_agent_summary_text(
     """
     Join all recorded summary entries into a single string.
     """
-    entries = _get_normalized_agent_summary_entries(state)
+    entries = get_agent_summary_entries(state)
     if not entries:
         return None
     return separator.join(entries)
@@ -132,7 +132,7 @@ def build_agent_summary_markdown(
     """
     Build a Markdown-friendly block with bulleted summary entries.
     """
-    entries = _get_normalized_agent_summary_entries(state)
+    entries = get_agent_summary_entries(state)
     if not entries:
         return None
 
@@ -147,7 +147,7 @@ def build_agent_summary_markdown(
     return body
 
 
-def _get_normalized_agent_summary_entries(state: AgentState) -> list[str]:
+def get_agent_summary_entries(state: AgentState) -> list[str]:
     """
     Return the list of cached summary entries, falling back to scanning messages.
     """

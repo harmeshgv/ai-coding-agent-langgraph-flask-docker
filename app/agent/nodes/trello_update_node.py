@@ -7,6 +7,7 @@ based on the agent's configuration.
 """
 
 import logging
+from time import sleep
 
 from langchain_core.messages import AIMessage
 
@@ -15,48 +16,11 @@ from agent.trello_client import (
     add_comment_to_trello_card,
     move_trello_card_to_named_list,
 )
-from agent.utils import build_agent_summary_markdown
+from agent.utils import get_agent_summary_entries
 
 AGENT_DEFAULT_COMMENT = "Task completed by AI Agent."
 
 logger = logging.getLogger(__name__)
-
-
-def get_agent_result(messages):
-    """
-    Searches backward in the history for the 'finish_task' Tool-Call.
-    The summary or result of the tool call is returned.
-    If not found, returns the default comment.
-    """
-    for msg in reversed(messages):
-        # Wir suchen nach einer AI-Nachricht, die Tools benutzt hat
-        if isinstance(msg, AIMessage) and msg.tool_calls:
-            for tool_call in msg.tool_calls:
-                # Prüfen, ob es das Abschluss-Tool ist
-                if tool_call["name"] == "finish_task":
-                    # Das Argument 'summary' oder 'result' extrahieren
-                    return tool_call["args"].get("summary", AGENT_DEFAULT_COMMENT)
-
-    return AGENT_DEFAULT_COMMENT
-
-
-def _build_final_agent_comment(state: AgentState) -> str:
-    """
-    Prefer the aggregated agent summary, fallback to the last finish_task summary.
-    """
-    summary_markdown = build_agent_summary_markdown(
-        state,
-        heading="**Agent Update:**",
-        bullet_prefix="- ",
-        line_separator="\n",
-    )
-    if summary_markdown:
-        logger.info("Using aggregated agent summary: %s", summary_markdown)
-        return summary_markdown
-
-    logger.info("Using last finish_task summary")
-    latest_summary = get_agent_result(state["messages"])
-    return f"**Agent Update:**\n\n- {latest_summary}"
 
 
 def create_trello_update_node(sys_config: dict):
@@ -88,8 +52,10 @@ def create_trello_update_node(sys_config: dict):
 
         # add comment to card
         try:
-            final_comment = _build_final_agent_comment(state)
-            await add_comment_to_trello_card(card_id, final_comment, sys_config)
+            final_comments = _build_agent_comments(state)
+            for comment in final_comments:
+                await add_comment_to_trello_card(card_id, comment, sys_config)
+                sleep(0.1)
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Failed to add comment to Trello card: %s", e)
 
@@ -111,3 +77,35 @@ def create_trello_update_node(sys_config: dict):
             return {"trello_card_id": None}
 
     return trello_update
+
+def get_agent_result(messages):
+    """
+    Searches backward in the history for the 'finish_task' Tool-Call.
+    The summary or result of the tool call is returned.
+    If not found, returns the default comment.
+    """
+    for msg in reversed(messages):
+        # Wir suchen nach einer AI-Nachricht, die Tools benutzt hat
+        if isinstance(msg, AIMessage) and msg.tool_calls:
+            for tool_call in msg.tool_calls:
+                # Prüfen, ob es das Abschluss-Tool ist
+                if tool_call["name"] == "finish_task":
+                    # Das Argument 'summary' oder 'result' extrahieren
+                    return tool_call["args"].get("summary", AGENT_DEFAULT_COMMENT)
+
+    return AGENT_DEFAULT_COMMENT
+
+
+def _build_agent_comments(state: AgentState) -> list[str]:
+    """
+    Builds a list of agent comments from the agent summary entries.
+    """
+    entries = get_agent_summary_entries(state)
+    if not entries:
+        return [AGENT_DEFAULT_COMMENT]
+
+    summary_list = []
+    for entry in entries:
+        summary_list.append(f"**Agent Update:**\n\n {entry}")
+
+    return summary_list
