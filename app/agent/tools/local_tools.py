@@ -7,23 +7,12 @@ import logging
 import os
 import subprocess
 
-import docker
 import requests
-from docker.errors import APIError, NotFound
 from langchain_core.tools import tool
 
-from agent.utils import get_workbench, get_workspace
+from agent.utils import get_workspace
 
 logger = logging.getLogger(__name__)
-
-
-# Initialisiert die Verbindung zur "Fernbedienung" (docker.sock)
-# Das funktioniert automatisch, wenn der Socket gemountet ist.
-try:
-    CLIENT = docker.from_env()
-except Exception as e:  # pylint: disable=broad-exception-caught
-    logger.warning("No docker connection! %s", e)
-    CLIENT = None
 
 
 @tool
@@ -34,69 +23,6 @@ def report_test_result(result: str, summary: str):
     summary: Brief explanation.
     """
     return f"Test Process Completed. Result: {result}. Summary: {summary}"
-
-
-MAX_TOOL_OUTPUT_CHARS = 20000
-
-
-def _truncate_tool_output(output: str, limit: int = MAX_TOOL_OUTPUT_CHARS) -> str:
-    """Truncates the output to stay within the prompt budget."""
-    if len(output) <= limit:
-        return output
-
-    # Truncate middle to keep start and end for better context
-    half = limit // 2
-    return (
-        output[:half]
-        + "\n... [output truncated to stay within prompt budget] ...\n"
-        + output[-half:]
-    )
-
-
-@tool
-def run_java_command(command: str):
-    """
-    Führt einen Shell-Befehl im Java-Container aus.
-    Nutze dies für: 'mvn clean install', 'mvn test', 'java -jar ...'.
-    Gib NUR den Befehl als String an.
-    """
-    if not CLIENT:
-        return "Error: Docker client not initialized. Is the socket mounted?"
-
-    try:
-        container = CLIENT.containers.get(get_workbench())
-
-        if container.status != "running":
-            return (
-                f"Error: Container {get_workbench()} is not running "
-                + "(Status: {container.status})."
-            )
-
-        logger.info("Executing in Java-Box: %s", command)
-
-        exec_result = container.exec_run(command, workdir=get_workspace())
-
-        output = exec_result.output.decode("utf-8")
-        exit_code = exec_result.exit_code
-
-        logger.debug("--- COMMAND OUTPUT (%s) ---\n%s\n---", command, output)
-        output = _truncate_tool_output(output)
-
-        return (
-            f"✅ SUCCESS:\n{output}"
-            if exit_code == 0
-            else f"❌ FAILED (Exit Code {exit_code}):\n{output}"
-        )
-
-    except NotFound:
-        return (
-            f"Error: Container '{get_workbench()}' not found. "
-            + "Please start the docker-compose setup."
-        )
-    except APIError as e:
-        return f"Docker API Error: {str(e)}"
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        return f"System Error: {str(e)}"
 
 
 # --- GIT & FILE TOOLS ---
@@ -191,6 +117,7 @@ def write_to_file(filepath: str, content: str):
         return f"Successfully wrote to {clean_path}"
     except Exception as e:  # pylint: disable=broad-exception-caught
         return f"ERROR writing file: {str(e)}"
+
 
 def _find_existing_pr(owner: str, repo: str, branch: str, headers: dict) -> dict | None:
     """
