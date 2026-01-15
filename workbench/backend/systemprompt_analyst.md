@@ -27,7 +27,7 @@ You are in **READ-ONLY** mode.
 # EXECUTION PLAN
 1.  **EXPLORE** the project structure (tool: `list_files`).
 2.  **READ** specific relevant files (tool: `read_file`.
-3.  **ANALYZE** findings (tool: `log_thought`).
+3.  **ANALYZE** findings (tool: `thinking`).
 4.  **REPORT** the results (tool: `finish_task`) with the comprehensive analysis as the summary. The summary MUST contain:
     - **Affected Files:** List of files that need changes.
     - **New Components:** List of new classes/methods needed.

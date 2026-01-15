@@ -9,8 +9,8 @@ from core.trello_repository import get_branch_for_issue, upsert_issue
 from flask import current_app
 from git import Repo
 
-from agent.core.state import AgentState
 from agent.services.git_workspace import checkout_branch
+from agent.state import AgentState
 from agent.utils import get_workspace
 
 logger = logging.getLogger(__name__)

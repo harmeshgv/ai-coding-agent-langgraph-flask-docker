@@ -5,12 +5,11 @@ Fetches tasks from a Trello board, preparing them for processing by the agent.
 """
 
 import logging
-
 from datetime import datetime, timezone
 
+from core.trello_repository import remove_issue_from_db
 from langchain_core.messages import HumanMessage
 
-from agent.core.state import AgentState
 from agent.integrations.trello_client import (
     get_all_trello_cards,
     get_all_trello_lists,
@@ -18,7 +17,7 @@ from agent.integrations.trello_client import (
     get_trello_card_list_moves,
     move_trello_card_to_named_list,
 )
-from core.trello_repository import remove_issue_from_db
+from agent.state import AgentState
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +128,9 @@ def create_trello_fetch_node(sys_config: dict):
     return trello_fetch
 
 
-async def fetch_card_from_list(readfrom_list_name: str, sys_config: dict) -> dict | None:
+async def fetch_card_from_list(
+    readfrom_list_name: str, sys_config: dict
+) -> dict | None:
     """Fetch a card from a Trello list."""
     trello_lists = await get_all_trello_lists(sys_config)
     read_from_list = next(

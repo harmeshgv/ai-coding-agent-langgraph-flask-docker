@@ -11,8 +11,8 @@ from typing import Any, Dict, Optional
 from core.models import AgentConfig
 from cryptography.fernet import Fernet
 
-from agent.core.system_mappings import SYSTEM_DEFINITIONS
 from agent.services.git_workspace import ensure_repository_exists
+from agent.system_mappings import SYSTEM_DEFINITIONS
 from agent.utils import get_workbench, get_workspace
 
 logger = logging.getLogger(__name__)
@@ -73,7 +73,9 @@ def _get_agent_config() -> Optional[AgentConfig]:
     return config
 
 
-def _get_sys_config(config: AgentConfig, encryption_key: Fernet) -> Optional[Dict[str, Any]]:
+def _get_sys_config(
+    config: AgentConfig, encryption_key: Fernet
+) -> Optional[Dict[str, Any]]:
     """Decrypt and parse the JSON payload stored for the task system."""
     logger.info("Starting agent cycle for system: %s", config.task_system_type)
     sys_config_raw = config.system_config_json or "{}"

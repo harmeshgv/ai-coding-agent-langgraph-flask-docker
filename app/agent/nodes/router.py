@@ -8,12 +8,13 @@ specialist agent (e.g., Coder, Bugfixer, Analyst) should handle it next.
 
 import logging
 from typing import Dict, Literal
+
 from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
 from agent.services.message_processing import filter_messages_for_llm
-from agent.core.state import AgentState
+from agent.state import AgentState
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,7 @@ OPTIONS:
 Respond ONLY with valid JSON that matches {"role":"coder"|"bugfixer"|"analyst"} with no additional text or markdown.
 """
 
+
 class RouterDecision(BaseModel):
     """Classify the incoming task into the correct category."""
 
@@ -41,7 +43,7 @@ def create_router_node(llm):
     Factory function that creates the router node for the agent graph.
 
     Args:
-        sys_config: The system configuration.        
+        sys_config: The system configuration.
         llm: The language model to be used for routing decisions.
 
     Returns:

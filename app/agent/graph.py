@@ -12,7 +12,6 @@ from langchain_core.messages import AIMessage
 from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolNode
 
-from agent.core.state import AgentState
 from agent.nodes.agent_skill_level import create_agent_skill_level_node
 from agent.nodes.analyst import create_analyst_node
 from agent.nodes.bugfixer import create_bugfixer_node
@@ -25,6 +24,7 @@ from agent.nodes.tester import create_tester_node
 from agent.nodes.trello_fetch_node import create_trello_fetch_node
 from agent.nodes.trello_update_node import create_trello_update_node
 from agent.services.summaries import has_finish_task_call
+from agent.state import AgentState
 from agent.tools.file_tools import (
     list_files,
     read_file,
@@ -63,7 +63,7 @@ def route_after_tools_tester(state: AgentState):
                 previous_agent = state.get("next_step", "coder")
                 return f"{previous_agent} failed"
 
-    # Wenn kein 'report_test_result' dabei war (z.B. nur 'run_java_command' oder 'git_add')
+    # Wenn kein 'report_test_result' dabei war (z.B. nur 'run_command' oder 'git_add')
     # dann geht es zurück zum Tester (Loop), damit er weitermachen kann.
     return "tester"
 

@@ -54,7 +54,7 @@ Diese Tools wurden spezifisch implementiert:
 * `write_to_file(filepath, content)`: Erstellt/Überschreibt Dateien.
 * `list_files(directory)`: Rekursives Listing (ohne .git).
 * `git_push_origin()`: Führt den Push durch (mit Token-Injection via ENV).
-* `log_thought(thought)`: Erlaubt dem Agenten, "laut zu denken" (Planung).
+* `thinking(thought)`: Erlaubt dem Agenten, "laut zu denken" (Planung).
 * `finish_task(summary)`: Signalisiert das Ende der Bearbeitung.
 
 ## 5. Wichtige Design-Entscheidungen & Fixes
@@ -69,7 +69,7 @@ Um zu verhindern, dass das LLM in eine Schweige-Schleife gerät (leere Antworten
 3.  **Injection:** Dem Kontext wird künstlich eine Nachricht hinzugefügt ("I have planned enough, I must act now"), um die Schreibblockade des Modells zu lösen.
 
 ### C. Action-Only Prinzip
-Die Prompts verbieten reines Chatten ("You are a HEADLESS agent"). Jede Interaktion muss über ein Tool erfolgen (`log_thought` für Text, `write_to_file` für Code). Dies verhindert API-Fehler bezüglich der Nachrichten-Reihenfolge.
+Die Prompts verbieten reines Chatten ("You are a HEADLESS agent"). Jede Interaktion muss über ein Tool erfolgen (`thinking` für Text, `write_to_file` für Code). Dies verhindert API-Fehler bezüglich der Nachrichten-Reihenfolge.
 
 ## 6. Konfiguration & Environment
 

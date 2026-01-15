@@ -6,8 +6,7 @@ from typing import Optional, Sequence, Tuple
 
 from langchain_core.messages import AIMessage, BaseMessage
 
-from agent.core.state import AgentState
-
+from agent.state import AgentState
 
 __all__ = [
     "append_agent_summary",
@@ -54,7 +53,9 @@ def record_finish_task_summary(
 ) -> Tuple[bool, list[str]]:
     """Store any finish_task summaries emitted by the given role."""
     summary_entries = list(state.get("agent_summary") or [])
-    if not isinstance(ai_message, AIMessage) or not getattr(ai_message, "tool_calls", None):
+    if not isinstance(ai_message, AIMessage) or not getattr(
+        ai_message, "tool_calls", None
+    ):
         return False, summary_entries
 
     recorded = False
@@ -78,10 +79,14 @@ def has_finish_task_call(message: BaseMessage) -> bool:
     if not isinstance(message, AIMessage) or not getattr(message, "tool_calls", None):
         return False
 
-    return any(tool_call.get("name") == "finish_task" for tool_call in message.tool_calls)
+    return any(
+        tool_call.get("name") == "finish_task" for tool_call in message.tool_calls
+    )
 
 
-def collect_finish_task_summaries(message: BaseMessage) -> list[tuple[Optional[str], str]]:
+def collect_finish_task_summaries(
+    message: BaseMessage,
+) -> list[tuple[Optional[str], str]]:
     """Extract the summary strings from finish_task tool calls within a message."""
     summaries: list[tuple[Optional[str], str]] = []
     if not isinstance(message, AIMessage) or not getattr(message, "tool_calls", None):
@@ -100,7 +105,9 @@ def collect_finish_task_summaries(message: BaseMessage) -> list[tuple[Optional[s
     return summaries
 
 
-def build_agent_summary_text(state: AgentState, separator: str = "\n\n") -> Optional[str]:
+def build_agent_summary_text(
+    state: AgentState, separator: str = "\n\n"
+) -> Optional[str]:
     """Join all recorded summary entries into a single string."""
     entries = get_agent_summary_entries(state)
     if not entries:

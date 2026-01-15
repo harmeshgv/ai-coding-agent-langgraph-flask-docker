@@ -13,8 +13,8 @@ from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import SystemMessage
 from pydantic import BaseModel, Field
 
-from agent.core.state import AgentState
 from agent.services.summaries import append_agent_summary
+from agent.state import AgentState
 
 logger = logging.getLogger(__name__)
 

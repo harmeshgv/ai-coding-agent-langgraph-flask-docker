@@ -2,7 +2,7 @@
 
 import os
 
-from agent.core.worker import run_agent_cycle
+from agent.worker import run_agent_cycle
 from core.extensions import db, scheduler
 from core.models import AgentConfig
 from cryptography.fernet import Fernet

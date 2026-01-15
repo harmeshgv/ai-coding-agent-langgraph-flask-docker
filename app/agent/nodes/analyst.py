@@ -18,7 +18,7 @@ from agent.services.message_processing import (
 )
 from agent.services.prompts import load_system_prompt
 from agent.services.summaries import record_finish_task_summary
-from agent.core.state import AgentState
+from agent.state import AgentState
 
 logger = logging.getLogger(__name__)
 

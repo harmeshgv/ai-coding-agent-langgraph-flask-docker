@@ -9,11 +9,11 @@ from typing import Any, Dict, Optional
 
 import requests
 
-from agent.core.state import AgentState
 from agent.services.summaries import (
     append_agent_summary,
     build_agent_summary_markdown,
 )
+from agent.state import AgentState
 from agent.utils import get_workspace
 
 logger = logging.getLogger(__name__)

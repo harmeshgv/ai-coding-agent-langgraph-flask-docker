@@ -11,11 +11,11 @@ from typing import Any, Dict, Literal, Optional
 from langchain_core.messages import SystemMessage
 from pydantic import BaseModel, Field
 
-from agent.core.state import AgentState
 from agent.services.logging import log_agent_response
 from agent.services.message_processing import filter_messages_for_llm
 from agent.services.prompts import load_system_prompt
 from agent.services.summaries import append_agent_summary
+from agent.state import AgentState
 from agent.tools.report_test_result import report_test_result
 
 logger = logging.getLogger(__name__)
