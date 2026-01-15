@@ -25,13 +25,13 @@ from agent.nodes.tester import create_tester_node
 from agent.nodes.trello_fetch_node import create_trello_fetch_node
 from agent.nodes.trello_update_node import create_trello_update_node
 from agent.services.summaries import has_finish_task_call
-from agent.tools.local_tools import (
-    finish_task,
+from agent.tools.file_tools import (
     list_files,
-    log_thought,
     read_file,
     write_to_file,
 )
+from agent.tools.finish_task import finish_task
+from agent.tools.log_thought import log_thought
 from agent.tools.run_java_command import run_java_command
 
 

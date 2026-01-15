@@ -1,10 +1,10 @@
 """Tool for logging agent thoughts without affecting state."""
 
-from __future__ import annotations
+import logging
 
 from langchain_core.tools import tool
 
-from agent.tools._base import logger
+logger = logging.getLogger(__name__)
 
 
 @tool
