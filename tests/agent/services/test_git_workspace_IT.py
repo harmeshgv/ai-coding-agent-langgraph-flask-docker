@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from git import Actor, Repo
-
 from agent.services.git_workspace import ensure_repository_exists
+from git import Actor, Repo
 
 TEST_ACTOR = Actor("Integration User", "integration@example.com")
 
