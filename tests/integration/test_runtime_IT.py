@@ -1,15 +1,15 @@
-"""Integration tests for agent.core.runtime.prepare_runtime."""
+"""Integration tests for agent.runtime.prepare_runtime."""
 
 from __future__ import annotations
 
 import json
 
-from cryptography.fernet import Fernet
-from flask import Flask
-
-from agent.core.runtime import AgentRuntimeContext, prepare_runtime
+from agent import runtime as runtime_module
+from agent.runtime import AgentRuntimeContext, prepare_runtime
 from core.extensions import db
 from core.models import AgentConfig
+from cryptography.fernet import Fernet
+from flask import Flask
 
 
 def _create_app(database_uri: str) -> Flask:
@@ -39,7 +39,7 @@ def test_prepare_runtime_returns_context(tmp_path, monkeypatch):
         ensure_called["repo_url"] = repo_url
         ensure_called["work_dir"] = work_dir
 
-    monkeypatch.setattr("agent.core.runtime.ensure_repository_exists", fake_ensure)
+    monkeypatch.setattr("agent.runtime.ensure_repository_exists", fake_ensure)
 
     with app.app_context():
         db.create_all()
@@ -77,8 +77,6 @@ def test_prepare_runtime_uses_default_repo_when_missing(tmp_path, monkeypatch):
 
     app = _create_app(f"sqlite:///{tmp_path / 'runtime_default.db'}")
     encryption_key = Fernet(Fernet.generate_key())
-
-    from agent.core import runtime as runtime_module
 
     captured = {}
     monkeypatch.setattr(
@@ -140,7 +138,7 @@ def test_prepare_runtime_returns_none_for_unknown_system(tmp_path, monkeypatch):
 
     # Still patch ensure_repository_exists to avoid network work
     monkeypatch.setattr(
-        "agent.core.runtime.ensure_repository_exists", lambda *args, **kwargs: None
+        "agent.runtime.ensure_repository_exists", lambda *args, **kwargs: None
     )
 
     with app.app_context():

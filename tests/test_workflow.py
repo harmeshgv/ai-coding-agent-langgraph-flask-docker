@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from collections import OrderedDict
 
+import agent.graph as graph_module
 import pytest
-
-import agent.core.graph as graph_module
 
 
 class RecordingStateGraph:
@@ -103,7 +102,11 @@ def test_create_workflow_registers_all_nodes(workflow_mocks):
     assert workflow.entry_point == "task_fetch"
 
     router_mapping = dict(
-        next(mapping.items() for source, mapping in workflow.conditional_edges if source == "router")  # type: ignore[stop-iteration]
+        next(
+            mapping.items()
+            for source, mapping in workflow.conditional_edges
+            if source == "router"
+        )  # type: ignore[stop-iteration]
     )
     assert router_mapping == {
         "coder": "agent_skill_level",
