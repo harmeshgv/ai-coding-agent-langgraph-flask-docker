@@ -33,6 +33,7 @@ def _truncate_tool_output(output: str, limit: int = MAX_TOOL_OUTPUT_CHARS) -> st
 
 
 @tool
+# pylint: disable=too-many-return-statements
 def run_command(command: str) -> str:
     """Execute a shell command inside the workbench container."""
     if not DOCKER_CLIENT:
