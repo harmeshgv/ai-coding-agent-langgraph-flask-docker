@@ -137,7 +137,7 @@ def configuration_post(config: AgentConfig, encryption_key: Fernet):
         )
 
     flash("Configuration saved successfully!", "success")
-    return redirect(url_for("web.config"))
+    return redirect(url_for("web.configuration"))
 
 
 def _set_trello_form_data(saved_data: dict[str, Any], form_data: dict):
@@ -235,7 +235,7 @@ def dashboard():
 
 
 @web_bp.route("/config", methods=["GET", "POST"])
-def configiguration():
+def configuration():
     """Handles the configuration page."""
     encryption_key = current_app.config["FERNET_KEY"]
     config = AgentConfig.query.first()
