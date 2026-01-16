@@ -22,7 +22,7 @@ from agent.runtime import AgentRuntimeContext, prepare_runtime
 from agent.services.graph_assets import save_graph_as_mermaid, save_graph_as_png
 from agent.services.llm_factory import get_llm
 from agent.services.logging import log_agent_state
-from agent.utils import get_workspace
+from agent.utils import get_codespace
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ async def _execute_agent_cycle(runtime: AgentRuntimeContext) -> None:
     async with AsyncExitStack() as stack:
         git_mcp = McpServerClient(
             command=sys.executable,
-            args=["-m", "mcp_server_git", "--repository", get_workspace()],
+            args=["-m", "mcp_server_git", "--repository", get_codespace()],
             env=os.environ.copy(),
         )
         task_mcp = McpServerClient(

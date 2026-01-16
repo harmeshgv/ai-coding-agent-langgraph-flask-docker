@@ -8,6 +8,7 @@ from typing import Final
 __all__ = [
     "get_workbench",
     "get_workspace",
+    "get_codespace",
 ]
 
 
@@ -22,3 +23,8 @@ def get_workspace() -> str:
 def get_workbench() -> str:
     """Return the active workbench identifier (e.g., 'workbench-backend')."""
     return os.environ.get("WORKBENCH", "")
+
+
+def get_codespace() -> str:
+    """Return the path to the code repository."""
+    return f"{get_workspace()}/code"

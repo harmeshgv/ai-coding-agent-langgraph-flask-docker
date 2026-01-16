@@ -27,6 +27,8 @@ def _encrypt_config(key: Fernet, payload: dict) -> str:
 def test_prepare_runtime_returns_context(tmp_path, monkeypatch):
     workspace = tmp_path / "workspace"
     workspace.mkdir()
+    codespace = workspace / "code"
+    codespace.mkdir()
     monkeypatch.setenv("WORKSPACE", workspace.as_posix())
     monkeypatch.setenv("WORKBENCH", "workbench-backend")
 
@@ -66,12 +68,14 @@ def test_prepare_runtime_returns_context(tmp_path, monkeypatch):
     assert context.task_env["FOO"] == "BAR"
     assert "command" in context.system_def
     assert ensure_called["repo_url"] == "https://example.com/foo/bar.git"
-    assert ensure_called["work_dir"] == workspace.as_posix()
+    assert ensure_called["work_dir"] == codespace.as_posix()
 
 
 def test_prepare_runtime_uses_default_repo_when_missing(tmp_path, monkeypatch):
     workspace = tmp_path / "workspace"
     workspace.mkdir()
+    codespace = workspace / "code"
+    codespace.mkdir()
     monkeypatch.setenv("WORKSPACE", workspace.as_posix())
     monkeypatch.setenv("WORKBENCH", "workbench-frontend")
 
@@ -119,7 +123,7 @@ def test_prepare_runtime_uses_default_repo_when_missing(tmp_path, monkeypatch):
     # DEFAULT_REPO lives in runtime module
     expected_repo = config.github_repo_url or runtime_module.DEFAULT_REPO
     assert captured["repo_url"] == expected_repo
-    assert captured["work_dir"] == workspace.as_posix()
+    assert captured["work_dir"] == codespace.as_posix()
     assert sys_config_result["value"] == {
         "trello_readfrom_list": "todo",
         "env": {"FOO": "BAR"},
@@ -130,6 +134,8 @@ def test_prepare_runtime_uses_default_repo_when_missing(tmp_path, monkeypatch):
 def test_prepare_runtime_returns_none_for_unknown_system(tmp_path, monkeypatch):
     workspace = tmp_path / "workspace"
     workspace.mkdir()
+    codespace = workspace / "code"
+    codespace.mkdir()
     monkeypatch.setenv("WORKSPACE", workspace.as_posix())
     monkeypatch.setenv("WORKBENCH", "workbench-backend")
 

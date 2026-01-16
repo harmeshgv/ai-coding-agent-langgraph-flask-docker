@@ -12,33 +12,37 @@ TEST_ACTOR = Actor("Integration User", "integration@example.com")
 
 def test_ensure_repository_exists_clones_remote_repo(tmp_path):
     remote_dir = _setup_remote_repo(tmp_path / "remote")
-    work_dir = tmp_path / "workspace"
-    work_dir.mkdir()
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    codespace = workspace / "code"
+    codespace.mkdir()
 
-    ensure_repository_exists(remote_dir.as_posix(), work_dir.as_posix())
+    ensure_repository_exists(remote_dir.as_posix(), codespace.as_posix())
 
-    repo = Repo(work_dir)
+    repo = Repo(codespace)
     assert repo.remotes.origin.url == remote_dir.as_posix()
-    assert (work_dir / "README.md").read_text(encoding="utf-8") == "root"
+    assert (codespace / "README.md").read_text(encoding="utf-8") == "root"
 
 
 def test_ensure_repository_exists_reclones_when_remote_changes(tmp_path):
     primary_remote = _setup_remote_repo(tmp_path / "remote_primary")
     fallback_remote = _setup_remote_repo(tmp_path / "remote_fallback", contents="alt")
-    work_dir = tmp_path / "workspace"
-    work_dir.mkdir()
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    codespace = workspace / "code"
+    codespace.mkdir()
 
-    ensure_repository_exists(primary_remote.as_posix(), work_dir.as_posix())
+    ensure_repository_exists(primary_remote.as_posix(), codespace.as_posix())
 
-    repo = Repo(work_dir)
+    repo = Repo(codespace)
     assert repo.remotes.origin.url == primary_remote.as_posix()
-    assert (work_dir / "README.md").read_text(encoding="utf-8") == "root"
+    assert (codespace / "README.md").read_text(encoding="utf-8") == "root"
 
-    ensure_repository_exists(fallback_remote.as_posix(), work_dir.as_posix())
+    ensure_repository_exists(fallback_remote.as_posix(), codespace.as_posix())
 
-    refreshed = Repo(work_dir)
+    refreshed = Repo(codespace)
     assert refreshed.remotes.origin.url == fallback_remote.as_posix()
-    assert (work_dir / "README.md").read_text(encoding="utf-8") == "alt"
+    assert (codespace / "README.md").read_text(encoding="utf-8") == "alt"
 
 
 def _setup_remote_repo(path: Path, contents: str = "root") -> Path:

@@ -23,9 +23,9 @@ def normalize_git_url(url: str) -> str:
     """Normalize a Git URL by stripping credentials for comparison."""
     try:
         parsed = urlparse(url)
-        normalized = parsed._replace(
-            netloc=parsed.hostname + (f":{parsed.port}" if parsed.port else "")
-        )
+        hostname = parsed.hostname or ""
+        port = parsed.port or ""
+        normalized = parsed._replace(netloc=f"{hostname}:{port}")
         return urlunparse(normalized)
     except Exception:  # pylint: disable=broad-exception-caught
         return url.split("@")[-1] if "@" in url else url
@@ -47,6 +47,9 @@ def ensure_repository_exists(repo_url: str, work_dir: str) -> None:
         logger.info("Cloning repository %s into %s", repo_url, work_dir)
         Repo.clone_from(repo_url, work_dir)
 
+    if not os.path.isdir(work_dir):
+        logger.info("Work directory %s does not exist, creating...", work_dir)
+        os.makedirs(work_dir)
     git_dir = os.path.join(work_dir, ".git")
     if not os.path.isdir(git_dir):
         logger.info("No git repository found in %s, cloning...", work_dir)
@@ -102,7 +105,9 @@ def ensure_repository_exists(repo_url: str, work_dir: str) -> None:
         logger.info("Repository is ready with clean checkout")
 
     except Exception as exc:  # pylint: disable=broad-exception-caught
-        logger.error("Error managing repository in %s: %s, re-cloning...", work_dir, exc)
+        logger.error(
+            "Error managing repository in %s: %s, re-cloning...", work_dir, exc
+        )
         clean_and_clone()
 
 

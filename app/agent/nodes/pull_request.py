@@ -14,7 +14,7 @@ from agent.services.summaries import (
     build_agent_summary_markdown,
 )
 from agent.state import AgentState
-from agent.utils import get_workspace
+from agent.utils import get_codespace
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +119,7 @@ def _execute_git_status() -> tuple[bool, str]:
     try:
         result = subprocess.run(
             ["git", "status", "--porcelain"],
-            cwd=get_workspace(),
+            cwd=get_codespace(),
             check=True,
             capture_output=True,
             text=True,
@@ -142,7 +142,7 @@ def _execute_git_add() -> bool:
     try:
         subprocess.run(
             ["git", "add", "."],
-            cwd=get_workspace(),
+            cwd=get_codespace(),
             check=True,
             capture_output=True,
             text=True,
@@ -162,17 +162,17 @@ def _execute_git_commit(message: str) -> bool:
     try:
         subprocess.run(
             ["git", "config", "user.email", "agent@bot.com"],
-            cwd=get_workspace(),
+            cwd=get_codespace(),
             check=True,
         )
         subprocess.run(
             ["git", "config", "user.name", "Coding Agent"],
-            cwd=get_workspace(),
+            cwd=get_codespace(),
             check=True,
         )
         subprocess.run(
             ["git", "commit", "-m", message],
-            cwd=get_workspace(),
+            cwd=get_codespace(),
             check=True,
             capture_output=True,
             text=True,
@@ -197,7 +197,7 @@ def _execute_git_push() -> tuple[bool, str]:
     try:
         current_branch = subprocess.check_output(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            cwd=get_workspace(),
+            cwd=get_codespace(),
             text=True,
         ).strip()
 
@@ -207,7 +207,7 @@ def _execute_git_push() -> tuple[bool, str]:
 
         current_url = subprocess.check_output(
             ["git", "remote", "get-url", "origin"],
-            cwd=get_workspace(),
+            cwd=get_codespace(),
             text=True,
         ).strip()
 
@@ -215,13 +215,13 @@ def _execute_git_push() -> tuple[bool, str]:
             auth_url = current_url.replace("https://", f"https://{token}@")
             subprocess.run(
                 ["git", "remote", "set-url", "origin", auth_url],
-                cwd=get_workspace(),
+                cwd=get_codespace(),
                 check=True,
             )
 
         result = subprocess.run(
             ["git", "push", "-u", "origin", "HEAD"],
-            cwd=get_workspace(),
+            cwd=get_codespace(),
             capture_output=True,
             text=True,
             check=True,
@@ -239,7 +239,7 @@ def _get_github_repo_info() -> tuple[Optional[str], Optional[str], Optional[str]
     try:
         remote_url = subprocess.check_output(
             ["git", "remote", "get-url", "origin"],
-            cwd=get_workspace(),
+            cwd=get_codespace(),
             text=True,
         ).strip()
 
@@ -251,7 +251,7 @@ def _get_github_repo_info() -> tuple[Optional[str], Optional[str], Optional[str]
 
         current_branch = subprocess.check_output(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            cwd=get_workspace(),
+            cwd=get_codespace(),
             text=True,
         ).strip()
 

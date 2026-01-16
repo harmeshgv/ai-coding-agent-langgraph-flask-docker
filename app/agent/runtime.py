@@ -13,11 +13,9 @@ from cryptography.fernet import Fernet
 
 from agent.services.git_workspace import ensure_repository_exists
 from agent.system_mappings import SYSTEM_DEFINITIONS
-from agent.utils import get_workbench, get_workspace
+from agent.utils import get_codespace, get_workbench
 
 logger = logging.getLogger(__name__)
-
-DEFAULT_REPO = "https://github.com/tom-test-user/test-repo.git"
 
 
 @dataclass(frozen=True)
@@ -41,12 +39,16 @@ def prepare_runtime(encryption_key: Fernet) -> Optional[AgentRuntimeContext]:
     if not sys_config:
         return None
 
+    if not config.github_repo_url:
+        logger.error("GitHub repository URL not provided.")
+        return None
+
     sys_config["github_repo_url"] = config.github_repo_url
     task_env = os.environ.copy()
     task_env.update(sys_config.get("env", {}))
 
-    logger.info("Workspace: %s", get_workspace())
-    ensure_repository_exists(config.github_repo_url or DEFAULT_REPO, get_workspace())
+    logger.info("Codespace: %s", get_codespace())
+    ensure_repository_exists(config.github_repo_url, get_codespace())
 
     if config.task_system_type not in SYSTEM_DEFINITIONS:
         logger.error("Task system '%s' not defined.", config.task_system_type)
