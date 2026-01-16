@@ -31,7 +31,9 @@ logger = logging.getLogger(__name__)
 # 1. Blueprint erstellen
 # 'web' = Name des Blueprints (für url_for('web.index'))
 # __name__ = Damit Flask weiß, wo Templates/Static files für diesen Blueprint liegen
-web_bp = Blueprint("web", __name__, template_folder="templates")
+web_bp = Blueprint(
+    "web", __name__, template_folder="templates", static_folder="../static"
+)
 
 
 def _missing_provider_env(provider: str) -> str | None:
@@ -84,7 +86,7 @@ def _get_llm_config() -> dict[str, Any]:
     }
 
 
-def index_post(config: AgentConfig, encryption_key: Fernet):
+def handle_post(config: AgentConfig, encryption_key: Fernet):
     """Update agent configuration from form"""
     # Update generic fields
     config.task_system_type = request.form.get("task_system_type")
@@ -135,7 +137,7 @@ def index_post(config: AgentConfig, encryption_key: Fernet):
         )
 
     flash("Configuration saved successfully!", "success")
-    return redirect(url_for("web.index"))
+    return redirect(url_for("web.config"))
 
 
 def _set_trello_form_data(saved_data: dict[str, Any], form_data: dict):
@@ -166,7 +168,7 @@ def _set_llm_form_data(saved_data: dict[str, Any], form_data: dict):
     form_data["llm_temperature"] = saved_data.get("llm_temperature", 0.0)
 
 
-def index_get(config: AgentConfig, encryption_key: Fernet) -> str:
+def handle_get(config: AgentConfig, encryption_key: Fernet) -> str:
     """
     Get agent configuration from form.
     Decrypt and parse JSON to populate form
@@ -207,7 +209,7 @@ def index_get(config: AgentConfig, encryption_key: Fernet) -> str:
     )
 
     return render_template(
-        "index.html",
+        "config.html",
         config=config,
         form_data=form_data,
         selected_provider=selected_provider,
@@ -216,16 +218,21 @@ def index_get(config: AgentConfig, encryption_key: Fernet) -> str:
     )
 
 
-# 2. Routen definieren (ACHTUNG: @web_bp statt @app)
-@web_bp.route("/", methods=["GET", "POST"])
-def index():
-    """Handles the main configuration page."""
+@web_bp.route("/", methods=["GET"])
+def dashboard():
+    """Handles the main dashboard page."""
+    return render_template("index.html")
+
+
+@web_bp.route("/config", methods=["GET", "POST"])
+def config():
+    """Handles the configuration page."""
     encryption_key = current_app.config["FERNET_KEY"]
     config = AgentConfig.query.first()
     if not config:
         config = AgentConfig(task_system_type="TRELLO", system_config_json="{}")
 
     if request.method == "POST":
-        return index_post(config, encryption_key)
+        return handle_post(config, encryption_key)
 
-    return index_get(config, encryption_key)
+    return handle_get(config, encryption_key)

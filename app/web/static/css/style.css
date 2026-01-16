@@ -1,0 +1,26 @@
+:root {
+    --dark-bg: #121212;
+    --dark-text: #e0e0e0;
+    --dark-card: #2c3035;
+    --dark-border: #444;
+}
+
+body {
+    background-color: var(--dark-bg);
+    color: var(--dark-text);
+}
+
+.card {
+    background-color: var(--dark-card);
+    border-color: var(--dark-border);
+}
+
+.navbar-dark .navbar-nav .nav-link.active {
+    color: #fff;
+    font-weight: bold;
+}
+
+.card-body-scroll {
+    max-height: 400px;
+    overflow-y: auto;
+}
