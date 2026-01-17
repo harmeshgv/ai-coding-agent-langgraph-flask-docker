@@ -9,6 +9,7 @@ different board systems (Trello, GitHub, Jira, etc.).
 import logging
 
 from agent.integrations.board_provider import BoardProvider
+from agent.integrations.trello_provider import TrelloProvider
 
 logger = logging.getLogger(__name__)
 
@@ -39,18 +40,9 @@ def create_board_provider(sys_config: dict) -> BoardProvider:
     logger.info("Creating board provider: %s", provider_type)
 
     if provider_type == "trello":
-        from agent.integrations.trello_provider import TrelloProvider  # pylint: disable=import-outside-toplevel
         return TrelloProvider(sys_config)
-
-    if provider_type == "github":
-        from agent.integrations.github_provider import GitHubProvider  # pylint: disable=import-outside-toplevel,import-error,no-name-in-module
-        return GitHubProvider(sys_config)
-
-    if provider_type == "jira":
-        from agent.integrations.jira_provider import JiraProvider  # pylint: disable=import-outside-toplevel,import-error,no-name-in-module
-        return JiraProvider(sys_config)
 
     raise ValueError(
         f"Unknown board provider: {provider_type}. "
-        f"Supported providers: trello, github, jira"
+        f"Supported providers: trello"
     )

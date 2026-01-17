@@ -32,19 +32,3 @@ def test_create_unknown_provider_raises_error():
     
     with pytest.raises(ValueError, match="Unknown board provider: unknown"):
         create_board_provider(sys_config)
-
-
-def test_create_github_provider_not_implemented():
-    """Test that GitHub provider raises ImportError (not yet implemented)."""
-    sys_config = {"board_provider": "github"}
-    
-    with pytest.raises(ImportError):
-        create_board_provider(sys_config)
-
-
-def test_create_jira_provider_not_implemented():
-    """Test that Jira provider raises ImportError (not yet implemented)."""
-    sys_config = {"board_provider": "jira"}
-    
-    with pytest.raises(ImportError):
-        create_board_provider(sys_config)
