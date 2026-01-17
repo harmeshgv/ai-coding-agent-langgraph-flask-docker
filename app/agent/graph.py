@@ -129,7 +129,7 @@ def create_workflow(
 ) -> StateGraph:
     """Creates and configures the main LangGraph workflow."""
     # --- Tool Sets ---
-    impl_issue_target_list = sys_config.get("trello_readfrom_list")
+    impl_issue_target_list = sys_config.get("backlog_list")
     analyst_tools = [
         list_files,
         read_file,

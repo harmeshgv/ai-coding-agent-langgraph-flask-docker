@@ -213,7 +213,7 @@ def test_build_agent_comments_adds_second_comment_when_card_created():
                 content="",
                 tool_calls=[
                     _tool_call(
-                        "create_implementation_card",
+                        "create_issue",
                         {"title": "Fix Bug", "instructions": "Fix the bug"},
                     )
                 ],
