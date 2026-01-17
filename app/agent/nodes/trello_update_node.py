@@ -9,7 +9,7 @@ based on the agent's configuration.
 import logging
 from time import sleep
 
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, ToolMessage
 
 from agent.integrations.trello_client import (
     add_comment_to_trello_card,
@@ -97,16 +97,54 @@ def get_agent_result(messages):
     return AGENT_DEFAULT_COMMENT
 
 
+def _check_for_card_creation(state: AgentState) -> tuple[bool, str | None]:
+    """
+    Checks if create_implementation_card was called and returns card info.
+
+    Returns:
+        Tuple of (was_card_created, card_info_message)
+    """
+    messages = state.get("messages", [])
+
+    for i, msg in enumerate(messages):
+        if not isinstance(msg, AIMessage) or not msg.tool_calls:
+            continue
+
+        for tool_call in msg.tool_calls:
+            if tool_call["name"] != "create_issue":
+                continue
+
+            # Find the corresponding ToolMessage response
+            if i + 1 >= len(messages) or not isinstance(messages[i + 1], ToolMessage):
+                continue
+
+            tool_response = messages[i + 1].content
+            # Check if the card was successfully created
+            if "Successfully created implementation issue" in tool_response:
+                return True, tool_response
+
+    return False, None
+
+
 def _build_agent_comments(state: AgentState) -> list[str]:
     """
     Builds a list of agent comments from the agent summary entries.
+    If a new card was created, adds a second comment about the card creation.
     """
+    # Always include the standard summary entries (the analysis)
     entries = get_agent_summary_entries(state)
     if not entries:
-        return [AGENT_DEFAULT_COMMENT]
+        summary_list = [AGENT_DEFAULT_COMMENT]
+    else:
+        summary_list = []
+        for entry in entries:
+            summary_list.append(f"**Agent Update:**\n\n {entry}")
 
-    summary_list = []
-    for entry in entries:
-        summary_list.append(f"**Agent Update:**\n\n {entry}")
+    # Check if analyst created a new implementation card
+    card_created, card_info = _check_for_card_creation(state)
+
+    if card_created and card_info:
+        # Add a second comment about the card creation
+        summary_list.append(f"**New Implementation Card Created:**\n\n{card_info}")
 
     return summary_list

@@ -231,3 +231,63 @@ async def get_trello_card_list_moves(card_id: str, sys_config: dict) -> list[dic
         }
         for action in data
     ]
+
+
+async def create_trello_card(
+    name: str, description: str, list_name: str, sys_config: dict
+) -> dict:
+    """
+    Creates a new Trello card in the specified list.
+
+    Args:
+        name (str): The title/name of the card.
+        description (str): The description/body of the card.
+        list_name (str): The name of the list to create the card in.
+        sys_config (dict): The system configuration containing Trello API credentials.
+
+    Returns:
+        dict: The created card data including id, name, and url.
+
+    Raises:
+        ValueError: If the environment is not found or list name is invalid.
+        RuntimeError: If the card creation fails.
+    """
+    env = sys_config.get("env")
+    if not env:
+        raise ValueError("Environment not found in sys_config")
+
+    trello_lists = await get_all_trello_lists(sys_config)
+    target_list = next(
+        (data for data in trello_lists if data["name"] == list_name), None
+    )
+
+    if not target_list:
+        raise ValueError(f"Trello list '{list_name}' not found on configured board")
+
+    list_id = target_list["id"]
+    logger.info("Creating card in list '%s' (id: %s)", list_name, list_id)
+
+    url = "https://api.trello.com/1/cards"
+    headers = {"Accept": "application/json"}
+    query = {
+        "idList": list_id,
+        "name": name,
+        "desc": description,
+        "key": env.get("TRELLO_API_KEY"),
+        "token": env.get("TRELLO_TOKEN"),
+    }
+
+    logger.info("Trello POST: %s", get_safe_url(url, query))
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, headers=headers, params=query)
+
+    if response.status_code != 200:
+        raise RuntimeError(f"Failed to create card: {response.text}")
+
+    data = response.json()
+    return {
+        "id": data.get("id"),
+        "name": data.get("name"),
+        "url": data.get("url"),
+        "list": list_name,
+    }

@@ -25,6 +25,7 @@ from agent.nodes.trello_fetch_node import create_trello_fetch_node
 from agent.nodes.trello_update_node import create_trello_update_node
 from agent.services.summaries import has_finish_task_call
 from agent.state import AgentState
+from agent.tools.create_issue import create_issue_tool
 from agent.tools.file_tools import (
     list_files,
     read_file,
@@ -128,7 +129,14 @@ def create_workflow(
 ) -> StateGraph:
     """Creates and configures the main LangGraph workflow."""
     # --- Tool Sets ---
-    analyst_tools = [list_files, read_file, thinking, finish_task]
+    impl_issue_target_list = sys_config.get("backlog_list")
+    analyst_tools = [
+        list_files,
+        read_file,
+        thinking,
+        create_issue_tool(sys_config, impl_issue_target_list),
+        finish_task,
+    ]
     coder_tools = [
         list_files,
         read_file,
