@@ -111,7 +111,7 @@ def _check_for_card_creation(state: AgentState) -> tuple[bool, str | None]:
             continue
 
         for tool_call in msg.tool_calls:
-            if tool_call["name"] != "create_implementation_card":
+            if tool_call["name"] != "create_issue":
                 continue
 
             # Find the corresponding ToolMessage response
@@ -120,7 +120,7 @@ def _check_for_card_creation(state: AgentState) -> tuple[bool, str | None]:
 
             tool_response = messages[i + 1].content
             # Check if the card was successfully created
-            if "Successfully created implementation card" in tool_response:
+            if "Successfully created implementation issue" in tool_response:
                 return True, tool_response
 
     return False, None

@@ -55,10 +55,10 @@ def test_check_for_card_creation_returns_false_when_no_card_created():
     assert card_info is None
 
 
-def test_check_for_card_creation_returns_true_when_card_created():
+def test_check_for_card_creation_returns_true_when_issue_created():
     """Test that _check_for_card_creation detects successful card creation."""
     tool_response = (
-        "Successfully created implementation card: 'Add Division Support'\n"
+        "Successfully created implementation issue: 'Add Division Support'\n"
         "Card URL: https://trello.com/c/abc123\n"
         "List: Sprint Backlog"
     )
@@ -69,7 +69,7 @@ def test_check_for_card_creation_returns_true_when_card_created():
                 content="",
                 tool_calls=[
                     _tool_call(
-                        "create_implementation_card",
+                        "create_issue",
                         {
                             "title": "Add Division Support",
                             "instructions": "Implement division method",
@@ -107,7 +107,7 @@ def test_check_for_card_creation_returns_false_when_card_creation_failed():
                 content="",
                 tool_calls=[
                     _tool_call(
-                        "create_implementation_card",
+                        "create_implementation_issue",
                         {"title": "Test", "instructions": "Test"},
                     )
                 ],
@@ -202,7 +202,7 @@ def test_build_agent_comments_includes_analysis_summary():
 def test_build_agent_comments_adds_second_comment_when_card_created():
     """Test that _build_agent_comments adds a second comment when card is created."""
     tool_response = (
-        "Successfully created implementation card: 'Fix Bug'\n"
+        "Successfully created implementation issue: 'Fix Bug'\n"
         "Card URL: https://trello.com/c/xyz789\n"
         "List: To Do"
     )

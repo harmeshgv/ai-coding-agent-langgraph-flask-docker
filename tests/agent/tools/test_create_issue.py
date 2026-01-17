@@ -1,4 +1,4 @@
-"""Unit tests for create_implementation_card tool."""
+"""Unit tests for create_issue tool."""
 
 from __future__ import annotations
 
@@ -6,10 +6,10 @@ from unittest.mock import AsyncMock, patch
 
 import anyio
 
-from agent.tools.create_implementation_card import create_implementation_card_tool
+from agent.tools.create_issue import create_issue_tool
 
 
-def test_create_implementation_card_tool_creates_card_successfully():
+def test_create_issue_tool_creates_card_successfully():
     """Test that the tool creates a card successfully with valid config."""
     async def _test():
         sys_config = {
@@ -28,12 +28,12 @@ def test_create_implementation_card_tool_creates_card_successfully():
         }
 
         with patch(
-            "agent.tools.create_implementation_card.create_trello_card",
+            "agent.tools.create_issue.create_trello_card",
             new_callable=AsyncMock,
         ) as mock_create:
             mock_create.return_value = mock_card_data
 
-            tool = create_implementation_card_tool(sys_config)
+            tool = create_issue_tool(sys_config, "Sprint Backlog")
             result = await tool.ainvoke(
                 {
                     "title": "Add Feature X",
@@ -41,7 +41,6 @@ def test_create_implementation_card_tool_creates_card_successfully():
                 }
             )
 
-            # Verify the Trello API was called correctly
             mock_create.assert_called_once_with(
                 name="Add Feature X",
                 description="Implement feature X with proper tests",
@@ -49,8 +48,7 @@ def test_create_implementation_card_tool_creates_card_successfully():
                 sys_config=sys_config,
             )
 
-            # Verify the result message
-            assert "Successfully created implementation card" in result
+            assert "Successfully created implementation issue" in result
             assert "Add Feature X" in result
             assert "https://trello.com/c/card123" in result
             assert "Sprint Backlog" in result
@@ -58,8 +56,8 @@ def test_create_implementation_card_tool_creates_card_successfully():
     anyio.run(_test)
 
 
-def test_create_implementation_card_tool_handles_missing_config():
-    """Test that the tool handles missing trello_readfrom_list config."""
+def test_create_issue_tool_handles_missing_target_list():
+    """Test that the tool handles missing target list configuration."""
     async def _test():
         sys_config = {
             "env": {
@@ -68,7 +66,7 @@ def test_create_implementation_card_tool_handles_missing_config():
             },
         }
 
-        tool = create_implementation_card_tool(sys_config)
+        tool = create_issue_tool(sys_config, target_list="")
         result = await tool.ainvoke(
             {
                 "title": "Test Task",
@@ -76,12 +74,12 @@ def test_create_implementation_card_tool_handles_missing_config():
             }
         )
 
-        assert "Error: trello_readfrom_list not configured" in result
+        assert "Error: target Trello list not configured" in result
 
     anyio.run(_test)
 
 
-def test_create_implementation_card_tool_handles_value_error():
+def test_create_issue_tool_handles_value_error():
     """Test that the tool handles ValueError from Trello client."""
     async def _test():
         sys_config = {
@@ -93,12 +91,12 @@ def test_create_implementation_card_tool_handles_value_error():
         }
 
         with patch(
-            "agent.tools.create_implementation_card.create_trello_card",
+            "agent.tools.create_issue.create_trello_card",
             new_callable=AsyncMock,
         ) as mock_create:
             mock_create.side_effect = ValueError("List 'Invalid List' not found")
 
-            tool = create_implementation_card_tool(sys_config)
+            tool = create_issue_tool(sys_config, "Invalid List")
             result = await tool.ainvoke(
                 {
                     "title": "Test Task",
@@ -112,7 +110,7 @@ def test_create_implementation_card_tool_handles_value_error():
     anyio.run(_test)
 
 
-def test_create_implementation_card_tool_handles_runtime_error():
+def test_create_issue_tool_handles_runtime_error():
     """Test that the tool handles RuntimeError from Trello API."""
     async def _test():
         sys_config = {
@@ -124,12 +122,12 @@ def test_create_implementation_card_tool_handles_runtime_error():
         }
 
         with patch(
-            "agent.tools.create_implementation_card.create_trello_card",
+            "agent.tools.create_issue.create_trello_card",
             new_callable=AsyncMock,
         ) as mock_create:
             mock_create.side_effect = RuntimeError("Failed to create card: API error")
 
-            tool = create_implementation_card_tool(sys_config)
+            tool = create_issue_tool(sys_config, "Sprint Backlog")
             result = await tool.ainvoke(
                 {
                     "title": "Test Task",
@@ -143,19 +141,19 @@ def test_create_implementation_card_tool_handles_runtime_error():
     anyio.run(_test)
 
 
-def test_create_implementation_card_tool_has_correct_metadata():
+def test_create_issue_tool_has_correct_metadata():
     """Test that the tool has correct name and description."""
     sys_config = {"trello_readfrom_list": "To Do"}
 
-    tool = create_implementation_card_tool(sys_config)
+    tool = create_issue_tool(sys_config, "To Do")
 
-    assert tool.name == "create_implementation_card"
-    assert "Creates a new Trello card" in tool.description
+    assert tool.name == "create_issue"
+    assert "Creates a new Trello issue card" in tool.description
     assert "implementation instructions" in tool.description
 
 
-def test_create_implementation_card_tool_binds_sys_config():
-    """Test that the factory function correctly binds sys_config via closure."""
+def test_create_issue_tool_binds_sys_config_and_target_list():
+    """Test that the factory function correctly binds sys_config and target list."""
     async def _test():
         sys_config_1 = {"trello_readfrom_list": "List A"}
         sys_config_2 = {"trello_readfrom_list": "List B"}
@@ -168,13 +166,13 @@ def test_create_implementation_card_tool_binds_sys_config():
         }
 
         with patch(
-            "agent.tools.create_implementation_card.create_trello_card",
+            "agent.tools.create_issue.create_trello_card",
             new_callable=AsyncMock,
         ) as mock_create:
             mock_create.return_value = mock_card_data
 
-            tool_1 = create_implementation_card_tool(sys_config_1)
-            tool_2 = create_implementation_card_tool(sys_config_2)
+            tool_1 = create_issue_tool(sys_config_1, "List A")
+            tool_2 = create_issue_tool(sys_config_2, "List B")
 
             # Call tool_1
             await tool_1.ainvoke({"title": "Task 1", "instructions": "Instructions 1"})

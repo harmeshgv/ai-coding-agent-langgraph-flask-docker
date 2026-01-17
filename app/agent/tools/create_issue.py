@@ -1,4 +1,4 @@
-"""Tool for creating implementation cards in Trello."""
+"""Tool for creating implementation issues/cards in Trello."""
 
 import logging
 
@@ -9,18 +9,10 @@ from agent.integrations.trello_client import create_trello_card
 logger = logging.getLogger(__name__)
 
 
-def create_implementation_card_tool(sys_config: dict) -> StructuredTool:
-    """
-    Factory function that creates a tool for creating implementation cards.
+def create_issue_tool(sys_config: dict, target_list: str) -> StructuredTool:
+    """Factory that creates a tool for creating issue cards in Trello."""
 
-    Args:
-        sys_config: System configuration to bind to the tool.
-
-    Returns:
-        A StructuredTool instance with sys_config bound.
-    """
-
-    async def create_implementation_card(
+    async def create_issue(
         title: str,
         instructions: str,
     ) -> str:
@@ -36,10 +28,8 @@ def create_implementation_card_tool(sys_config: dict) -> StructuredTool:
             Confirmation message with the card URL.
         """
         try:
-            target_list = sys_config.get("trello_readfrom_list")
             if not target_list:
-                return "Error: trello_readfrom_list not configured in sys_config"
-
+                return "Error: target Trello list not configured"
             result = await create_trello_card(
                 name=title,
                 description=instructions,
@@ -48,13 +38,13 @@ def create_implementation_card_tool(sys_config: dict) -> StructuredTool:
             )
 
             logger.info(
-                "Created implementation card '%s' in list '%s'",
+                "Created implementation issue '%s' in list '%s'",
                 result["name"],
                 result["list"],
             )
 
             return (
-                f"Successfully created implementation card: '{result['name']}'\n"
+                f"Successfully created implementation issue: '{result['name']}'\n"
                 f"Card URL: {result['url']}\n"
                 f"List: {result['list']}"
             )
@@ -67,11 +57,11 @@ def create_implementation_card_tool(sys_config: dict) -> StructuredTool:
             return f"Failed to create card: {str(e)}"
 
     return StructuredTool.from_function(
-        coroutine=create_implementation_card,
-        name="create_implementation_card",
+        coroutine=create_issue,
+        name="create_issue",
         description=(
-            "Creates a new Trello card with implementation instructions in the "
-            "configured incoming list. Use this when the user requests to create "
+            "Creates a new Trello issue card with implementation instructions in the "
+            f"'{target_list}' list. Use this when the user requests to create "
             "a card for implementing the analysis findings."
         ),
     )
