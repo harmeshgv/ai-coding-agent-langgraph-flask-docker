@@ -59,6 +59,7 @@ def _get_trello_data() -> dict[str, Any]:
             ),
         },
         "trello_board_id": request.form.get("trello_board_id"),
+        "backlog_list": request.form.get("backlog_list"),
         "trello_readfrom_list": request.form.get("trello_readfrom_list"),
         "trello_progress_list": request.form.get("trello_progress_list"),
         "trello_moveto_list": request.form.get("trello_moveto_list"),
@@ -140,6 +141,7 @@ def _set_trello_form_data(saved_data: dict[str, Any], form_data: dict):
     form_data["trello_api_key"] = saved_data.get("env", {}).get("TRELLO_API_KEY")
     form_data["trello_api_token"] = saved_data.get("env", {}).get("TRELLO_TOKEN")
     form_data["trello_board_id"] = saved_data.get("trello_board_id")
+    form_data["backlog_list"] = saved_data.get("backlog_list")
     form_data["trello_readfrom_list"] = saved_data.get("trello_readfrom_list")
     form_data["trello_progress_list"] = saved_data.get("trello_progress_list")
     form_data["trello_moveto_list"] = saved_data.get("trello_moveto_list")
