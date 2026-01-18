@@ -54,19 +54,19 @@ def create_task_update_node(sys_config: dict):
             logger.error("Failed to add comment to task: %s", e)
 
         try:
-            task_moveto_list = sys_config["task_moveto_list"]
-            task_moveto_list_id = await board_provider.move_task_to_named_list(
-                task_id, task_moveto_list
+            task_moveto_state = sys_config["task_moveto_state"]
+            task_moveto_state_id = await board_provider.move_task_to_named_state(
+                task_id, task_moveto_state
             )
 
             return {
-                "task_state_id": task_moveto_list_id,
+                "task_state_id": task_moveto_state_id,
             }
         except ValueError as exc:
             logger.warning(str(exc))
             return {"task_id": None}
         except Exception as e:  # pylint: disable=broad-exception-caught
-            logger.error("Error moving task to list: %s", e)
+            logger.error("Error moving task to state: %s", e)
             return {"task_id": None}
 
     return task_update

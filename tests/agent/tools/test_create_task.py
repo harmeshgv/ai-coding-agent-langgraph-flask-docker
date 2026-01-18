@@ -15,15 +15,15 @@ def test_create_task_tool_creates_card_successfully():
     async def _test():
         sys_config = {
             "board_provider": "trello",
-            "task_readfrom_list": "Sprint Backlog",
+            "task_readfrom_state": "Sprint Backlog",
         }
 
         mock_task = BoardTask(
             id="task123",
             name="Add Feature X",
             description="Implement feature X with proper tests",
-            list_id="list123",
-            list_name="Sprint Backlog",
+            state_id="list123",
+            state_name="Sprint Backlog",
         )
         mock_task.url = "https://trello.com/c/task123"
 
@@ -45,7 +45,7 @@ def test_create_task_tool_creates_card_successfully():
             mock_provider.create_task.assert_called_once_with(
                 name="Add Feature X",
                 description="Implement feature X with proper tests",
-                list_name="Sprint Backlog",
+                state_name="Sprint Backlog",
             )
 
             assert "Successfully created implementation task" in result
@@ -56,14 +56,14 @@ def test_create_task_tool_creates_card_successfully():
     anyio.run(_test)
 
 
-def test_create_task_tool_handles_missing_target_list():
+def test_create_task_tool_handles_missing_target_state():
     """Test that the tool handles missing target list configuration."""
     async def _test():
         sys_config = {
             "board_provider": "trello",
         }
 
-        tool = create_task_tool(sys_config, target_list="")
+        tool = create_task_tool(sys_config, target_state="")
         result = await tool.ainvoke(
             {
                 "title": "Test Task",
@@ -71,7 +71,7 @@ def test_create_task_tool_handles_missing_target_list():
             }
         )
 
-        assert "Error: target list not configured" in result
+        assert "Error: target state not configured" in result
 
     anyio.run(_test)
 
@@ -81,7 +81,7 @@ def test_create_task_tool_handles_value_error():
     async def _test():
         sys_config = {
             "board_provider": "trello",
-            "task_readfrom_list": "Invalid List",
+            "task_readfrom_state": "Invalid List",
         }
 
         mock_provider = MagicMock()
@@ -112,7 +112,7 @@ def test_create_task_tool_handles_runtime_error():
     async def _test():
         sys_config = {
             "board_provider": "trello",
-            "task_readfrom_list": "Sprint Backlog",
+            "task_readfrom_state": "Sprint Backlog",
         }
 
         mock_provider = MagicMock()
@@ -149,8 +149,8 @@ def test_create_task_tool_has_correct_metadata():
     assert "implementation instructions" in tool.description
 
 
-def test_create_task_tool_binds_sys_config_and_target_list():
-    """Test that the factory function correctly binds sys_config and target list."""
+def test_create_task_tool_binds_sys_config_and_target_state():
+    """Test that the factory function correctly binds sys_config and target state."""
     async def _test():
         sys_config_1 = {"board_provider": "trello"}
         sys_config_2 = {"board_provider": "trello"}
@@ -159,8 +159,8 @@ def test_create_task_tool_binds_sys_config_and_target_list():
             id="task123",
             name="Task 1",
             description="Instructions 1",
-            list_id="list_a",
-            list_name="List A",
+            state_id="list_a",
+            state_name="List A",
         )
         mock_task_1.url = "https://trello.com/c/task123"
         
@@ -168,8 +168,8 @@ def test_create_task_tool_binds_sys_config_and_target_list():
             id="task456",
             name="Task 2",
             description="Instructions 2",
-            list_id="list_b",
-            list_name="List B",
+            state_id="list_b",
+            state_name="List B",
         )
         mock_task_2.url = "https://trello.com/c/task456"
 
@@ -191,7 +191,7 @@ def test_create_task_tool_binds_sys_config_and_target_list():
 
             # Verify it used List A
             call_args = mock_provider_1.create_task.call_args
-            assert call_args[1]["list_name"] == "List A"
+            assert call_args[1]["state_name"] == "List A"
             assert call_args[1]["name"] == "Task 1"
 
             # Call tool_2
@@ -199,7 +199,7 @@ def test_create_task_tool_binds_sys_config_and_target_list():
 
             # Verify it used List B
             call_args = mock_provider_2.create_task.call_args
-            assert call_args[1]["list_name"] == "List B"
+            assert call_args[1]["state_name"] == "List B"
             assert call_args[1]["name"] == "Task 2"
 
     anyio.run(_test)

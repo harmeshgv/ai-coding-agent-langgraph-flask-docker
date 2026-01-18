@@ -21,7 +21,7 @@ def sys_config():
     """Fixture for system configuration."""
     return {
         "board_provider": "trello",
-        "task_moveto_list": "Done",
+        "task_moveto_state": "Done",
     }
 
 
@@ -30,7 +30,7 @@ def mock_board_provider():
     """Fixture for mock board provider."""
     provider = MagicMock()
     provider.add_comment = AsyncMock()
-    provider.move_task_to_named_list = AsyncMock(return_value="list3")
+    provider.move_task_to_named_state = AsyncMock(return_value="list3")
     return provider
 
 
@@ -52,7 +52,7 @@ async def test_task_update_node_success(sys_config, mock_board_provider):
         
         assert result["task_state_id"] == "list3"
         mock_board_provider.add_comment.assert_called()
-        mock_board_provider.move_task_to_named_list.assert_called_once_with(
+        mock_board_provider.move_task_to_named_state.assert_called_once_with(
             "card1", "Done"
         )
 
@@ -77,8 +77,8 @@ async def test_task_update_node_no_task_id(sys_config, mock_board_provider):
 async def test_task_update_node_move_fails(sys_config, mock_board_provider):
     """Test task update when move operation fails."""
     state = {"task_id": "card1", "messages": [], "agent_summary": []}
-    mock_board_provider.move_task_to_named_list = AsyncMock(
-        side_effect=ValueError("List not found")
+    mock_board_provider.move_task_to_named_state = AsyncMock(
+        side_effect=ValueError("State not found")
     )
     
     with patch(

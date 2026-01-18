@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from agent.integrations.board_provider import BoardTask, BoardComment, BoardListMove
+from agent.integrations.board_provider import BoardTask, BoardComment, BoardStateMove
 from agent.integrations.trello_provider import TrelloProvider
 
 
@@ -30,8 +30,8 @@ def trello_provider(sys_config):
 
 
 @pytest.mark.asyncio
-async def test_get_lists(trello_provider, sys_config):
-    """Test getting lists from Trello."""
+async def test_get_states(trello_provider, sys_config):
+    """Test getting states (Trello lists) from board."""
     mock_lists = [
         {"id": "list1", "name": "To Do"},
         {"id": "list2", "name": "In Progress"},
@@ -41,24 +41,24 @@ async def test_get_lists(trello_provider, sys_config):
         "agent.integrations.trello_provider.get_all_trello_lists",
         new=AsyncMock(return_value=mock_lists),
     ):
-        lists = await trello_provider.get_lists()
+        states = await trello_provider.get_states()
         
-        assert lists == mock_lists
+        assert states == mock_lists
 
 
 @pytest.mark.asyncio
-async def test_get_tasks_from_list(trello_provider):
-    """Test getting tasks from a Trello list."""
+async def test_get_tasks_from_state(trello_provider):
+    """Test getting tasks from a state (Trello list)."""
     mock_cards = [
-        {"id": "card1", "name": "Task 1", "desc": "Description 1"},
-        {"id": "card2", "name": "Task 2", "desc": "Description 2"},
+        {"id": "card1", "name": "Task 1", "desc": "Description 1", "url": "http://test1"},
+        {"id": "card2", "name": "Task 2", "desc": "Description 2", "url": "http://test2"},
     ]
     
     with patch(
         "agent.integrations.trello_provider.get_all_trello_cards",
         new=AsyncMock(return_value=mock_cards),
     ):
-        tasks = await trello_provider.get_tasks_from_list("list1")
+        tasks = await trello_provider.get_tasks_from_state("list1")
         
         assert len(tasks) == 2
         assert all(isinstance(task, BoardTask) for task in tasks)
@@ -68,27 +68,27 @@ async def test_get_tasks_from_list(trello_provider):
 
 
 @pytest.mark.asyncio
-async def test_move_task_to_list(trello_provider):
-    """Test moving a task to a different list."""
+async def test_move_task_to_state(trello_provider):
+    """Test moving a task to a different state (Trello list)."""
     with patch(
         "agent.integrations.trello_provider.move_trello_card_to_list",
         new=AsyncMock(),
     ) as mock_move:
-        await trello_provider.move_task_to_list("card1", "list2")
+        await trello_provider.move_task_to_state("card1", "list2")
         
         mock_move.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_move_task_to_named_list(trello_provider):
-    """Test moving a task to a list by name."""
+async def test_move_task_to_named_state(trello_provider):
+    """Test moving a task to a state by name (Trello list)."""
     with patch(
         "agent.integrations.trello_provider.move_trello_card_to_named_list",
         new=AsyncMock(return_value="list2"),
     ) as mock_move:
-        list_id = await trello_provider.move_task_to_named_list("card1", "In Progress")
+        state_id = await trello_provider.move_task_to_named_state("card1", "In Progress")
         
-        assert list_id == "list2"
+        assert state_id == "list2"
         mock_move.assert_called_once()
 
 
@@ -131,28 +131,28 @@ async def test_get_comments(trello_provider):
 
 
 @pytest.mark.asyncio
-async def test_get_list_moves(trello_provider):
-    """Test getting list move history for a card."""
+async def test_get_state_moves(trello_provider):
+    """Test getting state move history (Trello list moves) for a card."""
     mock_moves = [
         {
             "id": "move1",
             "date": "2024-01-01T12:00:00Z",
             "list_before": "To Do",
             "list_after": "In Progress",
-        },
+        }
     ]
     
     with patch(
         "agent.integrations.trello_provider.get_trello_card_list_moves",
         new=AsyncMock(return_value=mock_moves),
     ):
-        moves = await trello_provider.get_list_moves("card1")
+        moves = await trello_provider.get_state_moves("card1")
         
         assert len(moves) == 1
-        assert all(isinstance(move, BoardListMove) for move in moves)
+        assert all(isinstance(move, BoardStateMove) for move in moves)
         assert moves[0].id == "move1"
-        assert moves[0].list_before == "To Do"
-        assert moves[0].list_after == "In Progress"
+        assert moves[0].state_before == "To Do"
+        assert moves[0].state_after == "In Progress"
 
 
 @pytest.mark.asyncio
@@ -174,7 +174,7 @@ async def test_create_card(trello_provider):
         assert isinstance(task, BoardTask)
         assert task.id == "new_card"
         assert task.name == "New Task"
-        assert task.list_name == "To Do"
+        assert task.state_name == "To Do"
 
 
 def test_parse_timestamp_valid(trello_provider):

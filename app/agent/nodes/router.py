@@ -1,17 +1,16 @@
 """
 Defines the router node for the agent graph.
 
-This node is responsible for the initial analysis of a task. It uses a
-specialized LLM call to classify the user's request and decide which
-specialist agent (e.g., Coder, Bugfixer, Analyst) should handle it next.
+This node is responsible for the initial analysis of a task. It uses an LLM
+call to classify the user's request and decide which specialist agent (e.g.,
+Coder, Bugfixer, Analyst) should handle it next.
 """
 
 import logging
 from typing import Dict, Literal
 
-from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import HumanMessage, SystemMessage
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from agent.services.message_processing import filter_messages_for_llm
 from agent.state import AgentState
@@ -37,19 +36,16 @@ class RouterDecision(BaseModel):
         ..., description="The specific role needed to solve the task."
     )
 
-
 def create_router_node(llm):
     """
     Factory function that creates the router node for the agent graph.
 
     Args:
-        sys_config: The system configuration.
         llm: The language model to be used for routing decisions.
 
     Returns:
         A function that represents the router node.
     """
-    structured_llm = llm.with_structured_output(RouterDecision)
 
     async def router_node(state: AgentState) -> Dict[str, str]:
         # Router only needs the original task to make routing decision
@@ -59,15 +55,17 @@ def create_router_node(llm):
 
         for attempt in range(3):
             try:
-                response = await structured_llm.ainvoke(current_messages)
-                logger.info("Router decided: %s", response.role)
-                return {"next_step": response.role}
-            except OutputParserException as exc:
+                response = await llm.ainvoke(current_messages)
+                decision = RouterDecision.model_validate_json(
+                    _extract_router_text(response)
+                )
+                logger.info("Router decided: %s", decision.role)
+                return {"next_step": decision.role}
+            except (ValidationError, ValueError) as exc:
                 logger.warning(
-                    "Router invalid JSON attempt %d/3: %s",
+                    "Router invalid response attempt %d/3: %s",
                     attempt + 1,
                     exc,
-                    exc_info=True,
                 )
                 correction = HumanMessage(
                     content=(
@@ -81,3 +79,30 @@ def create_router_node(llm):
         raise RuntimeError("Router failed to produce valid JSON after 3 retries.")
 
     return router_node
+
+
+def _extract_router_text(response) -> str:
+    """Normalize router LLM output to a compact JSON string."""
+    content = getattr(response, "content", "")
+    if isinstance(content, str):
+        text = content
+    elif isinstance(content, list):
+        text_parts = []
+        for part in content:
+            if isinstance(part, dict) and part.get("type") == "text":
+                text_parts.append(part.get("text", ""))
+        text = "".join(text_parts)
+    else:
+        text = str(content)
+
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.strip("`")
+        if text.lower().startswith("json"):
+            text = text[4:]
+        text = text.strip()
+
+    if not text:
+        raise ValueError("Router returned empty content")
+
+    return text

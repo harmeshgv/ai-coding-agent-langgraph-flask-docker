@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from agent.integrations.board_provider import (
     BoardTask,
     BoardComment,
-    BoardListMove,
+    BoardStateMove,
     BoardProvider,
 )
 from agent.integrations.trello_client import (
@@ -46,34 +46,37 @@ class TrelloProvider(BoardProvider):
         """
         self.sys_config = sys_config
 
-    async def get_lists(self) -> list[dict]:
-        """Fetch all lists from the Trello board."""
+    async def get_states(self) -> list[dict]:
+        """Fetch all states (Trello lists) from the board."""
         return await get_all_trello_lists(self.sys_config)
 
-    async def get_tasks_from_list(self, list_id: str) -> list[BoardTask]:
-        """Fetch all tasks from a specific Trello list."""
-        cards = await get_all_trello_cards(list_id, self.sys_config)
+    async def get_tasks_from_state(self, state_id: str) -> list[BoardTask]:
+        """Fetch all tasks from a specific state (Trello list)."""
+        # state_id corresponds to Trello list_id
+        cards = await get_all_trello_cards(state_id, self.sys_config)
 
         return [
             BoardTask(
                 id=card["id"],
                 name=card["name"],
                 description=card["desc"],
-                list_id=list_id,
-                list_name="",
+                state_id=state_id,
+                state_name="",
                 url=card.get("url", ""),
             )
             for card in cards
         ]
 
-    async def move_task_to_list(self, task_id: str, list_id: str) -> None:
-        """Move a Trello task to a different list."""
-        await move_trello_card_to_list(task_id, list_id, self.sys_config)
+    async def move_task_to_state(self, task_id: str, state_id: str) -> None:
+        """Move a task to a different state (Trello list)."""
+        # state_id corresponds to Trello list_id
+        await move_trello_card_to_list(task_id, state_id, self.sys_config)
 
-    async def move_task_to_named_list(self, task_id: str, list_name: str) -> str:
-        """Move a Trello task to a list identified by name."""
+    async def move_task_to_named_state(self, task_id: str, state_name: str) -> str:
+        """Move a task to a state (Trello list) identified by name."""
+        # state_name corresponds to Trello list_name
         return await move_trello_card_to_named_list(
-            task_id, list_name, self.sys_config
+            task_id, state_name, self.sys_config
         )
 
     async def add_comment(self, task_id: str, comment: str) -> None:
@@ -94,32 +97,33 @@ class TrelloProvider(BoardProvider):
             for comment in comments
         ]
 
-    async def get_list_moves(self, task_id: str) -> list[BoardListMove]:
-        """Fetch the history of list moves for a Trello task."""
+    async def get_state_moves(self, task_id: str) -> list[BoardStateMove]:
+        """Fetch the history of state moves (Trello list moves) for a task."""
         moves = await get_trello_card_list_moves(task_id, self.sys_config)
 
         return [
-            BoardListMove(
+            BoardStateMove(
                 id=move["id"],
                 date=self._parse_timestamp(move["date"]),
-                list_before=move["list_before"],
-                list_after=move["list_after"],
+                state_before=move["list_before"],
+                state_after=move["list_after"],
             )
             for move in moves
         ]
 
     async def create_task(
-        self, name: str, description: str, list_name: str
+        self, name: str, description: str, state_name: str
     ) -> BoardTask:
-        """Create a new Trello task in the specified list."""
-        result = await create_trello_card(name, description, list_name, self.sys_config)
+        """Create a new task in the specified state (Trello list)."""
+        # state_name corresponds to Trello list_name
+        result = await create_trello_card(name, description, state_name, self.sys_config)
 
         return BoardTask(
             id=result["id"],
             name=result["name"],
             description=description,
-            list_id="",
-            list_name=result["list"],
+            state_id="",
+            state_name=result["list"],
             url=result.get("url", ""),
         )
 

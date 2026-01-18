@@ -129,12 +129,12 @@ def create_workflow(
 ) -> StateGraph:
     """Creates and configures the main LangGraph workflow."""
     # --- Tool Sets ---
-    impl_task_target_list = sys_config.get("backlog_list")
+    impl_task_target_state = sys_config.get("task_backlog_state")
     analyst_tools = [
         list_files,
         read_file,
         thinking,
-        create_task_tool(sys_config, impl_task_target_list),
+        create_task_tool(sys_config, impl_task_target_state),
         finish_task,
     ]
     coder_tools = [

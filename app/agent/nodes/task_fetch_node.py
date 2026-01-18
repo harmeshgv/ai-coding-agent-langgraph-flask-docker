@@ -9,7 +9,7 @@ import logging
 from datetime import datetime
 
 from core.task_repository import remove_task_from_db
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import SystemMessage
 
 from agent.integrations.board_factory import create_board_provider
 from agent.integrations.board_provider import BoardProvider, BoardTask  # pylint: disable=unused-import
@@ -19,18 +19,18 @@ logger = logging.getLogger(__name__)
 
 
 async def _get_task_context(board_provider: BoardProvider, sys_config: dict):
-    incoming_list_name = sys_config["task_readfrom_list"]
-    in_progress_list_name = sys_config.get("task_in_progress_list")
+    incoming_state_name = sys_config["task_readfrom_state"]
+    in_progress_state_name = sys_config.get("task_in_progress_state")
 
     task_context = None
-    if in_progress_list_name:
-        task_context = await fetch_task_from_list(
-            board_provider, in_progress_list_name, sys_config
+    if in_progress_state_name:
+        task_context = await fetch_task_from_state(
+            board_provider, in_progress_state_name, sys_config
         )
 
     if not task_context:
-        task_context = await fetch_task_from_list(
-            board_provider, incoming_list_name, sys_config
+        task_context = await fetch_task_from_state(
+            board_provider, incoming_state_name, sys_config
         )
     return task_context
 
@@ -39,25 +39,25 @@ async def _ensure_task_in_progress(
     board_provider: BoardProvider,
     task_context: dict,
     task_id: str,
-    task_in_progress_list_name: str | None,
+    task_in_progress_state_name: str | None,
     sys_config: dict,
 ) -> dict:
     """
-    Moves the task to the in-progress list if needed, updating the task_context.
+    Moves the task to the in-progress state if needed, updating the task_context.
     """
-    if not task_in_progress_list_name:
+    if not task_in_progress_state_name:
         return task_context
 
-    current_list_name = task_context["list_name"]
-    if current_list_name == task_in_progress_list_name:
+    current_state_name = task_context["state_name"]
+    if current_state_name == task_in_progress_state_name:
         return task_context
 
     remove_task_from_db(task_id)
-    readfrom_list_id = task_context["list_id"]
+    readfrom_state_id = task_context["state_id"]
     move_task_result = await move_task_to_in_progress(
-        board_provider, task_id, readfrom_list_id, task_in_progress_list_name, sys_config
+        board_provider, task_id, readfrom_state_id, task_in_progress_state_name, sys_config
     )
-    task_context["list_id"] = move_task_result["list_id"]
+    task_context["state_id"] = move_task_result["state_id"]
     return task_context
 
 
@@ -73,11 +73,11 @@ def create_task_fetch_node(sys_config: dict):
         try:
             board_provider = create_board_provider(sys_config)
 
-            review_list_name = sys_config.get("task_moveto_list")
-            if not review_list_name:
+            review_state_name = sys_config.get("task_moveto_state")
+            if not review_state_name:
                 return {"task_id": None}
 
-            task_in_progress_list_name = sys_config.get("task_in_progress_list")
+            task_in_progress_state_name = sys_config.get("task_in_progress_state")
 
             task_context = await _get_task_context(board_provider, sys_config)
             if not task_context:
@@ -89,17 +89,17 @@ def create_task_fetch_node(sys_config: dict):
                 board_provider,
                 task_context,
                 task.id,
-                task_in_progress_list_name,
+                task_in_progress_state_name,
                 sys_config,
             )
 
             comments = await board_provider.get_comments(task.id)
 
-            review_cutoff = await get_review_transition_timestamp(
-                board_provider, task.id, review_list_name
+            review_timestamp = await get_review_transition_timestamp(
+                board_provider, task.id, review_state_name
             )
-            if review_cutoff:
-                comments = filter_comments_after_timestamp(comments, review_cutoff)
+            if review_timestamp:
+                comments = filter_comments_after_timestamp(comments, review_timestamp)
 
             content = task.name + "\n" + task.description
             if comments:
@@ -119,9 +119,14 @@ def create_task_fetch_node(sys_config: dict):
             return {
                 "task_id": task.id,
                 "task_name": task.name,
-                "messages": [HumanMessage(content=content)],
-                "task_state_id": task_context["list_id"],
-                "agent_summary": [],
+                "task_state_id": task_context["state_id"],
+                "task_description": task.description,
+                "messages": [
+                    SystemMessage(
+                        content=f"Task: {task.name}\n\nDescription:\n{task.description}"
+                    )
+                ],
+                "task_comments": comments,
             }
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Error fetching tasks: %s", e)
@@ -130,80 +135,80 @@ def create_task_fetch_node(sys_config: dict):
     return task_fetch
 
 
-async def fetch_task_from_list(
-    board_provider: BoardProvider, readfrom_list_name: str, sys_config: dict  # pylint: disable=unused-argument
+async def fetch_task_from_state(
+    board_provider: BoardProvider, state_name: str, sys_config: dict  # pylint: disable=unused-argument
 ) -> dict | None:
-    """Fetch a task from a board list."""
-    board_lists = await board_provider.get_lists()
-    read_from_list = next(
-        (data for data in board_lists if data["name"] == readfrom_list_name),
+    """Fetch a task from a board state."""
+    board_states = await board_provider.get_states()
+    target_state = next(
+        (data for data in board_states if data["name"] == state_name),
         None,
     )
 
-    if not read_from_list:
-        logger.warning("%s list not found", readfrom_list_name)
+    if not target_state:
+        logger.warning("%s state not found", state_name)
         return None
 
-    readfrom_list_id = read_from_list["id"]
-    logger.info("Found %s list id: %s", readfrom_list_name, readfrom_list_id)
+    state_id = target_state["id"]
+    logger.info("Found %s state id: %s", state_name, state_id)
 
-    tasks = await board_provider.get_tasks_from_list(readfrom_list_id)
+    tasks = await board_provider.get_tasks_from_state(state_id)
     if not tasks:
-        logger.info("No open tasks found in %s.", readfrom_list_name)
+        logger.info("No open tasks found in %s.", state_name)
         return None
 
     task = tasks[0]
 
     return {
         "task": task,
-        "list_id": readfrom_list_id,
-        "list_name": readfrom_list_name,
+        "state_id": state_id,
+        "state_name": state_name,
     }
 
 
 async def move_task_to_in_progress(
     board_provider: BoardProvider,
     task_id: str,
-    current_list_id: str,
-    task_in_progress_list_name: str,
+    current_state_id: str,
+    task_in_progress_state_name: str,
     sys_config: dict,  # pylint: disable=unused-argument
 ) -> dict:
     """
-    Moves the task to the in-progress list before task processing begins.
+    Moves the task to the in-progress state before task processing begins.
     """
-    if not task_in_progress_list_name:
+    if not task_in_progress_state_name:
         logger.warning(
-            "task_in_progress_list not configured, skipping move to in-progress list"
+            "task_in_progress_state not configured, skipping move to in-progress state"
         )
     else:
         logger.info(
-            "Moving task %s to in-progress list: %s", task_id, task_in_progress_list_name
+            "Moving task %s to in-progress state: %s", task_id, task_in_progress_state_name
         )
 
         try:
-            progress_list_id = await board_provider.move_task_to_named_list(
-                task_id, task_in_progress_list_name
+            progress_state_id = await board_provider.move_task_to_named_state(
+                task_id, task_in_progress_state_name
             )
             return {
-                "list_id": progress_list_id,
+                "state_id": progress_state_id,
             }
         except ValueError as e:
-            logger.warning("Failed to move task to in-progress list: %s", e)
+            logger.warning("Failed to move task to in-progress state: %s", e)
         except Exception as e:  # pylint: disable=broad-exception-caught
-            logger.error("Failed to move task to in-progress list: %s", e)
+            logger.error("Failed to move task to in-progress state: %s", e)
 
-    return {"list_id": current_list_id}
+    return {"state_id": current_state_id}
 
 
 async def get_review_transition_timestamp(
-    board_provider: BoardProvider, task_id: str, review_list_name: str
+    board_provider: BoardProvider, task_id: str, review_state_name: str
 ) -> datetime | None:
-    """Returns the timestamp of the last transition of a task to a review list."""
+    """Returns the timestamp of the last transition of a task to a review state."""
     try:
-        list_moves = await board_provider.get_list_moves(task_id)
+        state_moves = await board_provider.get_state_moves(task_id)
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.warning(
-            "Failed to fetch list moves for task %s: %s. Including all comments.",
+            "Failed to fetch state moves for task %s: %s. Including all comments.",
             task_id,
             e,
         )
@@ -211,8 +216,8 @@ async def get_review_transition_timestamp(
 
     review_timestamps = [
         move.date
-        for move in list_moves
-        if move.list_after == review_list_name
+        for move in state_moves
+        if move.state_after == review_state_name
     ]
     if not review_timestamps:
         return None
@@ -221,7 +226,7 @@ async def get_review_transition_timestamp(
     logger.info(
         "Task %s last moved to '%s' at %s.",
         task_id,
-        review_list_name,
+        review_state_name,
         latest_review.isoformat(),
     )
     return latest_review

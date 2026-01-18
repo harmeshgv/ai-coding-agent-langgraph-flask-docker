@@ -20,15 +20,15 @@ class BoardTask:
         id: Unique identifier for the task
         name: Title/name of the task
         description: Detailed description of the task
-        list_id: ID of the list/column containing this task
-        list_name: Name of the list/column containing this task
+        state_id: ID of the state/column containing this task
+        state_name: Name of the state/column containing this task
         url: URL to view the task in the board system
     """
     id: str
     name: str
     description: str
-    list_id: str
-    list_name: str
+    state_id: str
+    state_name: str
     url: str = ""
 
 
@@ -50,20 +50,20 @@ class BoardComment:
 
 
 @dataclass
-class BoardListMove:
+class BoardStateMove:
     """
-    Domain model for tracking when a task moves between lists.
+    Domain model for tracking when a task moves between states.
     
     Attributes:
         id: Unique identifier for the move action
         date: Timestamp when the move occurred
-        list_before: Name of the list before the move
-        list_after: Name of the list after the move
+        state_before: Name of the state before the move
+        state_after: Name of the state after the move
     """
     id: str
     date: datetime
-    list_before: str | None
-    list_after: str | None
+    state_before: str | None
+    state_after: str | None
 
 
 class BoardProvider(ABC):
@@ -75,53 +75,53 @@ class BoardProvider(ABC):
     """
 
     @abstractmethod
-    async def get_lists(self) -> list[dict]:
+    async def get_states(self) -> list[dict]:
         """
-        Fetch all lists/columns from the board.
+        Fetch all states/columns from the board.
         
         Returns:
             List of dictionaries with 'id' and 'name' keys
         """
 
     @abstractmethod
-    async def get_tasks_from_list(self, list_id: str) -> list[BoardTask]:
+    async def get_tasks_from_state(self, state_id: str) -> list[BoardTask]:
         """
-        Fetch all tasks from a specific list.
+        Fetch all tasks from a specific state.
         
         Args:
-            list_id: The ID of the list to fetch tasks from
+            state_id: The ID of the state to fetch tasks from
             
         Returns:
             List of BoardTask objects
         """
 
     @abstractmethod
-    async def move_task_to_list(self, task_id: str, list_id: str) -> None:
+    async def move_task_to_state(self, task_id: str, state_id: str) -> None:
         """
-        Move a task to a different list.
+        Move a task to a different state.
         
         Args:
             task_id: The ID of the task to move
-            list_id: The ID of the target list
+            state_id: The ID of the target state
             
         Raises:
             RuntimeError: If the move operation fails
         """
 
     @abstractmethod
-    async def move_task_to_named_list(self, task_id: str, list_name: str) -> str:
+    async def move_task_to_named_state(self, task_id: str, state_name: str) -> str:
         """
-        Move a task to a list identified by name.
+        Move a task to a state identified by name.
         
         Args:
             task_id: The ID of the task to move
-            list_name: The name of the target list
+            state_name: The name of the target state
             
         Returns:
-            The ID of the target list
+            The ID of the target state
             
         Raises:
-            ValueError: If the list name is not found
+            ValueError: If the state name is not found
             RuntimeError: If the move operation fails
         """
 
@@ -154,15 +154,15 @@ class BoardProvider(ABC):
         """
 
     @abstractmethod
-    async def get_list_moves(self, task_id: str) -> list[BoardListMove]:
+    async def get_state_moves(self, task_id: str) -> list[BoardStateMove]:
         """
-        Fetch the history of list moves for a task.
+        Fetch the history of state moves for a task.
         
         Args:
             task_id: The ID of the task
             
         Returns:
-            List of BoardListMove objects
+            List of BoardStateMove objects
             
         Raises:
             RuntimeError: If fetching move history fails
@@ -170,20 +170,20 @@ class BoardProvider(ABC):
 
     @abstractmethod
     async def create_task(
-        self, name: str, description: str, list_name: str
+        self, name: str, description: str, state_name: str
     ) -> BoardTask:
         """
-        Create a new task in the specified list.
+        Create a new task in the specified state.
         
         Args:
             name: The title/name of the task
             description: The description/body of the task
-            list_name: The name of the list to create the task in
+            state_name: The name of the state to create the task in
             
         Returns:
             The created BoardTask object
             
         Raises:
-            ValueError: If the list name is not found
+            ValueError: If the state name is not found
             RuntimeError: If task creation fails
         """
