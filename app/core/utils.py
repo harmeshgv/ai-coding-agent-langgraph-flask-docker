@@ -37,6 +37,7 @@ def log_and_validate_env(logger):
         "OPENROUTER_API_KEY",
         "ANTHROPIC_API_KEY",
         "OLLAMA_API_KEY",
+        "DATABASE_DIR",
     ]
 
     for env_name in keys_to_log:
@@ -47,6 +48,13 @@ def log_and_validate_env(logger):
             logger.info("%s is not set", env_name)
 
     logger.info("OLLAMA_BASE_URL: %s", os.environ.get("OLLAMA_BASE_URL", "Not set"))
+
+    ENABLE_MCP_SERVERS = os.environ.get("ENABLE_MCP_SERVERS", "true").lower() not in {
+        "false",
+        "0",
+        "no",
+    }
+    logger.info("MCP enabled: %s", ENABLE_MCP_SERVERS)
 
     # Kritische Checks
     if not os.environ.get("GITHUB_TOKEN"):
