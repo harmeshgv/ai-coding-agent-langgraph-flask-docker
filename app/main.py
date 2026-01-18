@@ -46,17 +46,22 @@ if __name__ == "__main__":
     ANTHROPIC_API_KEY = _log_secret("ANTHROPIC_API_KEY")
     OLLAMA_API_KEY = _log_secret("OLLAMA_API_KEY")
 
+    DATABASE_DIR = os.environ.get("DATABASE_BASE_DIR")
+    logger.info("DATABASE_DIR: %s", DATABASE_DIR)
+    if not DATABASE_DIR:
+        logger.info("DATABASE_DIR is not set")
+
     OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL")
     logger.info("OLLAMA_BASE_URL: %s", OLLAMA_BASE_URL)
     if not OLLAMA_BASE_URL:
         logger.info("OLLAMA_BASE_URL is not set")
 
-    enable_mcp = os.environ.get("ENABLE_MCP_SERVERS", "true").lower() not in {
+    ENABLE_MCP_SERVERS = os.environ.get("ENABLE_MCP_SERVERS", "true").lower() not in {
         "false",
         "0",
         "no",
     }
-    logger.info("MCP enabled: %s", enable_mcp)
+    logger.info("MCP enabled: %s", ENABLE_MCP_SERVERS)
 
     if not os.environ.get("GITHUB_TOKEN"):
         raise ValueError("GITHUB_TOKEN is not set. Application cannot start.")

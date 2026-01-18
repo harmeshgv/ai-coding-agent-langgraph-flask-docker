@@ -146,6 +146,7 @@ Supported providers:
 |Google|`GOOGLE_API_KEY`|-|
 |Anthropic|`ANTHROPIC_API_KEY`|-|
 |Ollama|`OLLAMA_API_KEY` (optional for local setups)|`OLLAMA_BASE_URL` - default http://host.docker.internal:11434|
+|Database directory|`DATABASE_DIR`|Optional override for the SQLite folder (defaults to `app/instance`)|
 |MCP control|`ENABLE_MCP_SERVERS` (default `true`)|Set to `false`/`0`/`no` to skip spawning the Git and task MCP servers when running locally|
 
 ```bash

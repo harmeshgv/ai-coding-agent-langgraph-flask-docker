@@ -21,8 +21,9 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "a-default-secret-key-for-development"
 
 # Database configuration
 BASE_DIR = Path(__file__).resolve().parent.parent
+DATABASE_DIR = Path(os.environ.get("DATABASE_DIR", BASE_DIR / "instance"))
 SQLALCHEMY_DATABASE_URI = (
-    os.environ.get("DATABASE_URL") or f"sqlite:///{BASE_DIR / 'instance' / 'agent.db'}"
+    os.environ.get("DATABASE_URL") or f"sqlite:///{DATABASE_DIR / 'agent.db'}"
 )
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 

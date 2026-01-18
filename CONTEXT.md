@@ -76,6 +76,7 @@ Die Prompts verbieten reines Chatten ("You are a HEADLESS agent"). Jede Interakt
 Die Steuerung erfolgt über Umgebungsvariablen und die Datenbank:
 * `MISTRAL_API_KEY`: Für das LLM.
 * `GITHUB_TOKEN`: Für `git push` Operationen (wird zur Laufzeit in die URL injiziert).
+* `DATABASE_DIR`: Optionales Verzeichnis für die SQLite-Datenbank (Standard `app/instance`).
 * `ENABLE_MCP_SERVERS`: Standard `true`. Auf `false`/`0`/`no` setzen, wenn die MCP-Hilfsprozesse (Git/Task) nicht gestartet werden sollen – etwa bei lokalen Debug-Sessions ohne MCP-Unterstützung.
 * **SQLite DB:** Speichert TaskApp-URL, User-Credentials und das Ziel-Projekt.
 
