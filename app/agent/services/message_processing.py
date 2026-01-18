@@ -93,44 +93,41 @@ def filter_messages_for_llm(
     original_count = len(messages)
     original_tokens = _estimate_tokens(messages)
 
-    # Extract and preserve system message if present at the beginning
+    # Extract and preserve all system messages
     # System messages contain critical instructions and must always be included
-    system_message = None
-    if messages and isinstance(messages[0], SystemMessage):
-        system_message = messages[0]
-        messages = messages[1:]
+    system_messages = [msg for msg in messages if isinstance(msg, SystemMessage)]
+    non_system_messages = [msg for msg in messages if not isinstance(msg, SystemMessage)]
 
     # Find the first human message (original task) to preserve context
-    first_human_idx = _find_first_human_message(messages)
+    first_human_idx = _find_first_human_message(non_system_messages)
     # Calculate starting index for recent messages window
-    recent_start_idx = max(0, len(messages) - max_messages)
+    recent_start_idx = max(0, len(non_system_messages) - max_messages)
     # Adjust start boundary to ensure we begin at a valid message type
-    adjusted_start_idx = _find_safe_start_boundary(messages, recent_start_idx)
+    adjusted_start_idx = _find_safe_start_boundary(non_system_messages, recent_start_idx)
 
     # Extract recent messages from the adjusted starting point
-    recent_messages = messages[adjusted_start_idx:]
+    recent_messages = non_system_messages[adjusted_start_idx:]
     # Remove trailing AI messages without tool calls (incomplete responses)
     recent_messages = _trim_trailing_invalid_ai_messages(recent_messages)
 
     # Fallback: if no recent messages remain, find the last human message or use the last message
-    if not recent_messages and messages:
-        for msg in reversed(messages):
+    if not recent_messages and non_system_messages:
+        for msg in reversed(non_system_messages):
             if isinstance(msg, HumanMessage):
                 filtered_messages = [msg]
                 break
         else:
-            filtered_messages = [messages[-1]] if messages else []
+            filtered_messages = [non_system_messages[-1]] if non_system_messages else []
     # If the first human message (original task) was cut off, prepend it to maintain context
     elif first_human_idx is not None and first_human_idx < adjusted_start_idx:
-        first_task = [messages[first_human_idx]]
+        first_task = [non_system_messages[first_human_idx]]
         filtered_messages = first_task + recent_messages
     # Otherwise, use only the recent messages
     else:
         filtered_messages = recent_messages
 
-    # Re-insert system message at the beginning if it was present
-    if system_message:
-        filtered_messages = [system_message] + filtered_messages
+    # Prepend all system messages at the beginning
+    filtered_messages = system_messages + filtered_messages
 
     # Log token savings from filtering
     filtered_count = len(filtered_messages)

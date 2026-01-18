@@ -37,7 +37,6 @@ def log_and_validate_env(logger):
         "OPENROUTER_API_KEY",
         "ANTHROPIC_API_KEY",
         "OLLAMA_API_KEY",
-        "DATABASE_DIR",
     ]
 
     for env_name in keys_to_log:
@@ -55,6 +54,9 @@ def log_and_validate_env(logger):
         "no",
     }
     logger.info("MCP enabled: %s", ENABLE_MCP_SERVERS)
+    logger.info("DATABASE_DIR: %s", os.environ.get("DATABASE_DIR", "Not set"))
+    logger.info("WORKBENCH: %s", os.environ.get("WORKBENCH", "Not set"))
+    logger.info("WORKSPACE: %s", os.environ.get("WORKSPACE", "Not set"))
 
     # Kritische Checks
     if not os.environ.get("GITHUB_TOKEN"):

@@ -113,8 +113,24 @@ def create_task_fetch_node(sys_config: dict):
                     date = comment.date.isoformat()
                     content += f"\n[{date}] {author}:\n{text}\n"
 
-            logger.info("Processing task ID: %s - %s", task.id, task.name)
-            logger.info("Initial messages content: %s", content)
+            logger.info("Processing task ID: %s - %s", task.id, task.name)            
+
+            # Build SystemMessage with full context including rejection comments if present
+            system_content = f"Task: {task.name}\n\nDescription:\n{task.description}"
+            if comments:
+                system_content += (
+                    "\n\n--- The Pull Request was rejected with "
+                    + "the following review comments: ---\n"
+                    + "NOTE: The task description shows the current implementation. "
+                    + "The comments below indicate ADDITIONAL work that needs to be done.\n"
+                )
+                for comment in reversed(comments):
+                    author = comment.author
+                    text = comment.text
+                    date = comment.date.isoformat()
+                    system_content += f"\n[{date}] {author}:\n{text}\n"
+
+                logger.info("PR review message content: %s", system_content)
 
             return {
                 "task_id": task.id,
@@ -122,9 +138,7 @@ def create_task_fetch_node(sys_config: dict):
                 "task_state_id": task_context["state_id"],
                 "task_description": task.description,
                 "messages": [
-                    SystemMessage(
-                        content=f"Task: {task.name}\n\nDescription:\n{task.description}"
-                    )
+                    SystemMessage(content=system_content)
                 ],
                 "task_comments": comments,
             }
