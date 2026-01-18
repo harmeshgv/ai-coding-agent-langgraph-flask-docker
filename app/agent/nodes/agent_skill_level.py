@@ -106,7 +106,7 @@ def create_agent_skill_level_node(llm):
     Returns:
         A function that represents the coder skill level node.
     """
-    structured_llm = llm.with_structured_output(SkillLevelResult)
+    structured_llm = llm.with_structured_output(SkillLevelResult, method="json_mode")
 
     async def agent_skill_level_node(state: AgentState) -> Dict[str, Any]:
         # Router only needs the original task to make routing decision
