@@ -9,6 +9,8 @@ services:
       - "5000:5000"
     command: uv run run_web.py # <-- Startet NUR Flask
     env_file: .env
+    environment:
+      - WORKSPACE=/coding-agent-workspace
     volumes:
       - ./workspace:/coding-agent-workspace
       - ./app/instance:/coding-agent/app/instance
@@ -21,6 +23,8 @@ services:
     container_name: ai-coding-agent
     command: uv run run_agent.py
     env_file: .env
+    environment:
+      - WORKSPACE=/coding-agent-workspace
     volumes:
       - ./app/instance:/coding-agent/app/instance
       # mapping ./workspace to /workspace in container

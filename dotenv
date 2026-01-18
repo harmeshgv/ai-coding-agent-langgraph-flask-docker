@@ -1,0 +1,27 @@
+# .env Datei
+
+# workspace: shared storage for the local repository
+WORKSPACE=./workspace
+
+# workbench if the agent uses backend environment
+WORKBENCH=workbench-backend
+# workbench if the agent uses fronend environment
+#WORKBENCH=workbench-frontend
+
+# database
+ENCRYPTION_KEY=your_encryption_key_here
+
+# GitHub Credentials
+GITHUB_TOKEN=your_github_token_here
+
+# LLM API keys (only set if you want to use them)
+#MISTRAL_API_KEY=your_mistral_api_key_here
+#GOOGLE_API_KEY=your_google_api_key_here
+#OPENAI_API_KEY=your_openai_api_key_here
+#OPENROUTER_API_KEY=your_openrouter_api_key_here
+#ANTHROPIC_API_KEY=your_anthropic_api_key_here
+
+# Ollama API key (only if a key is needed)
+#OLLAMA_API_KEY=your_ollama_api_key_here
+# Ollama base URL (only if you want to use Ollama not in a docker container)
+#OLLAMA_BASE_URL=your_ollama_base_url_here
