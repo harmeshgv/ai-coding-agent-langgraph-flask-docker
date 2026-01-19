@@ -9,28 +9,31 @@ import pytest
 
 from app.agent.integrations.board_provider import BoardTask, BoardComment, BoardStateMove
 from app.agent.integrations.trello_provider import TrelloProvider
+from app.core.models import AgentConfig
 
 
 @pytest.fixture
-def sys_config():
-    """Fixture for system configuration."""
-    return {
-        "env": {
-            "TRELLO_API_KEY": "test_key",
-            "TRELLO_TOKEN": "test_token",
-        },
-        "trello_board_id": "test_board_id",
-    }
+def agent_config():
+    """Fixture for agent configuration."""
+    return AgentConfig(
+        system_config={
+            "env": {
+                "TRELLO_API_KEY": "test_key",
+                "TRELLO_TOKEN": "test_token",
+            },
+            "trello_board_id": "test_board_id",
+        }
+    )
 
 
 @pytest.fixture
-def trello_provider(sys_config):
+def trello_provider(agent_config):
     """Fixture for TrelloProvider instance."""
-    return TrelloProvider(sys_config)
+    return TrelloProvider(agent_config)
 
 
 @pytest.mark.asyncio
-async def test_get_states(trello_provider, sys_config):
+async def test_get_states(trello_provider):
     """Test getting states (Trello lists) from board."""
     mock_lists = [
         {"id": "list1", "name": "To Do"},
@@ -76,7 +79,7 @@ async def test_move_task_to_state(trello_provider):
     ) as mock_move:
         await trello_provider.move_task_to_state("card1", "list2")
         
-        mock_move.assert_called_once()
+        mock_move.assert_called_once_with("card1", "list2", trello_provider.agent_config)
 
 
 @pytest.mark.asyncio
@@ -101,7 +104,7 @@ async def test_add_comment(trello_provider):
     ) as mock_add:
         await trello_provider.add_comment("card1", "Test comment")
         
-        mock_add.assert_called_once_with("card1", "Test comment", trello_provider.sys_config)
+        mock_add.assert_called_once_with("card1", "Test comment", trello_provider.agent_config)
 
 
 @pytest.mark.asyncio

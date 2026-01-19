@@ -12,6 +12,8 @@ from langchain_core.messages import AIMessage
 from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolNode
 
+from app.core.models import AgentConfig
+
 from app.agent.nodes.agent_skill_level import create_agent_skill_level_node
 from app.agent.nodes.analyst import create_analyst_node
 from app.agent.nodes.bugfixer import create_bugfixer_node
@@ -124,18 +126,18 @@ def route_after_tools_analyst(state: AgentState) -> str:
 def create_workflow(
     llm_large: BaseChatModel,
     llm_small: BaseChatModel,
-    sys_config: dict,
+    agent_config: AgentConfig,
     agent_stack: str,
 ) -> StateGraph:
     """Creates and configures the main LangGraph workflow."""
     # --- Tool Sets ---
-    impl_task_target_state = sys_config.get("task_backlog_state")
+    impl_task_target_state = agent_config.system_config.get("task_backlog_state")
     analyst_tools = [
         list_files,
         read_file,
         write_to_file,
         thinking,
-        create_task_tool(sys_config, impl_task_target_state),
+        create_task_tool(agent_config, impl_task_target_state),
         finish_task,
     ]
     coder_tools = [
@@ -153,8 +155,8 @@ def create_workflow(
     # --- Graph Nodes ---
     workflow = StateGraph(AgentState)
 
-    workflow.add_node("task_fetch", create_task_fetch_node(sys_config))
-    workflow.add_node("checkout", create_checkout_node(sys_config))
+    workflow.add_node("task_fetch", create_task_fetch_node(agent_config))
+    workflow.add_node("checkout", create_checkout_node(agent_config))
     workflow.add_node("router", create_router_node(llm_small))
     workflow.add_node("agent_skill_level", create_agent_skill_level_node(llm_small))
 
@@ -177,7 +179,7 @@ def create_workflow(
 
     workflow.add_node("correction", create_correction_node())
     workflow.add_node("pull_request", create_pull_request_node())
-    workflow.add_node("task_update", create_task_update_node(sys_config))
+    workflow.add_node("task_update", create_task_update_node(agent_config))
 
     workflow.set_entry_point("task_fetch")
 

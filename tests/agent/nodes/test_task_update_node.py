@@ -14,15 +14,18 @@ from app.agent.nodes.task_update_node import (
     create_task_update_node,
     get_agent_result,
 )
+from app.core.models import AgentConfig
 
 
 @pytest.fixture
-def sys_config():
-    """Fixture for system configuration."""
-    return {
-        "board_provider": "trello",
-        "task_moveto_state": "Done",
-    }
+def agent_config():
+    """Fixture for agent configuration."""
+    return AgentConfig(
+        system_config={
+            "board_provider": "trello",
+            "task_moveto_state": "Done",
+        }
+    )
 
 
 @pytest.fixture
@@ -35,7 +38,7 @@ def mock_board_provider():
 
 
 @pytest.mark.asyncio
-async def test_task_update_node_success(sys_config, mock_board_provider):
+async def test_task_update_node_success(agent_config, mock_board_provider):
     """Test successful task update."""
     state = {
         "task_id": "card1",
@@ -47,7 +50,7 @@ async def test_task_update_node_success(sys_config, mock_board_provider):
         "app.agent.nodes.task_update_node.create_board_provider",
         return_value=mock_board_provider,
     ):
-        task_update = create_task_update_node(sys_config)
+        task_update = create_task_update_node(agent_config)
         result = await task_update(state)
         
         assert result["task_state_id"] == "list3"
@@ -58,7 +61,7 @@ async def test_task_update_node_success(sys_config, mock_board_provider):
 
 
 @pytest.mark.asyncio
-async def test_task_update_node_no_task_id(sys_config, mock_board_provider):
+async def test_task_update_node_no_task_id(agent_config, mock_board_provider):
     """Test task update with no task ID."""
     state = {"task_id": None, "messages": []}
     
@@ -66,7 +69,7 @@ async def test_task_update_node_no_task_id(sys_config, mock_board_provider):
         "app.agent.nodes.task_update_node.create_board_provider",
         return_value=mock_board_provider,
     ):
-        task_update = create_task_update_node(sys_config)
+        task_update = create_task_update_node(agent_config)
         result = await task_update(state)
         
         assert result == {}
@@ -74,7 +77,7 @@ async def test_task_update_node_no_task_id(sys_config, mock_board_provider):
 
 
 @pytest.mark.asyncio
-async def test_task_update_node_move_fails(sys_config, mock_board_provider):
+async def test_task_update_node_move_fails(agent_config, mock_board_provider):
     """Test task update when move operation fails."""
     state = {"task_id": "card1", "messages": [], "agent_summary": []}
     mock_board_provider.move_task_to_named_state = AsyncMock(
@@ -85,7 +88,7 @@ async def test_task_update_node_move_fails(sys_config, mock_board_provider):
         "app.agent.nodes.task_update_node.create_board_provider",
         return_value=mock_board_provider,
     ):
-        task_update = create_task_update_node(sys_config)
+        task_update = create_task_update_node(agent_config)
         result = await task_update(state)
         
         assert result["task_id"] is None

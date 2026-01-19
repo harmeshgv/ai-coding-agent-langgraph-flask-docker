@@ -4,10 +4,12 @@ This module contains the class definitions for all database models used by
 SQLAlchemy. Each class corresponds to a table in the database.
 """
 
+import json
 import os
+from typing import Any, Dict
 
 from cryptography.fernet import Fernet
-from sqlalchemy import LargeBinary, TypeDecorator
+from sqlalchemy import ForeignKey, LargeBinary, TypeDecorator
 
 from app.core.extensions import db
 
@@ -18,31 +20,44 @@ encryption_key = Fernet(key.encode())
 
 
 # pylint: disable=too-many-ancestors
-class EncryptedString(TypeDecorator):
-    """Encrypts data on its way into the database, decrypts it on its way out."""
+class EncryptedDict(TypeDecorator):
+    """Encrypts dictionaries on write and returns dicts on read."""
 
     impl = LargeBinary  # Stored as Binary/Blob in the DB
     cache_ok = True
 
     @property
     def python_type(self):
-        return str
+        return dict
 
     def process_bind_param(self, value, dialect):
-        """Encrypt before saving"""
-        if value is not None:
-            # Must be bytes for Fernet
-            value_bytes = value.encode("utf-8")
-            encrypted_value = encryption_key.encrypt(value_bytes)
-            return encrypted_value
-        return value
+        """Encrypt before saving."""
+        if value is None:
+            return value
+
+        if not isinstance(value, dict):
+            raise TypeError("EncryptedDict only supports dictionary values.")
+
+        value_bytes = json.dumps(value).encode("utf-8")
+        return encryption_key.encrypt(value_bytes)
 
     def process_result_value(self, value, dialect):
-        """Decrypt after loading"""
-        if value is not None:
-            decrypted_value = encryption_key.decrypt(value)
-            return decrypted_value.decode("utf-8")
-        return value
+        """Decrypt after loading."""
+        if value is None:
+            return value
+
+        decrypted_value = encryption_key.decrypt(value)
+        decoded_value = decrypted_value.decode("utf-8")
+
+        try:
+            loaded_value = json.loads(decoded_value or "{}")
+        except json.JSONDecodeError as exc:
+            raise ValueError("Stored EncryptedDict value is not valid JSON") from exc
+
+        if not isinstance(loaded_value, dict):
+            raise ValueError("Stored EncryptedDict value did not decode to a dict")
+
+        return loaded_value
 
     def process_literal_param(self, value, dialect):
         """Handles rendering of a literal parameter for this type.
@@ -75,9 +90,9 @@ class AgentConfig(db.Model):
     task_system_type = db.Column(
         db.String(50), nullable=False, default="TRELLO"
     )  # e.g., "TRELLO", "JIRA", "CUSTOM"
-    system_config_json = db.Column(
-        db.Text, nullable=True
-    )  # JSON blob for credentials, IDs, etc.
+    system_config = db.Column(
+        EncryptedDict, nullable=True
+    )  # Dict blob for credentials, IDs, etc.
 
     # Existing Fields
     repo_type = db.Column(
@@ -96,6 +111,63 @@ class AgentConfig(db.Model):
 
     def __repr__(self):
         return f"<AgentConfig {self.id}>"
+
+    def as_dict(self) -> Dict[str, Any]:
+        """Return a plain dictionary of column values for logging/debugging."""
+        return {
+            column.name: getattr(self, column.name)
+            for column in self.__table__.columns  # type: ignore[attr-defined]
+        }
+
+
+class TaskSystem(db.Model):
+    """Represents an external task system configuration (e.g., Trello)."""
+
+    __tablename__ = "task_system"
+
+    id = db.Column(db.Integer, primary_key=True)
+    task_system_type = db.Column(db.String(50), nullable=False, default="TRELLO")
+    board_provider = db.Column(db.String(50), nullable=False)
+    api_key = db.Column(db.String(200), nullable=True) # encrypt later
+    token = db.Column(db.String(200), nullable=True) # encrypt later
+    base_url = db.Column(db.String(200), nullable=True)
+    board_id = db.Column(db.String(100), nullable=True)
+
+    agent_configs = db.relationship(
+        "AgentConfigNew", back_populates="task_system", cascade="all, delete-orphan"
+    )
+
+    def __repr__(self):
+        return f"<TaskSystem {self.id} type={self.task_system_type}>"
+
+
+class AgentConfigNew(db.Model):
+    """New agent configuration model with normalized task-system data."""
+
+    __tablename__ = "agent_config_new"
+
+    id = db.Column(db.Integer, primary_key=True)
+    task_backlog_state = db.Column(db.String(100), nullable=True)
+    task_readfrom_state = db.Column(db.String(100), nullable=True)
+    task_in_progress_state = db.Column(db.String(100), nullable=True)
+    task_moveto_state = db.Column(db.String(100), nullable=True)
+    llm_provider = db.Column(db.String(50), nullable=True)
+    llm_model_large = db.Column(db.String(100), nullable=True)
+    llm_model_small = db.Column(db.String(100), nullable=True)
+    llm_temperature = db.Column(db.String(16), nullable=True)
+    repo_type = db.Column(db.String(50), nullable=False, default="GITHUB")
+    github_repo_url = db.Column(db.String(200), nullable=True)
+    polling_interval_seconds = db.Column(db.Integer, nullable=False, default=60)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    agent_skill_level = db.Column(db.String(50), nullable=True)
+    task_system_id = db.Column(
+        db.Integer, ForeignKey("task_system.id"), nullable=False, index=True
+    )
+
+    task_system = db.relationship("TaskSystem", back_populates="agent_configs")
+
+    def __repr__(self):
+        return f"<AgentConfigNew {self.id} task_system_id={self.task_system_id}>"
 
 
 # pylint: disable=too-few-public-methods

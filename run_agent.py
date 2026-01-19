@@ -3,6 +3,7 @@ import time
 from dotenv import load_dotenv
 
 from app.agent.worker import run_agent_cycle
+from app.core.extensions import db
 from app.core.models import AgentConfig
 from app.core.utils import log_and_validate_env, setup_logging
 from app.web import create_app
@@ -21,6 +22,9 @@ if __name__ == "__main__":
     # Wir starten KEINEN Server, wir nutzen app nur als Hülle für die DB
     app = create_app(encryption_key)
 
+    with app.app_context():
+        db.create_all()
+
     # 4. Der Infinite Loop (Ersatz für Scheduler)
     while True:
         with app.app_context():
@@ -32,7 +36,7 @@ if __name__ == "__main__":
                 # Den eigentlichen Job ausführen
                 # Hinweis: run_agent_cycle muss so angepasst sein,
                 # dass es nicht erwartet, vom Scheduler aufgerufen zu werden.
-                run_agent_cycle(app, encryption_key)
+                run_agent_cycle(app)
 
             except Exception as e:
                 logger.error(f"❌ Error in worker cycle: {e}", exc_info=True)

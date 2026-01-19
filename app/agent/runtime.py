@@ -8,8 +8,6 @@ import os
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
-from cryptography.fernet import Fernet
-
 from app.agent.services.git_workspace import ensure_repository_exists
 from app.agent.system_mappings import SYSTEM_DEFINITIONS
 from app.agent.utils import get_codespace, get_workbench
@@ -23,29 +21,31 @@ class AgentRuntimeContext:
     """Aggregated runtime inputs required to execute one agent cycle."""
 
     agent_config: AgentConfig
-    sys_config: Dict[str, Any]
     task_env: Dict[str, str]
     agent_stack: str
     system_def: Dict[str, Any]
 
 
-def prepare_runtime(encryption_key: Fernet) -> Optional[AgentRuntimeContext]:
+def prepare_runtime() -> Optional[AgentRuntimeContext]:
     """Build the runtime context needed by the agent worker."""
-    config = _get_agent_config()
+    config :AgentConfig = _get_agent_config()
     if not config:
         return None
 
-    sys_config = _get_sys_config(config, encryption_key)
-    if not sys_config:
+    logger.info(
+        "Agent config:\n%s",
+        json.dumps(config.as_dict(), indent=2, default=str),
+    )
+    if not config.system_config:
         return None
 
     if not config.github_repo_url:
         logger.error("GitHub repository URL not provided.")
         return None
 
-    sys_config["github_repo_url"] = config.github_repo_url
+    config.system_config["github_repo_url"] = config.github_repo_url
     task_env = os.environ.copy()
-    task_env.update(sys_config.get("env", {}))
+    task_env.update(config.system_config.get("env", {}))
 
     logger.info("Codespace: %s", get_codespace())
     ensure_repository_exists(config.github_repo_url, get_codespace())
@@ -59,7 +59,6 @@ def prepare_runtime(encryption_key: Fernet) -> Optional[AgentRuntimeContext]:
 
     return AgentRuntimeContext(
         agent_config=config,
-        sys_config=sys_config,
         task_env=task_env,
         agent_stack=agent_stack,
         system_def=system_def,
@@ -73,17 +72,3 @@ def _get_agent_config() -> Optional[AgentConfig]:
         logger.info("Agent is not active or not configured. Skipping cycle.")
         return None
     return config
-
-
-def _get_sys_config(
-    config: AgentConfig, encryption_key: Fernet
-) -> Optional[Dict[str, Any]]:
-    """Decrypt and parse the JSON payload stored for the task system."""
-    logger.info("Starting agent cycle for system: %s", config.task_system_type)
-    sys_config_raw = config.system_config_json or "{}"
-    try:
-        decrypted = encryption_key.decrypt(sys_config_raw.encode()).decode()
-        return json.loads(decrypted or "{}")
-    except (TypeError, AttributeError, json.JSONDecodeError) as exc:
-        logger.error("Could not parse or decrypt existing configuration: %s", exc)
-        return None

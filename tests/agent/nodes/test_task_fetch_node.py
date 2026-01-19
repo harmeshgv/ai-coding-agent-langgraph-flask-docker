@@ -15,17 +15,20 @@ from app.agent.nodes.task_fetch_node import (
     filter_comments_after_timestamp,
     get_review_transition_timestamp,
 )
+from app.core.models import AgentConfig
 
 
 @pytest.fixture
-def sys_config():
-    """Fixture for system configuration."""
-    return {
-        "board_provider": "trello",
-        "task_readfrom_state": "To Do",
-        "task_in_progress_state": "In Progress",
-        "task_moveto_state": "Done",
-    }
+def agent_config():
+    """Fixture for agent configuration."""
+    return AgentConfig(
+        system_config={
+            "board_provider": "trello",
+            "task_readfrom_state": "To Do",
+            "task_in_progress_state": "In Progress",
+            "task_moveto_state": "Done",
+        }
+    )
 
 
 @pytest.fixture
@@ -57,13 +60,13 @@ def mock_board_provider():
 
 
 @pytest.mark.asyncio
-async def test_task_fetch_node_success(sys_config, mock_board_provider):
+async def test_task_fetch_node_success(agent_config, mock_board_provider):
     """Test successful task fetch."""
     with patch(
         "app.agent.nodes.task_fetch_node.create_board_provider",
         return_value=mock_board_provider,
     ):
-        task_fetch = create_task_fetch_node(sys_config)
+        task_fetch = create_task_fetch_node(agent_config)
         result = await task_fetch({})
         
         assert result["task_id"] == "card1"
@@ -76,23 +79,24 @@ async def test_task_fetch_node_success(sys_config, mock_board_provider):
 
 
 @pytest.mark.asyncio
-async def test_task_fetch_node_no_review_list(sys_config, mock_board_provider):
+async def test_task_fetch_node_no_review_list(agent_config, mock_board_provider):
     """Test task fetch when no review list is configured."""
-    sys_config_no_review = sys_config.copy()
+    sys_config_no_review = dict(agent_config.system_config or {})
     sys_config_no_review["task_moveto_state"] = None
+    temp_config = AgentConfig(system_config=sys_config_no_review)
     
     with patch(
         "app.agent.nodes.task_fetch_node.create_board_provider",
         return_value=mock_board_provider,
     ):
-        task_fetch = create_task_fetch_node(sys_config_no_review)
+        task_fetch = create_task_fetch_node(temp_config)
         result = await task_fetch({})
         
         assert result["task_id"] is None
 
 
 @pytest.mark.asyncio
-async def test_task_fetch_node_no_cards(sys_config, mock_board_provider):
+async def test_task_fetch_node_no_cards(agent_config, mock_board_provider):
     """Test task fetch when no tasks are available."""
     mock_board_provider.get_tasks_from_state = AsyncMock(return_value=[])
     
@@ -100,14 +104,14 @@ async def test_task_fetch_node_no_cards(sys_config, mock_board_provider):
         "app.agent.nodes.task_fetch_node.create_board_provider",
         return_value=mock_board_provider,
     ):
-        task_fetch = create_task_fetch_node(sys_config)
+        task_fetch = create_task_fetch_node(agent_config)
         result = await task_fetch({})
         
         assert result["task_id"] is None
 
 
 @pytest.mark.asyncio
-async def test_task_fetch_node_with_comments(sys_config, mock_board_provider):
+async def test_task_fetch_node_with_comments(agent_config, mock_board_provider):
     """Test task fetch with comments."""
     mock_comments = [
         BoardComment(
@@ -123,7 +127,7 @@ async def test_task_fetch_node_with_comments(sys_config, mock_board_provider):
         "app.agent.nodes.task_fetch_node.create_board_provider",
         return_value=mock_board_provider,
     ):
-        task_fetch = create_task_fetch_node(sys_config)
+        task_fetch = create_task_fetch_node(agent_config)
         result = await task_fetch({})
         
         # Comments are not included in the initial message, only in task_comments
@@ -133,9 +137,12 @@ async def test_task_fetch_node_with_comments(sys_config, mock_board_provider):
 
 
 @pytest.mark.asyncio
-async def test_fetch_task_from_state_success(mock_board_provider, sys_config):
+async def test_fetch_task_from_state_success(mock_board_provider):
     """Test fetching a task from a state."""
-    result = await fetch_task_from_state(mock_board_provider, "To Do", sys_config)
+    result = await fetch_task_from_state(
+        mock_board_provider,
+        "To Do",
+    )
     
     assert result is not None
     assert result["task"].id == "card1"
@@ -144,10 +151,11 @@ async def test_fetch_task_from_state_success(mock_board_provider, sys_config):
 
 
 @pytest.mark.asyncio
-async def test_fetch_task_from_state_not_found(mock_board_provider, sys_config):
+async def test_fetch_task_from_state_not_found(mock_board_provider):
     """Test fetching from a non-existent state."""
     result = await fetch_task_from_state(
-        mock_board_provider, "Non-existent", sys_config
+        mock_board_provider,
+        "Non-existent",
     )
     
     assert result is None

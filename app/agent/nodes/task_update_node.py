@@ -14,19 +14,20 @@ from langchain_core.messages import AIMessage, ToolMessage
 from app.agent.integrations.board_factory import create_board_provider
 from app.agent.services.summaries import get_agent_summary_entries
 from app.agent.state import AgentState
+from app.core.models import AgentConfig
 
 AGENT_DEFAULT_COMMENT = "Task completed by AI Agent."
 
 logger = logging.getLogger(__name__)
 
 
-def create_task_update_node(sys_config: dict):
+def create_task_update_node(agent_config: AgentConfig):
     """
     Factory function that creates the task update node.
 
     Args:
-        sys_config: A dictionary containing the system configuration,
-                    including board provider credentials and settings.
+        agent_config: Agent configuration containing board provider credentials
+            and settings.
 
     Returns:
         A function that represents the task update node.
@@ -43,7 +44,7 @@ def create_task_update_node(sys_config: dict):
 
         logger.info("Updating task %s", task_id)
 
-        board_provider = create_board_provider(sys_config)
+        board_provider = create_board_provider(agent_config)
 
         try:
             final_comments = _build_agent_comments(state)
@@ -54,7 +55,7 @@ def create_task_update_node(sys_config: dict):
             logger.error("Failed to add comment to task: %s", e)
 
         try:
-            task_moveto_state = sys_config["task_moveto_state"]
+            task_moveto_state = agent_config.system_config["task_moveto_state"]
             task_moveto_state_id = await board_provider.move_task_to_named_state(
                 task_id, task_moveto_state
             )

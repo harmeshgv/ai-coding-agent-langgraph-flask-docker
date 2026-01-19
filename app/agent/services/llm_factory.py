@@ -22,6 +22,8 @@ from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from pydantic import SecretStr
 
+from app.core.models import AgentConfig
+
 logger = logging.getLogger(__name__)
 
 
@@ -96,26 +98,26 @@ LLM_PROVIDERS: Dict[str, Callable[[str, float], BaseChatModel]] = {
 }
 
 
-def get_llm(config: dict, large: bool = True) -> BaseChatModel:
+def get_llm(agent_config: AgentConfig, large: bool = True) -> BaseChatModel:
     """
     Factory function to get an LLM instance based on the provider.
 
-    :param config: A dictionary with 'llm_provider', 'llm_model_large',
-                   'llm_model_small', and 'llm_temperature'.
+    :param agent_config: Agent configuration providing llm_* fields.
     :param large: If True, use llm_model_large; otherwise use llm_model_small.
     :return: An instance of a class that inherits from BaseChatModel.
     :raises ValueError: If provider is not specified, model is not specified,
                        or provider is unknown.
     """
-    provider = config.get("llm_provider")
+    provider = agent_config.llm_provider
     if not provider:
         raise ValueError("llm_provider not specified")
 
-    model = config.get("llm_model_large") if large else config.get("llm_model_small")
+    model = agent_config.llm_model_large if large else agent_config.llm_model_small
     if not model:
         raise ValueError("llm_model not specified")
 
-    temperature = float(config.get("llm_temperature", 0.0))
+    temperature_value = agent_config.llm_temperature
+    temperature = float(temperature_value or 0.0)
 
     provider_factory = LLM_PROVIDERS.get(provider)
     if not provider_factory:

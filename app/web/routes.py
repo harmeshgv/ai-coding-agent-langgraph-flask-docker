@@ -7,15 +7,12 @@ and retrieving settings for task management systems, repositories,
 and LLM providers, as well as handling encryption of sensitive data.
 """
 
-import json
 import logging
 import os
 from typing import Any
 
-from cryptography.fernet import Fernet, InvalidToken
 from flask import (
     Blueprint,
-    current_app,
     flash,
     redirect,
     render_template,
@@ -89,7 +86,7 @@ def _get_llm_config() -> dict[str, Any]:
     }
 
 
-def settings_post(config: AgentConfig, encryption_key: Fernet):
+def settings_post(config: AgentConfig):
     """Update agent settings from form"""
     # Update generic fields
     config.task_system_type = request.form.get("task_system_type")
@@ -106,14 +103,11 @@ def settings_post(config: AgentConfig, encryption_key: Fernet):
 
     # Create JSON from the specific fields for the selected system
 
-    # Decrypt and load existing data first, to not lose settings from other cards
-    try:
-        decrypted_json = encryption_key.decrypt(
-            config.system_config_json.encode()
-        ).decode()
-        new_config_data = json.loads(decrypted_json or "{}")
-    except (InvalidToken, TypeError, AttributeError, json.JSONDecodeError):
-        new_config_data = {}  # Start fresh if decryption fails or data is invalid
+    # Load existing data first, to not lose settings from other cards
+    existing_config = config.system_config or {}
+    if not isinstance(existing_config, dict):
+        existing_config = {}
+    new_config_data = dict(existing_config)
 
     system_type = config.task_system_type
 
@@ -124,10 +118,8 @@ def settings_post(config: AgentConfig, encryption_key: Fernet):
 
     new_config_data.update(_get_llm_config())
 
-    # Encrypt the JSON configuration
-    json_config_str = json.dumps(new_config_data, indent=2)
-    encrypted_config = encryption_key.encrypt(json_config_str.encode()).decode()
-    config.system_config_json = encrypted_config
+    # Assign dict directly; EncryptedString handles serialization/encryption
+    config.system_config = new_config_data
 
     if not config.id:
         db.session.add(config)
@@ -166,7 +158,7 @@ def _set_llm_form_data(saved_data: dict[str, Any], form_data: dict):
     form_data["llm_temperature"] = saved_data.get("llm_temperature", 0.0)
 
 
-def settings_get(config: AgentConfig, encryption_key: Fernet) -> str:
+def settings_get(config: AgentConfig) -> str:
     """
     Get agent settings from form.
     Decrypt and parse JSON to populate form
@@ -174,29 +166,24 @@ def settings_get(config: AgentConfig, encryption_key: Fernet) -> str:
     form_data = {}
     form_data["agent_skill_level"] = config.agent_skill_level
 
-    if config.system_config_json:
-        try:
-            decrypted_json = encryption_key.decrypt(
-                config.system_config_json.encode()
-            ).decode()
-            saved_data = json.loads(decrypted_json or "{}")
-
-            # Populate form_data with prefixed keys for the template
-            # Trello data
-            _set_trello_form_data(saved_data, form_data)
-
-            # Jira data
-            _set_jira_form_data(saved_data, form_data)
-
-            # LLM data
-            _set_llm_form_data(saved_data, form_data)
-
-        except (InvalidToken, TypeError, AttributeError, json.JSONDecodeError):
+    if config.system_config:
+        saved_data = config.system_config
+        if not isinstance(saved_data, dict):
             flash(
-                "Could not parse or decrypt existing settings. It may be legacy data. "
-                + "Re-saving will fix it.",
+                "Could not parse existing settings. Re-saving will fix it.",
                 "warning",
             )
+            saved_data = {}
+
+        # Populate form_data with prefixed keys for the template
+        # Trello data
+        _set_trello_form_data(saved_data, form_data)
+
+        # Jira data
+        _set_jira_form_data(saved_data, form_data)
+
+        # LLM data
+        _set_llm_form_data(saved_data, form_data)
     if not form_data.get("llm_provider"):
         form_data["llm_provider"] = "mistral"
 
@@ -235,12 +222,11 @@ def dashboard():
 @web_bp.route("/settings", methods=["GET", "POST"])
 def settings():
     """Handles the settings page."""
-    encryption_key = current_app.config["FERNET_KEY"]
     config = AgentConfig.query.first()
     if not config:
-        config = AgentConfig(task_system_type="TRELLO", system_config_json="{}")
+        config = AgentConfig(task_system_type="TRELLO", system_config={})
 
     if request.method == "POST":
-        return settings_post(config, encryption_key)
+        return settings_post(config)
 
-    return settings_get(config, encryption_key)
+    return settings_get(config)

@@ -13,24 +13,25 @@ from langchain_core.messages import SystemMessage
 from app.core.task_repository import remove_task_from_db
 from app.agent.integrations.board_factory import create_board_provider
 from app.agent.integrations.board_provider import BoardProvider, BoardTask  # pylint: disable=unused-import
+from app.core.models import AgentConfig
 from app.agent.state import AgentState
 
 logger = logging.getLogger(__name__)
 
 
-async def _get_task_context(board_provider: BoardProvider, sys_config: dict):
-    incoming_state_name = sys_config["task_readfrom_state"]
-    in_progress_state_name = sys_config.get("task_in_progress_state")
+async def _get_task_context(board_provider: BoardProvider, agent_config: AgentConfig):
+    incoming_state_name = agent_config.system_config["task_readfrom_state"]
+    in_progress_state_name = agent_config.system_config.get("task_in_progress_state")
 
     task_context = None
     if in_progress_state_name:
         task_context = await fetch_task_from_state(
-            board_provider, in_progress_state_name, sys_config
+            board_provider, in_progress_state_name
         )
 
     if not task_context:
         task_context = await fetch_task_from_state(
-            board_provider, incoming_state_name, sys_config
+            board_provider, incoming_state_name
         )
     return task_context
 
@@ -40,7 +41,6 @@ async def _ensure_task_in_progress(
     task_context: dict,
     task_id: str,
     task_in_progress_state_name: str | None,
-    sys_config: dict,
 ) -> dict:
     """
     Moves the task to the in-progress state if needed, updating the task_context.
@@ -55,13 +55,13 @@ async def _ensure_task_in_progress(
     remove_task_from_db(task_id)
     readfrom_state_id = task_context["state_id"]
     move_task_result = await move_task_to_in_progress(
-        board_provider, task_id, readfrom_state_id, task_in_progress_state_name, sys_config
+        board_provider, task_id, readfrom_state_id, task_in_progress_state_name
     )
     task_context["state_id"] = move_task_result["state_id"]
     return task_context
 
 
-def create_task_fetch_node(sys_config: dict):
+def create_task_fetch_node(agent_config: AgentConfig):
     """Creates a task fetch node for the agent graph."""
 
     async def task_fetch(state: AgentState) -> dict:  # pylint: disable=unused-argument
@@ -71,15 +71,15 @@ def create_task_fetch_node(sys_config: dict):
         logger.info("Fetching tasks from board")
 
         try:
-            board_provider = create_board_provider(sys_config)
+            board_provider = create_board_provider(agent_config)
 
-            review_state_name = sys_config.get("task_moveto_state")
+            review_state_name = agent_config.system_config.get("task_moveto_state")
             if not review_state_name:
                 return {"task_id": None}
 
-            task_in_progress_state_name = sys_config.get("task_in_progress_state")
+            task_in_progress_state_name = agent_config.system_config.get("task_in_progress_state")
 
-            task_context = await _get_task_context(board_provider, sys_config)
+            task_context = await _get_task_context(board_provider, agent_config)
             if not task_context:
                 return {"task_id": None}
 
@@ -90,7 +90,6 @@ def create_task_fetch_node(sys_config: dict):
                 task_context,
                 task.id,
                 task_in_progress_state_name,
-                sys_config,
             )
 
             comments = await board_provider.get_comments(task.id)
@@ -150,7 +149,7 @@ def create_task_fetch_node(sys_config: dict):
 
 
 async def fetch_task_from_state(
-    board_provider: BoardProvider, state_name: str, sys_config: dict  # pylint: disable=unused-argument
+    board_provider: BoardProvider, state_name: str
 ) -> dict | None:
     """Fetch a task from a board state."""
     board_states = await board_provider.get_states()
@@ -185,7 +184,6 @@ async def move_task_to_in_progress(
     task_id: str,
     current_state_id: str,
     task_in_progress_state_name: str,
-    sys_config: dict,  # pylint: disable=unused-argument
 ) -> dict:
     """
     Moves the task to the in-progress state before task processing begins.

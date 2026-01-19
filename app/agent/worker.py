@@ -9,9 +9,9 @@ import asyncio
 import logging
 import os
 import sys
+from typing import Optional
 from contextlib import AsyncExitStack
 
-from cryptography.fernet import Fernet
 from flask import Flask
 from langchain.chat_models import BaseChatModel
 from langgraph.graph import StateGraph
@@ -27,10 +27,10 @@ from app.agent.utils import get_codespace
 logger = logging.getLogger(__name__)
 
 
-async def run_agent_cycle_async(app: Flask, encryption_key: Fernet) -> None:
+async def run_agent_cycle_async(app: Flask) -> None:
     """Runs one complete asynchronous cycle of the agent."""
     with app.app_context():
-        runtime = prepare_runtime(encryption_key)
+        runtime: Optional[AgentRuntimeContext] = prepare_runtime()
         if not runtime:
             return
 
@@ -63,12 +63,12 @@ async def _execute_agent_cycle(runtime: AgentRuntimeContext) -> None:
         else:
             logger.info("Skipping MCP server startup (ENABLE_MCP_SERVERS is disabled)")
 
-        llm_large: BaseChatModel = get_llm(runtime.sys_config, True)
-        llm_small: BaseChatModel = get_llm(runtime.sys_config, False)
+        llm_large: BaseChatModel = get_llm(runtime.agent_config, True)
+        llm_small: BaseChatModel = get_llm(runtime.agent_config, False)
         workflow: StateGraph = create_workflow(
             llm_large,
             llm_small,
-            runtime.sys_config,
+            runtime.agent_config,
             runtime.agent_stack,
         )
 
@@ -93,9 +93,9 @@ async def _execute_agent_cycle(runtime: AgentRuntimeContext) -> None:
         log_agent_state(final_state)
 
 
-def run_agent_cycle(app: Flask, encryption_key: Fernet) -> None:
+def run_agent_cycle(app: Flask) -> None:
     """Synchronous wrapper for the main async agent cycle."""
     try:
-        asyncio.run(run_agent_cycle_async(app, encryption_key))
+        asyncio.run(run_agent_cycle_async(app))
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error("Critical error in agent cycle: %s", e, exc_info=True)

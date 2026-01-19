@@ -43,7 +43,6 @@ def create_router_node(llm):
     Factory function that creates the router node for the agent graph.
 
     Args:
-        sys_config: The system configuration.
         llm: The language model to be used for routing decisions.
 
     Returns:

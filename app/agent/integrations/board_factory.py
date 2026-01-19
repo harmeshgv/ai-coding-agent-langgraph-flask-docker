@@ -10,20 +10,21 @@ import logging
 
 from app.agent.integrations.board_provider import BoardProvider
 from app.agent.integrations.trello_provider import TrelloProvider
+from app.core.models import AgentConfig
 
 logger = logging.getLogger(__name__)
 
 
-def create_board_provider(sys_config: dict) -> BoardProvider:
+def create_board_provider(agent_config: AgentConfig) -> BoardProvider:
     """
     Factory function to create the appropriate board provider.
     
-    The provider type is determined by the 'board_provider' key in sys_config.
+    The provider type is determined by the 'board_provider' key inside
+    AgentConfig.system_config.
     If not specified, defaults to 'trello' for backward compatibility.
     
     Args:
-        sys_config: System configuration dictionary containing provider type
-                   and provider-specific settings
+        agent_config: Agent configuration containing system configuration settings
     
     Returns:
         An instance of a BoardProvider implementation
@@ -32,15 +33,16 @@ def create_board_provider(sys_config: dict) -> BoardProvider:
         ValueError: If an unknown provider type is specified
         
     Example:
-        >>> sys_config = {"board_provider": "trello", ...}
-        >>> provider = create_board_provider(sys_config)
+        >>> agent_config = AgentConfig(system_config={"board_provider": "trello", ...})
+        >>> provider = create_board_provider(agent_config)
     """
-    provider_type = sys_config.get("board_provider", "trello").lower()
+    system_config = agent_config.system_config or {}
+    provider_type = system_config.get("board_provider", "trello").lower()
 
     logger.info("Creating board provider: %s", provider_type)
 
     if provider_type == "trello":
-        return TrelloProvider(sys_config)
+        return TrelloProvider(agent_config)
 
     raise ValueError(
         f"Unknown board provider: {provider_type}. "
