@@ -15,6 +15,8 @@ from langgraph.graph.message import add_messages
 
 
 class PlanState(StrEnum):
+    """Defines the states of the plan."""
+
     REQUESTED = "requested"
     CREATED = "created"
     UPDATED = "updated"

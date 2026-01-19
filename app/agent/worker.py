@@ -22,7 +22,6 @@ from app.agent.runtime import AgentRuntimeContext, prepare_runtime
 from app.agent.services.graph_assets import save_graph_as_mermaid, save_graph_as_png
 from app.agent.services.llm_factory import get_llm
 from app.agent.services.logging import log_agent_state
-from app.agent.state import PlanState
 from app.agent.utils import get_codespace
 
 logger = logging.getLogger(__name__)
