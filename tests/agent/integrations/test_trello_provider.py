@@ -9,21 +9,21 @@ import pytest
 
 from app.agent.integrations.board_provider import BoardTask, BoardComment, BoardStateMove
 from app.agent.integrations.trello_provider import TrelloProvider
-from app.core.models import AgentConfig
+from app.core.models import AgentConfig, TaskSystem
 
 
 @pytest.fixture
 def agent_config():
     """Fixture for agent configuration."""
-    return AgentConfig(
-        system_config={
-            "env": {
-                "TRELLO_API_KEY": "test_key",
-                "TRELLO_TOKEN": "test_token",
-            },
-            "trello_board_id": "test_board_id",
-        }
+    task_system = TaskSystem(
+        board_provider="trello",
+        api_key="test_key",
+        token="test_token",
+        board_id="test_board_id",
     )
+    config = AgentConfig(task_system_type="TRELLO")
+    config.task_system = task_system
+    return config
 
 
 @pytest.fixture

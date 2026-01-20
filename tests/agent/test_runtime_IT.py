@@ -41,10 +41,7 @@ def test_prepare_runtime_returns_context(tmp_path, monkeypatch):
             task_system_type="TRELLO",
             github_repo_url="https://example.com/foo/bar.git",
             is_active=True,
-            system_config={
-                "env": {"FOO": "BAR"},
-                "trello_readfrom_list": "todo",
-            },
+            task_readfrom_state="todo",
         )
         db.session.add(config)
         db.session.commit()
@@ -53,14 +50,13 @@ def test_prepare_runtime_returns_context(tmp_path, monkeypatch):
 
     assert isinstance(context, AgentRuntimeContext)
     assert context.agent_stack == "backend"
-    assert context.agent_config.system_config["trello_readfrom_list"] == "todo"
-    assert context.task_env["FOO"] == "BAR"
-    assert "command" in context.system_def
+    assert context.agent_config.task_readfrom_state == "todo"
+    assert "command" in context.mcp_system_def
     assert ensure_called["repo_url"] == "https://example.com/foo/bar.git"
     assert ensure_called["work_dir"] == codespace.as_posix()
 
 
-def test_prepare_runtime_uses_default_repo_when_missing(tmp_path, monkeypatch):
+def test_prepare_runtime_uses_default_repo(tmp_path, monkeypatch):
     workspace = tmp_path / "workspace"
     workspace.mkdir()
     codespace = workspace / "code"
@@ -69,11 +65,10 @@ def test_prepare_runtime_uses_default_repo_when_missing(tmp_path, monkeypatch):
     monkeypatch.setenv("WORKBENCH", "workbench-frontend")
 
     app = _create_app(f"sqlite:///{tmp_path / 'runtime_default.db'}")
-
+    
     captured = {}
     monkeypatch.setattr(
-        runtime_module,
-        "ensure_repository_exists",
+        "app.agent.runtime.ensure_repository_exists",
         lambda repo_url, work_dir: captured.update(
             {"repo_url": repo_url, "work_dir": work_dir}
         ),
@@ -85,7 +80,7 @@ def test_prepare_runtime_uses_default_repo_when_missing(tmp_path, monkeypatch):
             task_system_type="TRELLO",
             github_repo_url=None,
             is_active=True,
-            system_config={"trello_readfrom_list": "todo", "env": {"FOO": "BAR"}},
+            task_readfrom_state="todo",
         )
         db.session.add(config)
         db.session.commit()
@@ -94,15 +89,10 @@ def test_prepare_runtime_uses_default_repo_when_missing(tmp_path, monkeypatch):
 
     assert isinstance(context, AgentRuntimeContext)
     assert context.agent_stack == "frontend"
-    # DEFAULT_REPO lives in runtime module
-    expected_repo = config.github_repo_url
-    assert captured["repo_url"] == expected_repo
+    assert context.agent_config.task_readfrom_state == "todo"
+    assert "command" in context.mcp_system_def
+    assert captured["repo_url"] == config.github_repo_url
     assert captured["work_dir"] == codespace.as_posix()
-    assert context.agent_config.system_config == {
-        "trello_readfrom_list": "todo",
-        "env": {"FOO": "BAR"},
-        "github_repo_url": expected_repo,
-    }
 
 
 def test_prepare_runtime_returns_none_for_unknown_system(tmp_path, monkeypatch):
@@ -114,6 +104,8 @@ def test_prepare_runtime_returns_none_for_unknown_system(tmp_path, monkeypatch):
     monkeypatch.setenv("WORKBENCH", "workbench-backend")
 
     app = _create_app(f"sqlite:///{tmp_path / 'runtime_invalid.db'}")
+    
+    monkeypatch.setattr("app.agent.runtime.ensure_repository_exists", lambda repo_url, work_dir: None)
 
     with app.app_context():
         db.create_all()
@@ -121,7 +113,6 @@ def test_prepare_runtime_returns_none_for_unknown_system(tmp_path, monkeypatch):
             task_system_type="UNKNOWN",
             github_repo_url="https://example.com/foo/bar.git",
             is_active=True,
-            system_config={},
         )
         db.session.add(config)
         db.session.commit()

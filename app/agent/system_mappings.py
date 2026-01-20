@@ -56,7 +56,7 @@ trello_response_parser = parse_trello_response
 SERVERS_PATH = os.environ.get("SERVERS_PATH", "/coding-agent/servers")
 
 
-SYSTEM_DEFINITIONS = {
+MCP_SYSTEM_DEFINITIONS = {
     "TRELLO": {
         "command": ["tsx", os.path.join(SERVERS_PATH, "trello/src/index.ts")],
         "polling_tool": "read_board",

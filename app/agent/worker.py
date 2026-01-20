@@ -53,9 +53,13 @@ async def _execute_agent_cycle(runtime: AgentRuntimeContext) -> None:
                 env=os.environ.copy(),
             )
             task_mcp = McpServerClient(
-                runtime.system_def["command"][0],
-                runtime.system_def["command"][1:],
-                env=runtime.task_env,
+                runtime.mcp_system_def["command"][0],
+                runtime.mcp_system_def["command"][1:],
+                env={
+                    "TRELLO_API_KEY": runtime.agent_config.task_system.api_key,
+                    "TRELLO_TOKEN": runtime.agent_config.task_system.token,
+                    "TRELLO_BASE_URL": runtime.agent_config.task_system.base_url,
+                },
             )
 
             await stack.enter_async_context(git_mcp)

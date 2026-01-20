@@ -74,6 +74,9 @@ class EncryptedDict(TypeDecorator):
 
 
 # pylint: disable=too-few-public-methods
+DEFAULT_TRELLO_BASE_URL = "https://api.trello.com/1"
+
+
 class AgentConfig(db.Model):
     """Represents the configuration for the AI agent.
 
@@ -91,10 +94,6 @@ class AgentConfig(db.Model):
         db.String(50), nullable=False, default="TRELLO"
     )  # e.g., "TRELLO", "JIRA", "CUSTOM"
 
-    system_config = db.Column(
-        db.JSON, nullable=True
-    )  # Dict blob for credentials, IDs, etc.
-
     task_backlog_state = db.Column(db.String(100), nullable=True)
     task_readfrom_state = db.Column(db.String(100), nullable=True)
     task_in_progress_state = db.Column(db.String(100), nullable=True)
@@ -103,7 +102,6 @@ class AgentConfig(db.Model):
     llm_model_large = db.Column(db.String(100), nullable=True)
     llm_model_small = db.Column(db.String(100), nullable=True)
     llm_temperature = db.Column(db.String(16), nullable=True)
-
 
     # Existing Fields
     repo_type = db.Column(
@@ -116,14 +114,25 @@ class AgentConfig(db.Model):
     polling_interval_seconds = db.Column(db.Integer, nullable=False, default=60)
     is_active = db.Column(db.Boolean, nullable=False, default=False)
     agent_skill_level = db.Column(db.String(50), nullable=True)
+    task_system_id = db.Column(
+        db.Integer,
+        ForeignKey("task_system.id"),
+        nullable=True,
+        unique=True,
+        index=True,
+    )
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    task_system = db.relationship("TaskSystem", back_populates="agent_configs")
+    task_system = db.relationship(
+        "TaskSystem",
+        back_populates="agent_config",
+        uselist=False,
+    )
 
     def __repr__(self):
-        return f"<AgentConfigNew {self.id} task_system_id={self.task_system_id}>"
+        return f"<AgentConfig {self.id} task_system_id={self.task_system_id}>"
 
     def as_dict(self) -> Dict[str, Any]:
         """Return a plain dictionary of column values for logging/debugging."""
@@ -146,42 +155,15 @@ class TaskSystem(db.Model):
     base_url = db.Column(db.String(200), nullable=True)
     board_id = db.Column(db.String(100), nullable=True)
 
-    agent_configs = db.relationship(
-        "AgentConfig", back_populates="task_system", cascade="all, delete-orphan"
+    agent_config = db.relationship(
+        "AgentConfig",
+        back_populates="task_system",
+        cascade="all, delete-orphan",
+        uselist=False,
     )
 
     def __repr__(self):
         return f"<TaskSystem {self.id} type={self.task_system_type}>"
-
-
-class AgentConfigNew(db.Model):
-    """New agent configuration model with normalized task-system data."""
-
-    __tablename__ = "agent_config_new"
-
-    id = db.Column(db.Integer, primary_key=True)
-    task_backlog_state = db.Column(db.String(100), nullable=True)
-    task_readfrom_state = db.Column(db.String(100), nullable=True)
-    task_in_progress_state = db.Column(db.String(100), nullable=True)
-    task_moveto_state = db.Column(db.String(100), nullable=True)
-    llm_provider = db.Column(db.String(50), nullable=True)
-    llm_model_large = db.Column(db.String(100), nullable=True)
-    llm_model_small = db.Column(db.String(100), nullable=True)
-    llm_temperature = db.Column(db.String(16), nullable=True)
-    repo_type = db.Column(db.String(50), nullable=False, default="GITHUB")
-    github_repo_url = db.Column(db.String(200), nullable=True)
-    polling_interval_seconds = db.Column(db.Integer, nullable=False, default=60)
-    is_active = db.Column(db.Boolean, nullable=False, default=True)
-    agent_skill_level = db.Column(db.String(50), nullable=True)
-    task_system_id = db.Column(
-        db.Integer, ForeignKey("task_system.id"), nullable=False, index=True
-    )
-
-    task_system = db.relationship("TaskSystem", back_populates="agent_configs")
-
-    def __repr__(self):
-        return f"<AgentConfigNew {self.id} task_system_id={self.task_system_id}>"
-
 
 # pylint: disable=too-few-public-methods
 class Task(db.Model):

@@ -36,8 +36,7 @@ def create_board_provider(agent_config: AgentConfig) -> BoardProvider:
         >>> agent_config = AgentConfig(system_config={"board_provider": "trello", ...})
         >>> provider = create_board_provider(agent_config)
     """
-    system_config = agent_config.system_config or {}
-    provider_type = system_config.get("board_provider", "trello").lower()
+    provider_type = agent_config.task_system_type.lower()
 
     logger.info("Creating board provider: %s", provider_type)
 

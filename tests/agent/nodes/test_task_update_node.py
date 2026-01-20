@@ -21,9 +21,7 @@ from app.core.models import AgentConfig
 def agent_config():
     """Fixture for agent configuration."""
     return AgentConfig(
-        system_config={
-            "board_provider": "trello",
-        },
+        task_system_type="TRELLO",
         task_moveto_state="Done",
     )
 

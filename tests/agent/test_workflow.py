@@ -79,8 +79,10 @@ def workflow_mocks(monkeypatch):
 def test_create_workflow_registers_all_nodes(workflow_mocks):
     llm_large = DummyLLM()
     llm_small = DummyLLM()
-    sys_config = {"trello_readfrom_list": "todo"}
-    agent_config = AgentConfig(system_config=sys_config)
+    agent_config = AgentConfig(
+        task_system_type="TRELLO",
+        task_readfrom_state="todo",
+    )
 
     workflow = graph_module.create_workflow(
         llm_large,

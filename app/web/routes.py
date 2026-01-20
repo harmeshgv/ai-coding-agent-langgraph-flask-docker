@@ -22,7 +22,7 @@ from flask import (
 
 from app.core.constants import LLM_PROVIDER_API_ENV
 from app.core.extensions import db
-from app.core.models import AgentConfig
+from app.core.models import AgentConfig, TaskSystem
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +91,65 @@ def _get_llm_config() -> dict[str, Any]:
     }
 
 
+def _get_or_create_task_system(config: AgentConfig) -> TaskSystem:
+    task_system = config.task_system
+    if not task_system:
+        task_system = TaskSystem(
+            task_system_type=config.task_system_type,
+            board_provider="trello",
+        )
+        config.task_system = task_system
+    return task_system
+
+
+def _update_trello_config(config: AgentConfig, new_config_data: dict):
+    """Update Trello configuration from form data."""
+    trello_data = _get_trello_data()
+
+    config.task_backlog_state = _normalize_form_value(
+        trello_data.pop("task_backlog_state", None)
+    )
+    config.task_readfrom_state = _normalize_form_value(
+        trello_data.pop("task_readfrom_state", None)
+    )
+    config.task_in_progress_state = _normalize_form_value(
+        trello_data.pop("task_in_progress_state", None)
+    )
+    config.task_moveto_state = _normalize_form_value(
+        trello_data.pop("task_moveto_state", None)
+    )
+
+    task_system = _get_or_create_task_system(config)
+    board_provider = trello_data.pop("board_provider", None)
+    if board_provider:
+        task_system.board_provider = board_provider
+    board_id = trello_data.pop("trello_board_id", None)
+    if board_id:
+        task_system.board_id = board_id
+
+    env_config = trello_data.pop("env", {}) or {}
+    api_key = env_config.get("TRELLO_API_KEY")
+    token = env_config.get("TRELLO_TOKEN")
+    base_url = env_config.get("TRELLO_BASE_URL")
+    if api_key:
+        task_system.api_key = api_key
+    if token:
+        task_system.token = token
+    if base_url:
+        task_system.base_url = base_url
+
+    new_config_data.update(trello_data)
+
+
+def _update_llm_config(config: AgentConfig):
+    """Update LLM configuration from form data."""
+    llm_config = _get_llm_config()
+    config.llm_provider = _normalize_form_value(llm_config.get("llm_provider")) or "mistral"
+    config.llm_model_large = _normalize_form_value(llm_config.get("llm_model_large"))
+    config.llm_model_small = _normalize_form_value(llm_config.get("llm_model_small"))
+    config.llm_temperature = _normalize_form_value(llm_config.get("llm_temperature"))
+
+
 def settings_post(config: AgentConfig):
     """Update agent settings from form"""
     # Update generic fields
@@ -117,30 +176,11 @@ def settings_post(config: AgentConfig):
     system_type = config.task_system_type
 
     if system_type == "TRELLO":
-        trello_data = _get_trello_data()
-
-        config.task_backlog_state = _normalize_form_value(
-            trello_data.pop("task_backlog_state", None)
-        )
-        config.task_readfrom_state = _normalize_form_value(
-            trello_data.pop("task_readfrom_state", None)
-        )
-        config.task_in_progress_state = _normalize_form_value(
-            trello_data.pop("task_in_progress_state", None)
-        )
-        config.task_moveto_state = _normalize_form_value(
-            trello_data.pop("task_moveto_state", None)
-        )
-
-        new_config_data.update(trello_data)
+        _update_trello_config(config, new_config_data)
     elif system_type == "JIRA":
         new_config_data.update(_get_jira_data())
 
-    llm_config = _get_llm_config()
-    config.llm_provider = _normalize_form_value(llm_config.get("llm_provider")) or "mistral"
-    config.llm_model_large = _normalize_form_value(llm_config.get("llm_model_large"))
-    config.llm_model_small = _normalize_form_value(llm_config.get("llm_model_small"))
-    config.llm_temperature = _normalize_form_value(llm_config.get("llm_temperature"))
+    _update_llm_config(config)
 
 
     # Assign dict directly; EncryptedString handles serialization/encryption
@@ -154,50 +194,33 @@ def settings_post(config: AgentConfig):
     return redirect(url_for("web.settings"))
 
 
-def _set_trello_form_data(config: AgentConfig, saved_data: dict[str, Any], form_data: dict):
+def _set_trello_form_data(config: AgentConfig, form_data: dict):
     """Set Trello form data."""
-    form_data["trello_api_key"] = saved_data.get("env", {}).get("TRELLO_API_KEY")
-    form_data["trello_api_token"] = saved_data.get("env", {}).get("TRELLO_TOKEN")
-    form_data["trello_board_id"] = saved_data.get("trello_board_id")
-    form_data["trello_backlog_list"] = config.task_backlog_state or saved_data.get(
-        "task_backlog_state"
-    )
-    form_data["trello_readfrom_list"] = config.task_readfrom_state or saved_data.get(
-        "task_readfrom_state"
-    )
-    form_data["trello_progress_list"] = (
-        config.task_in_progress_state or saved_data.get("task_in_progress_state")
-    )
-    form_data["trello_moveto_list"] = config.task_moveto_state or saved_data.get(
-        "task_moveto_state"
-    )
-    form_data["trello_base_url"] = saved_data.get("env", {}).get(
-        "TRELLO_BASE_URL", "https://api.trello.com/1"
-    )
+    task_system = config.task_system
+
+    form_data["trello_api_key"] = task_system.api_key
+    form_data["trello_api_token"] = task_system.token
+    form_data["trello_board_id"] = task_system.board_id
+    form_data["trello_backlog_list"] = config.task_backlog_state
+    form_data["trello_readfrom_list"] = config.task_readfrom_state
+    form_data["trello_progress_list"] = config.task_in_progress_state
+    form_data["trello_moveto_list"] = config.task_moveto_state
+    form_data["trello_base_url"] = task_system.base_url
 
 
-def _set_jira_form_data(saved_data: dict[str, Any], form_data: dict):
+def _set_jira_form_data(config: AgentConfig, form_data: dict):
     """Set Jira form data."""
-    form_data["jira_username"] = saved_data.get("env", {}).get("JIRA_USERNAME")
-    form_data["jira_api_token"] = saved_data.get("env", {}).get("JIRA_API_TOKEN")
-    form_data["jira_jql_query"] = saved_data.get("jql")
+    form_data["jira_username"] = "JIRA_USERNAME"
+    form_data["jira_api_token"] = "JIRA_API_TOKEN"
+    form_data["jira_jql_query"] = "JIRA_JQL_QUERY"
 
 
-def _set_llm_form_data(config: AgentConfig, saved_data: dict[str, Any], form_data: dict):
+def _set_llm_form_data(config: AgentConfig, form_data: dict):
     """Set LLM form data."""
-    form_data["llm_provider"] = (
-        config.llm_provider or saved_data.get("llm_provider") or "mistral"
-    )
-    form_data["llm_model_large"] = config.llm_model_large or saved_data.get(
-        "llm_model_large"
-    )
-    form_data["llm_model_small"] = config.llm_model_small or saved_data.get(
-        "llm_model_small"
-    )
-    form_data["llm_temperature"] = config.llm_temperature or saved_data.get(
-        "llm_temperature",
-        0.0,
-    )
+    form_data["llm_provider"] = config.llm_provider or "mistral"
+    form_data["llm_model_large"] = config.llm_model_large
+    form_data["llm_model_small"] = config.llm_model_small
+    form_data["llm_temperature"] = config.llm_temperature
 
 
 def settings_get(config: AgentConfig) -> str:
@@ -208,26 +231,15 @@ def settings_get(config: AgentConfig) -> str:
     form_data = {}
     form_data["agent_skill_level"] = config.agent_skill_level
 
-    if config.system_config:
-        saved_data = config.system_config
-        if not isinstance(saved_data, dict):
-            flash(
-                "Could not parse existing settings. Re-saving will fix it.",
-                "warning",
-            )
-            saved_data = {}
+    # Populate form_data with prefixed keys for the template
+    # Trello data
+    _set_trello_form_data(config, form_data)
 
-        # Populate form_data with prefixed keys for the template
-        # Trello data
-        _set_trello_form_data(config, saved_data, form_data)
+    # Jira data
+    _set_jira_form_data(config, form_data)
 
-        # Jira data
-        _set_jira_form_data(saved_data, form_data)
-
-        # LLM data
-        _set_llm_form_data(config, saved_data, form_data)
-    if not form_data.get("llm_provider"):
-        form_data["llm_provider"] = "mistral"
+    # LLM data
+    _set_llm_form_data(config, form_data)
 
     selected_provider = form_data.get("llm_provider", "mistral")
     missing_provider_env = _missing_provider_env(selected_provider)

@@ -22,9 +22,7 @@ from app.core.models import AgentConfig
 def agent_config():
     """Fixture for agent configuration."""
     return AgentConfig(
-        system_config={
-            "board_provider": "trello",
-        },
+        task_system_type="TRELLO",
         task_backlog_state="Backlog",
         task_readfrom_state="To Do",
         task_in_progress_state="In Progress",
@@ -83,7 +81,7 @@ async def test_task_fetch_node_success(agent_config, mock_board_provider):
 async def test_task_fetch_node_no_review_list(agent_config, mock_board_provider):
     """Test task fetch when no review list is configured."""
     temp_config = AgentConfig(
-        system_config=dict(agent_config.system_config or {}),
+        task_system_type=agent_config.task_system_type,
         task_backlog_state=agent_config.task_backlog_state,
         task_readfrom_state=agent_config.task_readfrom_state,
         task_in_progress_state=agent_config.task_in_progress_state,
