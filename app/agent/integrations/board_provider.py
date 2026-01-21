@@ -84,6 +84,21 @@ class BoardProvider(ABC):
         """
 
     @abstractmethod
+    async def get_task(self, task_id: str) -> BoardTask:
+        """
+        Fetch a specific task from the board.
+        
+        Args:
+            task_id: The ID of the task to fetch
+            
+        Returns:
+            The BoardTask object
+            
+        Raises:
+            RuntimeError: If task fetching fails
+        """
+
+    @abstractmethod
     async def get_tasks_from_state(self, state_id: str) -> list[BoardTask]:
         """
         Fetch all tasks from a specific state.
@@ -105,7 +120,7 @@ class BoardProvider(ABC):
             state_id: The ID of the target state
             
         Raises:
-            RuntimeError: If the move operation fails
+            RuntimeError: If the operation fails
         """
 
     @abstractmethod
@@ -187,3 +202,7 @@ class BoardProvider(ABC):
             ValueError: If the state name is not found
             RuntimeError: If task creation fails
         """
+
+    @abstractmethod
+    def get_type(self) -> str:
+        """Return provider identifier (e.g., 'trello', 'github')."""

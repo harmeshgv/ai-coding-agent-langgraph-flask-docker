@@ -20,6 +20,7 @@ from app.agent.integrations.github_client import (
     create_draft_issue,
     get_issue_comments,
     get_items_from_column,
+    get_project_item,
     get_item_status_history,
     get_project_columns,
     move_item_to_column,
@@ -50,6 +51,19 @@ class GitHubProvider(BoardProvider):
     async def get_states(self) -> list[dict]:
         """Fetch all states (columns) from the GitHub Project."""
         return await get_project_columns(self.agent_settings)
+
+    async def get_task(self, task_id: str) -> BoardTask:
+        """Fetch a specific task (project item) by ID."""
+        item = await get_project_item(task_id, self.agent_settings)
+
+        return BoardTask(
+            id=item["id"],
+            name=item.get("title", ""),
+            description=item.get("body", ""),
+            state_id=item.get("state_id", ""),
+            state_name=item.get("state_name", ""),
+            url=item.get("url", ""),
+        )
 
     async def get_tasks_from_state(self, state_id: str) -> list[BoardTask]:
         """
@@ -151,6 +165,10 @@ class GitHubProvider(BoardProvider):
             state_name=result["column"],
             url=result.get("url", ""),
         )
+
+    def get_type(self) -> str:
+        """Return the provider identifier."""
+        return "github"
 
     def _parse_timestamp(self, value: str | None) -> datetime:
         """

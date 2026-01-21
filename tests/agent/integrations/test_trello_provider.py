@@ -50,6 +50,34 @@ async def test_get_states(trello_provider):
 
 
 @pytest.mark.asyncio
+async def test_get_task(trello_provider):
+    """Test fetching a single Trello card via provider."""
+    mock_card = {
+        "id": "card123",
+        "name": "Test Card",
+        "desc": "Details",
+        "list_id": "list1",
+        "list_name": "To Do",
+        "url": "https://trello/card123",
+    }
+
+    with patch(
+        "app.agent.integrations.trello_provider.get_trello_card",
+        new=AsyncMock(return_value=mock_card),
+    ) as mock_get:
+        task = await trello_provider.get_task("card123")
+
+        mock_get.assert_called_once_with("card123", trello_provider.agent_settings)
+        assert isinstance(task, BoardTask)
+        assert task.id == "card123"
+        assert task.name == "Test Card"
+        assert task.description == "Details"
+        assert task.state_id == "list1"
+        assert task.state_name == "To Do"
+        assert task.url == "https://trello/card123"
+
+
+@pytest.mark.asyncio
 async def test_get_tasks_from_state(trello_provider):
     """Test getting tasks from a state (Trello list)."""
     mock_cards = [

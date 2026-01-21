@@ -77,6 +77,40 @@ async def get_all_trello_cards(list_id: str, agent_settings: AgentSettings) -> l
     ]
 
 
+async def get_trello_card(card_id: str, agent_settings: AgentSettings) -> dict:
+    """Fetch details for a single Trello card including its list metadata."""
+    task_system = agent_settings.get_task_system("trello")
+    if not task_system:
+        raise RuntimeError("Trello task system is not configured")
+
+    url = f"https://api.trello.com/1/cards/{card_id}"
+    headers = {"Accept": "application/json"}
+    query = {
+        "fields": "name,desc,idList,url",
+        "list": "true",
+        "key": task_system.api_key,
+        "token": task_system.token,
+    }
+
+    logger.info("Trello GET: %s", get_safe_url(url, query))
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, headers=headers, params=query)
+
+    if response.status_code != 200:
+        raise RuntimeError(f"Failed to fetch card {card_id}: {response.text}")
+
+    data = response.json()
+    list_info = data.get("list") or {}
+    return {
+        "id": data.get("id", card_id),
+        "name": data.get("name", ""),
+        "desc": data.get("desc", ""),
+        "url": data.get("url", ""),
+        "list_id": data.get("idList", ""),
+        "list_name": list_info.get("name", ""),
+    }
+
+
 async def move_trello_card_to_list(card_id: str, list_id: str, agent_settings: AgentSettings):
     """
     Move a Trello card to a specified list.

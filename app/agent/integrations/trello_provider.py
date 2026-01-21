@@ -20,6 +20,7 @@ from app.agent.integrations.trello_client import (
     create_trello_card,
     get_all_trello_cards,
     get_all_trello_lists,
+    get_trello_card,
     get_trello_card_comments,
     get_trello_card_list_moves,
     move_trello_card_to_list,
@@ -50,6 +51,22 @@ class TrelloProvider(BoardProvider):
     async def get_states(self) -> list[dict]:
         """Fetch all states (Trello lists) from the board."""
         return await get_all_trello_lists(self.agent_settings)
+
+    async def get_task(self, task_id: str) -> BoardTask:
+        """Fetch a specific Trello card."""
+        card = await get_trello_card(task_id, self.agent_settings)
+
+        if not card:
+            raise RuntimeError(f"Trello card {task_id} not found")
+
+        return BoardTask(
+            id=card["id"],
+            name=card.get("name", ""),
+            description=card.get("desc", ""),
+            state_id=card.get("list_id", ""),
+            state_name=card.get("list_name", ""),
+            url=card.get("url", ""),
+        )
 
     async def get_tasks_from_state(self, state_id: str) -> list[BoardTask]:
         """Fetch all tasks from a specific state (Trello list)."""
@@ -132,6 +149,10 @@ class TrelloProvider(BoardProvider):
             state_name=result["list"],
             url=result.get("url", ""),
         )
+
+    def get_type(self) -> str:
+        """Return the provider identifier."""
+        return "trello"
 
     def _parse_timestamp(self, value: str | None) -> datetime:
         """

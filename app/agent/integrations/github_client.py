@@ -312,6 +312,61 @@ async def get_items_from_column(
     return all_items
 
 
+async def get_project_item(
+    item_id: str,
+    agent_settings: AgentSettings,
+) -> dict[str, Any]:
+    """Fetch a single project item with its status metadata."""
+    query = """
+    query($itemId: ID!) {
+        node(id: $itemId) {
+            ... on ProjectV2Item {
+                id
+                fieldValueByName(name: "Status") {
+                    ... on ProjectV2ItemFieldSingleSelectValue {
+                        optionId
+                        name
+                    }
+                }
+                content {
+                    __typename
+                    ... on Issue {
+                        id
+                        title
+                        body
+                        url
+                    }
+                    ... on DraftIssue {
+                        id
+                        title
+                        body
+                    }
+                }
+            }
+        }
+    }
+    """
+
+    variables = {"itemId": item_id}
+    data = await _execute_graphql(query, variables, agent_settings)
+
+    node = data.get("data", {}).get("node")
+    if not node:
+        raise RuntimeError(f"GitHub project item {item_id} not found")
+
+    status_field = node.get("fieldValueByName") or {}
+    content = node.get("content") or {}
+
+    return {
+        "id": node.get("id", item_id),
+        "title": content.get("title", ""),
+        "body": content.get("body", ""),
+        "url": content.get("url", ""),
+        "state_id": status_field.get("optionId", ""),
+        "state_name": status_field.get("name", ""),
+    }
+
+
 async def move_item_to_column(
     item_id: str,
     column_id: str,
