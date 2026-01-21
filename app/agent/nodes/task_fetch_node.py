@@ -10,11 +10,12 @@ from datetime import datetime
 
 from langchain_core.messages import SystemMessage
 
-from app.core.task_repository import remove_task_from_db
+from app.core.task_repository import remove_task_from_db, get_branch_for_task
 from app.agent.integrations.board_factory import create_board_provider
 from app.agent.integrations.board_provider import BoardProvider, BoardTask  # pylint: disable=unused-import
 from app.core.models import AgentSettings
 from app.agent.state import AgentState
+from app.agent.services.pull_request import check_pr_exists_for_branch
 
 logger = logging.getLogger(__name__)
 
@@ -78,18 +79,35 @@ async def _fetch_review_comments(
 ) -> list:
     """
     Fetch comments from review if task was returned from review to in-progress.
-    
+
+    Args:
+        board_provider: BoardProvider
+        task_id: id of task
+        original_state_name: name of state before task was moved to in-progress
+        task_in_progress_state_name: name of in-progress state
+        review_state_name: name of review state
+
     Returns:
         List of comments if task was in review and returned, empty list otherwise.
     """
     comments = []
+    # if task was in review and returned to in-progress,
+    # fetch comments between review and move to in-progress
     if original_state_name == task_in_progress_state_name:
+        all_comments = await board_provider.get_comments(task_id)
+
+        if board_provider.get_type() == "github":
+            # For GitHub, only return last comment if a PR exists for the branch
+            branch_name = get_branch_for_task(task_id)
+            if branch_name and check_pr_exists_for_branch(branch_name):
+                return all_comments[-1:] if all_comments else []
+            return []
+
         latest_move = await get_latest_move_to_in_progress(
             board_provider, task_id, review_state_name, task_in_progress_state_name
         )
         logger.info("Latest move: %s", latest_move)
         if latest_move:
-            all_comments = await board_provider.get_comments(task_id)
             comments = filter_comments_between_timestamps(
                 all_comments,
                 latest_move["review_timestamp"],

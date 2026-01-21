@@ -470,7 +470,10 @@ async def get_issue_comments(
     agent_settings: AgentSettings,
 ) -> list[dict[str, Any]]:
     """
-    Fetch all comments for a GitHub issue.
+    Fetch all comments for a GitHub issue or project item.
+
+    Args:
+        issue_id: Either an Issue ID or ProjectV2Item ID
 
     Returns:
         List of comment dicts with id, text, author, and date.
@@ -490,6 +493,22 @@ async def get_issue_comments(
                     }
                 }
             }
+            ... on ProjectV2Item {
+                content {
+                    ... on Issue {
+                        comments(first: 100) {
+                            nodes {
+                                id
+                                body
+                                author {
+                                    login
+                                }
+                                createdAt
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
     """
@@ -497,7 +516,15 @@ async def get_issue_comments(
     variables = {"issueId": issue_id}
     data = await _execute_graphql(query, variables, agent_settings)
 
-    comments = data.get("data", {}).get("node", {}).get("comments", {}).get("nodes", [])
+    node = data.get("data", {}).get("node", {})
+    
+    # Try to get comments directly (if it's an Issue)
+    comments = node.get("comments", {}).get("nodes", [])
+    
+    # If no comments found, try to get from ProjectV2Item content
+    if not comments:
+        content = node.get("content", {})
+        comments = content.get("comments", {}).get("nodes", [])
 
     return [
         {

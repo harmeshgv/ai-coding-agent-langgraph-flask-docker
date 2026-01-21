@@ -2,33 +2,18 @@
 
 import logging
 import os
-import re
 import subprocess
-from dataclasses import dataclass
-from typing import Any, Dict, Optional
-
-import requests
+from typing import Any, Dict
 
 from app.agent.services.summaries import (
     append_agent_summary,
     build_agent_summary_markdown,
 )
+from app.agent.services.pull_request import create_or_update_pr
 from app.agent.state import AgentState
-from app.agent.utils import get_codespace
+from app.agent.utils import get_codespace, get_current_git_branch
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True)
-class GitHubContext:
-    """
-    Holds repository metadata required for PR operations.
-    """
-
-    owner: str
-    repo: str
-    branch: str
-    headers: Dict[str, str]
 
 
 def create_pull_request_node():
@@ -69,7 +54,7 @@ def _create_or_update_pr(state: AgentState):
         return False, summary_entries
 
     pr_title, pr_body = _build_pr_inputs(state)
-    pr_success, pr_msg, pr_url = _execute_create_pull_request(
+    pr_success, pr_msg, pr_url = create_or_update_pr(
         title=pr_title,
         body=pr_body,
     )
@@ -195,11 +180,10 @@ def _execute_git_push() -> tuple[bool, str]:
         return False, "ERROR: GITHUB_TOKEN missing"
 
     try:
-        current_branch = subprocess.check_output(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            cwd=get_codespace(),
-            text=True,
-        ).strip()
+        current_branch = get_current_git_branch()
+        if not current_branch:
+            logger.error("Could not determine current branch")
+            return False, "ERROR: Could not determine current branch"
 
         if current_branch in ["main", "master"]:
             logger.warning("Attempted to push to default branch '%s'", current_branch)
@@ -232,140 +216,3 @@ def _execute_git_push() -> tuple[bool, str]:
         safe_stderr = e.stderr.replace(token, "***") if token else e.stderr
         logger.error("Git push failed: %s", safe_stderr)
         return False, f"Push FAILED: {safe_stderr}"
-
-
-def _get_github_repo_info() -> tuple[Optional[str], Optional[str], Optional[str]]:
-    """Get GitHub owner, repo, and current branch. Returns (owner, repo, branch)."""
-    try:
-        remote_url = subprocess.check_output(
-            ["git", "remote", "get-url", "origin"],
-            cwd=get_codespace(),
-            text=True,
-        ).strip()
-
-        match = re.search(r"github\.com[:/](.+)/(.+?)(\.git)?$", remote_url)
-        if not match:
-            return None, None, None
-
-        owner, repo = match.group(1), match.group(2)
-
-        current_branch = subprocess.check_output(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            cwd=get_codespace(),
-            text=True,
-        ).strip()
-
-        return owner, repo, current_branch
-    except subprocess.CalledProcessError:
-        return None, None, None
-
-
-def _build_github_context(token: str) -> Optional[GitHubContext]:
-    """
-    Assemble the metadata required to interact with the GitHub API.
-    """
-    owner, repo, current_branch = _get_github_repo_info()
-    if not owner or not repo or not current_branch:
-        logger.error("Could not parse GitHub repository information")
-        return None
-
-    headers: Dict[str, str] = {
-        "Authorization": f"token {token}",
-        "Accept": "application/vnd.github.v3+json",
-    }
-
-    return GitHubContext(
-        owner=owner,
-        repo=repo,
-        branch=current_branch,
-        headers=headers,
-    )
-
-
-def _update_existing_pr(
-    context: GitHubContext,
-    pr_data: dict,
-    body: str,
-) -> tuple[bool, str, Optional[str]]:
-    """Add comment to existing PR. Returns (success, message, pr_url)."""
-    pr_number = pr_data.get("number")
-    pr_url = pr_data.get("html_url")
-    comment_url = (
-        f"https://api.github.com/repos/{context.owner}/{context.repo}/issues/"
-        f"{pr_number}/comments"
-    )
-    comment_payload = {"body": f"**Automated Update:**\n\n{body}"}
-
-    response = requests.post(
-        comment_url,
-        json=comment_payload,
-        headers=context.headers,
-        timeout=10,
-    )
-
-    if response.status_code == 201:
-        logger.info("Added comment to existing PR: %s", pr_url)
-        return True, f"SUCCESS: Added comment to existing PR: {pr_url}", pr_url
-    return False, f"ERROR adding comment: {response.status_code}", pr_url
-
-
-def _create_new_pr(
-    context: GitHubContext,
-    title: str,
-    body: str,
-) -> tuple[bool, str, Optional[str]]:
-    """Create new PR. Returns (success, message, pr_url)."""
-    url = f"https://api.github.com/repos/{context.owner}/{context.repo}/pulls"
-    payload = {"title": title, "body": body, "head": context.branch, "base": "main"}
-    response = requests.post(url, json=payload, headers=context.headers, timeout=10)
-
-    if response.status_code == 422:
-        logger.info("Target 'main' not found, trying 'master'...")
-        payload["base"] = "master"
-        response = requests.post(url, json=payload, headers=context.headers, timeout=10)
-
-    if response.status_code == 201:
-        pr_url = response.json().get("html_url")
-        logger.info("Pull Request created: %s", pr_url)
-        return True, f"SUCCESS: Pull Request created: {pr_url}", pr_url
-
-    return False, f"ERROR creating PR: {response.status_code} - {response.text}", None
-
-
-def _execute_create_pull_request(
-    title: str, body: str
-) -> tuple[bool, str, Optional[str]]:
-    """
-    Creates or updates a GitHub Pull Request.
-    Returns (success, message, pr_url).
-    """
-    token = os.environ.get("GITHUB_TOKEN")
-    if not token:
-        logger.error("GITHUB_TOKEN missing for PR creation")
-        return False, "ERROR: GITHUB_TOKEN missing", None
-
-    try:
-        context = _build_github_context(token)
-        if not context:
-            return False, "ERROR: Missing GitHub context", None
-
-        if context.branch in ["main", "master"]:
-            return (
-                False,
-                "ERROR: You are on main/master. Create a feature branch first!",
-                None,
-            )
-
-        url = f"https://api.github.com/repos/{context.owner}/{context.repo}/pulls"
-        params = {"head": f"{context.owner}:{context.branch}", "state": "open"}
-        response = requests.get(url, headers=context.headers, params=params, timeout=10)
-
-        if response.status_code == 200:
-            pulls = response.json()
-            if pulls:
-                return _update_existing_pr(context, pulls[0], body)
-
-        return _create_new_pr(context, title, body)
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        logger.error("PR creation failed: %s", str(e))
-        return False, f"ERROR: {str(e)}", None
