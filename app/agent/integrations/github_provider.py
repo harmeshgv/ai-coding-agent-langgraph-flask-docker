@@ -38,18 +38,18 @@ class GitHubProvider(BoardProvider):
     a consistent interface for board operations.
     """
 
-    def __init__(self, agent_config: AgentSettings):
+    def __init__(self, agent_settings: AgentSettings):
         """
         Initialize the GitHub provider.
 
         Args:
-            agent_config: Agent configuration containing GitHub project settings.
+            agent_settings: Agent settings containing GitHub project configuration.
         """
-        self.agent_config = agent_config
+        self.agent_settings = agent_settings
 
     async def get_states(self) -> list[dict]:
         """Fetch all states (columns) from the GitHub Project."""
-        return await get_project_columns(self.agent_config)
+        return await get_project_columns(self.agent_settings)
 
     async def get_tasks_from_state(self, state_id: str) -> list[BoardTask]:
         """
@@ -58,7 +58,7 @@ class GitHubProvider(BoardProvider):
         Note: For GitHub Projects, we need to resolve the column name from ID
         first, then fetch items. The state_id here is the column option ID.
         """
-        columns = await get_project_columns(self.agent_config)
+        columns = await get_project_columns(self.agent_settings)
         target_column = next(
             (col for col in columns if col["id"] == state_id), None
         )
@@ -67,7 +67,7 @@ class GitHubProvider(BoardProvider):
             logger.warning("Column with ID %s not found", state_id)
             return []
 
-        items = await get_items_from_column(target_column["name"], self.agent_config)
+        items = await get_items_from_column(target_column["name"], self.agent_settings)
 
         return [
             BoardTask(
@@ -83,11 +83,11 @@ class GitHubProvider(BoardProvider):
 
     async def move_task_to_state(self, task_id: str, state_id: str) -> None:
         """Move a task to a different state (column)."""
-        await move_item_to_column(task_id, state_id, self.agent_config)
+        await move_item_to_column(task_id, state_id, self.agent_settings)
 
     async def move_task_to_named_state(self, task_id: str, state_name: str) -> str:
         """Move a task to a state (column) identified by name."""
-        return await move_item_to_named_column(task_id, state_name, self.agent_config)
+        return await move_item_to_named_column(task_id, state_name, self.agent_settings)
 
     async def add_comment(self, task_id: str, comment: str) -> None:
         """
@@ -97,11 +97,11 @@ class GitHubProvider(BoardProvider):
         project item ID. If the task_id is a project item ID, we need to
         extract the content ID first.
         """
-        await add_comment_to_issue(task_id, comment, self.agent_config)
+        await add_comment_to_issue(task_id, comment, self.agent_settings)
 
     async def get_comments(self, task_id: str) -> list[BoardComment]:
         """Fetch all comments for a GitHub task."""
-        comments = await get_issue_comments(task_id, self.agent_config)
+        comments = await get_issue_comments(task_id, self.agent_settings)
 
         return [
             BoardComment(
@@ -120,7 +120,7 @@ class GitHubProvider(BoardProvider):
         Note: GitHub Projects v2 doesn't provide direct access to field change
         history through the API. This returns an empty list.
         """
-        moves = await get_item_status_history(task_id, self.agent_config)
+        moves = await get_item_status_history(task_id, self.agent_settings)
 
         return [
             BoardStateMove(
@@ -140,7 +140,7 @@ class GitHubProvider(BoardProvider):
             name,
             description,
             state_name,
-            self.agent_config,
+            self.agent_settings,
         )
 
         return BoardTask(

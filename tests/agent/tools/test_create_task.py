@@ -13,7 +13,7 @@ from app.agent.tools.create_task import create_task_tool
 def test_create_task_tool_creates_card_successfully():
     """Test that the tool creates a task successfully with valid config."""
     async def _test():
-        sys_config = {
+        settings = {
             "board_provider": "trello",
             "task_readfrom_state": "Sprint Backlog",
         }
@@ -34,7 +34,7 @@ def test_create_task_tool_creates_card_successfully():
             "app.agent.tools.create_task.create_board_provider",
             return_value=mock_provider,
         ):
-            tool = create_task_tool(sys_config, "Sprint Backlog")
+            tool = create_task_tool(settings, "Sprint Backlog")
             result = await tool.ainvoke(
                 {
                     "title": "Add Feature X",
@@ -59,11 +59,11 @@ def test_create_task_tool_creates_card_successfully():
 def test_create_task_tool_handles_missing_target_state():
     """Test that the tool handles missing target list configuration."""
     async def _test():
-        sys_config = {
+        settings = {
             "board_provider": "trello",
         }
 
-        tool = create_task_tool(sys_config, target_state="")
+        tool = create_task_tool(settings, target_state="")
         result = await tool.ainvoke(
             {
                 "title": "Test Task",
@@ -79,7 +79,7 @@ def test_create_task_tool_handles_missing_target_state():
 def test_create_task_tool_handles_value_error():
     """Test that the tool handles ValueError from board provider."""
     async def _test():
-        sys_config = {
+        settings = {
             "board_provider": "trello",
             "task_readfrom_state": "Invalid List",
         }
@@ -93,7 +93,7 @@ def test_create_task_tool_handles_value_error():
             "app.agent.tools.create_task.create_board_provider",
             return_value=mock_provider,
         ):
-            tool = create_task_tool(sys_config, "Invalid List")
+            tool = create_task_tool(settings, "Invalid List")
             result = await tool.ainvoke(
                 {
                     "title": "Test Task",
@@ -110,7 +110,7 @@ def test_create_task_tool_handles_value_error():
 def test_create_task_tool_handles_runtime_error():
     """Test that the tool handles RuntimeError from board provider."""
     async def _test():
-        sys_config = {
+        settings = {
             "board_provider": "trello",
             "task_readfrom_state": "Sprint Backlog",
         }
@@ -124,7 +124,7 @@ def test_create_task_tool_handles_runtime_error():
             "app.agent.tools.create_task.create_board_provider",
             return_value=mock_provider,
         ):
-            tool = create_task_tool(sys_config, "Sprint Backlog")
+            tool = create_task_tool(settings, "Sprint Backlog")
             result = await tool.ainvoke(
                 {
                     "title": "Test Task",
@@ -140,9 +140,9 @@ def test_create_task_tool_handles_runtime_error():
 
 def test_create_task_tool_has_correct_metadata():
     """Test that the tool has correct name and description."""
-    sys_config = {"board_provider": "trello"}
+    settings = {"board_provider": "trello"}
 
-    tool = create_task_tool(sys_config, "To Do")
+    tool = create_task_tool(settings, "To Do")
 
     assert tool.name == "create_task"
     assert "Creates a new task" in tool.description
@@ -152,8 +152,8 @@ def test_create_task_tool_has_correct_metadata():
 def test_create_task_tool_binds_sys_config_and_target_state():
     """Test that the factory function correctly binds sys_config and target state."""
     async def _test():
-        sys_config_1 = {"board_provider": "trello"}
-        sys_config_2 = {"board_provider": "trello"}
+        settings_1 = {"board_provider": "trello"}
+        settings_2 = {"board_provider": "trello"}
 
         mock_task_1 = BoardTask(
             id="task123",
@@ -183,8 +183,8 @@ def test_create_task_tool_binds_sys_config_and_target_state():
             "app.agent.tools.create_task.create_board_provider",
             side_effect=[mock_provider_1, mock_provider_2],
         ):
-            tool_1 = create_task_tool(sys_config_1, "List A")
-            tool_2 = create_task_tool(sys_config_2, "List B")
+            tool_1 = create_task_tool(settings_1, "List A")
+            tool_2 = create_task_tool(settings_2, "List B")
 
             # Call tool_1
             await tool_1.ainvoke({"title": "Task 1", "instructions": "Instructions 1"})

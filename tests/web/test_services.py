@@ -57,7 +57,7 @@ class TestDashboardService:
 class TestSettingsService:
     """Tests for SettingsService."""
 
-    def test_get_or_create_config_returns_existing(self, app):
+    def test_get_or_create_settings_returns_existing(self, app):
         """Should return existing config if one exists."""
         with app.app_context():
             existing = AgentSettings(task_system_type="TRELLO")
@@ -70,14 +70,14 @@ class TestSettingsService:
             db.session.commit()
             existing_id = existing.id
 
-            result = SettingsService.get_or_create_config()
+            result = SettingsService.get_or_create_settings()
 
             assert result.id == existing_id
 
-    def test_get_or_create_config_creates_new(self, app):
+    def test_get_or_create_settings_creates_new(self, app):
         """Should create new config with defaults if none exists."""
         with app.app_context():
-            result = SettingsService.get_or_create_config()
+            result = SettingsService.get_or_create_settings()
 
             assert result is not None
             assert result.task_system_type == "TRELLO"
@@ -85,7 +85,7 @@ class TestSettingsService:
     def test_save_settings_persists_to_db(self, app):
         """Should persist settings to database."""
         with app.app_context():
-            config = AgentSettings(task_system_type="TRELLO")
+            settings = AgentSettings(task_system_type="TRELLO")
             schema = SettingsFormSchema(
                 task_system_type="TRELLO",
                 agent_skill_level="senior",
@@ -94,7 +94,7 @@ class TestSettingsService:
                 llm_config=LLMConfigSchema(provider="openai"),
             )
 
-            result = SettingsService.save_settings(schema, config)
+            result = SettingsService.save_settings(schema, settings)
 
             assert result.id is not None
             assert result.agent_skill_level == "senior"
@@ -129,14 +129,14 @@ class TestSettingsService:
     def test_get_template_context_includes_required_keys(self, app):
         """Template context should include all required keys."""
         with app.app_context():
-            config = AgentSettings(
+            settings = AgentSettings(
                 task_system_type="TRELLO",
                 llm_provider="mistral",
             )
 
-            result = SettingsService.get_template_context(config)
+            result = SettingsService.get_template_context(settings)
 
-            assert "config" in result
+            assert "settings" in result
             assert "form_data" in result
             assert "selected_provider" in result
             assert "missing_provider_env" in result
@@ -162,7 +162,7 @@ class TestSettingsService:
     def test_validate_and_save_success(self, app):
         """Should return success tuple on valid save."""
         with app.app_context():
-            config = AgentSettings(task_system_type="TRELLO")
+            settings = AgentSettings(task_system_type="TRELLO")
 
             with app.test_request_context(
                 "/settings",
@@ -173,7 +173,7 @@ class TestSettingsService:
                     "llm_provider": "mistral",
                 },
             ):
-                success, error_msg = SettingsService.validate_and_save(config)
+                success, error_msg = SettingsService.validate_and_save(settings)
 
             assert success is True
             assert error_msg is None

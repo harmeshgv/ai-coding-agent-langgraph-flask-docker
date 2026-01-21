@@ -18,8 +18,8 @@ from app.agent.state import AgentState
 
 logger = logging.getLogger(__name__)
 
-async def _get_task_context(board_provider: BoardProvider, agent_config: AgentSettings):
-    active_task_system = agent_config.get_active_task_system()
+async def _get_task_context(board_provider: BoardProvider, agent_settings: AgentSettings):
+    active_task_system = agent_settings.get_active_task_system()
     if not active_task_system:
         logger.warning("No active task system configured")
         return None
@@ -140,7 +140,7 @@ def _build_system_message_content(task_name: str, task_description: str, comment
     return system_content
 
 
-def create_task_fetch_node(agent_config: AgentSettings):
+def create_task_fetch_node(agent_settings: AgentSettings):
     """Creates a task fetch node for the agent graph."""
 
     async def task_fetch(state: AgentState) -> dict:  # pylint: disable=unused-argument
@@ -150,9 +150,9 @@ def create_task_fetch_node(agent_config: AgentSettings):
         logger.info("Fetching tasks from board")
 
         try:
-            board_provider = create_board_provider(agent_config)
+            board_provider = create_board_provider(agent_settings)
 
-            active_task_system = agent_config.get_active_task_system()
+            active_task_system = agent_settings.get_active_task_system()
             if not active_task_system:
                 logger.warning("No active task system configured")
                 return {"task_id": None}
@@ -163,7 +163,7 @@ def create_task_fetch_node(agent_config: AgentSettings):
 
             task_in_progress_state_name = active_task_system.in_progress_state
 
-            task_context = await _get_task_context(board_provider, agent_config)
+            task_context = await _get_task_context(board_provider, agent_settings)
             if not task_context:
                 return {"task_id": None}
 

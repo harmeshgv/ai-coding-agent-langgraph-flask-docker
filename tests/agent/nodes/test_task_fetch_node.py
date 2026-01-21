@@ -19,9 +19,9 @@ from app.core.models import AgentSettings, TaskSystem
 
 
 @pytest.fixture
-def agent_config():
+def agent_settings():
     """Fixture for agent configuration."""
-    config = AgentSettings(task_system_type="TRELLO")
+    settings = AgentSettings(task_system_type="TRELLO")
     task_system = TaskSystem(
         task_system_type="TRELLO",
         board_provider="trello",
@@ -30,8 +30,8 @@ def agent_config():
         in_progress_state="In Progress",
         moveto_state="In Review",
     )
-    config.task_systems.append(task_system)
-    return config
+    settings.task_systems.append(task_system)
+    return settings
 
 
 @pytest.fixture
@@ -63,13 +63,13 @@ def mock_board_provider():
 
 
 @pytest.mark.asyncio
-async def test_task_fetch_node_success(agent_config, mock_board_provider):
+async def test_task_fetch_node_success(agent_settings, mock_board_provider):
     """Test successful task fetch."""
     with patch(
         "app.agent.nodes.task_fetch_node.create_board_provider",
         return_value=mock_board_provider,
     ):
-        task_fetch = create_task_fetch_node(agent_config)
+        task_fetch = create_task_fetch_node(agent_settings)
         result = await task_fetch({})
         
         assert result["task_id"] == "card1"
@@ -82,9 +82,9 @@ async def test_task_fetch_node_success(agent_config, mock_board_provider):
 
 
 @pytest.mark.asyncio
-async def test_task_fetch_node_no_review_list(agent_config, mock_board_provider):
+async def test_task_fetch_node_no_review_list(agent_settings, mock_board_provider):
     """Test task fetch when no review list is configured."""
-    temp_config = AgentSettings(task_system_type="TRELLO")
+    temp_settings = AgentSettings(task_system_type="TRELLO")
     task_system = TaskSystem(
         task_system_type="TRELLO",
         board_provider="trello",
@@ -93,20 +93,20 @@ async def test_task_fetch_node_no_review_list(agent_config, mock_board_provider)
         in_progress_state="In Progress",
         moveto_state=None,
     )
-    temp_config.task_systems.append(task_system)
+    temp_settings.task_systems.append(task_system)
     
     with patch(
         "app.agent.nodes.task_fetch_node.create_board_provider",
         return_value=mock_board_provider,
     ):
-        task_fetch = create_task_fetch_node(temp_config)
+        task_fetch = create_task_fetch_node(temp_settings)
         result = await task_fetch({})
         
         assert result["task_id"] is None
 
 
 @pytest.mark.asyncio
-async def test_task_fetch_node_no_cards(agent_config, mock_board_provider):
+async def test_task_fetch_node_no_cards(agent_settings, mock_board_provider):
     """Test task fetch when no tasks are available."""
     mock_board_provider.get_tasks_from_state = AsyncMock(return_value=[])
     
@@ -114,14 +114,14 @@ async def test_task_fetch_node_no_cards(agent_config, mock_board_provider):
         "app.agent.nodes.task_fetch_node.create_board_provider",
         return_value=mock_board_provider,
     ):
-        task_fetch = create_task_fetch_node(agent_config)
+        task_fetch = create_task_fetch_node(agent_settings)
         result = await task_fetch({})
         
         assert result["task_id"] is None
 
 
 @pytest.mark.asyncio
-async def test_task_fetch_node_with_comments(agent_config, mock_board_provider):
+async def test_task_fetch_node_with_comments(agent_settings, mock_board_provider):
     """Test task fetch with comments when task is already in In Progress (returned from review)."""
     from app.agent.integrations.board_provider import BoardStateMove
     
@@ -170,7 +170,7 @@ async def test_task_fetch_node_with_comments(agent_config, mock_board_provider):
         "app.agent.nodes.task_fetch_node.create_board_provider",
         return_value=mock_board_provider,
     ):
-        task_fetch = create_task_fetch_node(agent_config)
+        task_fetch = create_task_fetch_node(agent_settings)
         result = await task_fetch({})
         
         # Comments should be included since task was already in In Progress (returned from review)
@@ -180,7 +180,7 @@ async def test_task_fetch_node_with_comments(agent_config, mock_board_provider):
 
 
 @pytest.mark.asyncio
-async def test_task_fetch_node_no_comments_from_todo(agent_config, mock_board_provider):
+async def test_task_fetch_node_no_comments_from_todo(agent_settings, mock_board_provider):
     """Test that comments are NOT included when task is picked from To Do (not from review)."""
     from app.agent.integrations.board_provider import BoardStateMove
     
@@ -222,7 +222,7 @@ async def test_task_fetch_node_no_comments_from_todo(agent_config, mock_board_pr
         "app.agent.nodes.task_fetch_node.create_board_provider",
         return_value=mock_board_provider,
     ):
-        task_fetch = create_task_fetch_node(agent_config)
+        task_fetch = create_task_fetch_node(agent_settings)
         result = await task_fetch({})
         
         # Comments should NOT be included since task was picked from To Do

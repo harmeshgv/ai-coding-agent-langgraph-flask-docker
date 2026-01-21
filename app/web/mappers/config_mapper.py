@@ -86,48 +86,48 @@ class ConfigMapper:
 
     @staticmethod
     def schema_to_model(
-        schema: SettingsFormSchema, config: AgentSettings
+        schema: SettingsFormSchema, settings: AgentSettings
     ) -> AgentSettings:
         """Apply schema values to an AgentSettings model.
 
         Args:
             schema: Validated settings form schema.
-            config: Existing AgentSettings to update (or new instance).
+            settings: Existing AgentSettings to update (or new instance).
 
         Returns:
             Updated AgentSettings model (not yet committed).
         """
-        config.task_system_type = schema.task_system_type
-        config.agent_skill_level = schema.agent_skill_level
-        config.polling_interval_seconds = schema.polling_interval_seconds
-        config.repo_type = schema.repo_type
-        config.github_repo_url = schema.github_repo_url
-        config.is_active = schema.is_active
+        settings.task_system_type = schema.task_system_type
+        settings.agent_skill_level = schema.agent_skill_level
+        settings.polling_interval_seconds = schema.polling_interval_seconds
+        settings.repo_type = schema.repo_type
+        settings.github_repo_url = schema.github_repo_url
+        settings.is_active = schema.is_active
 
-        ConfigMapper._apply_llm_config(schema.llm_config, config)
+        ConfigMapper._apply_llm_config(schema.llm_config, settings)
 
         # Always save all provider configs
         if schema.trello_config:
-            ConfigMapper._apply_trello_config(schema.trello_config, config)
+            ConfigMapper._apply_trello_config(schema.trello_config, settings)
         if schema.github_config:
-            ConfigMapper._apply_github_config(schema.github_config, config)
+            ConfigMapper._apply_github_config(schema.github_config, settings)
 
-        return config
+        return settings
 
     @staticmethod
-    def _apply_llm_config(llm_schema: LLMConfigSchema, config: AgentSettings) -> None:
+    def _apply_llm_config(llm_schema: LLMConfigSchema, settings: AgentSettings) -> None:
         """Apply LLM configuration from schema to model."""
-        config.llm_provider = llm_schema.provider
-        config.llm_model_large = llm_schema.model_large
-        config.llm_model_small = llm_schema.model_small
-        config.llm_temperature = llm_schema.temperature
+        settings.llm_provider = llm_schema.provider
+        settings.llm_model_large = llm_schema.model_large
+        settings.llm_model_small = llm_schema.model_small
+        settings.llm_temperature = llm_schema.temperature
 
     @staticmethod
     def _apply_trello_config(
-        trello_schema: TrelloConfigSchema, config: AgentSettings
+        trello_schema: TrelloConfigSchema, settings: AgentSettings
     ) -> None:
         """Apply Trello configuration from schema to model."""
-        task_system = ConfigMapper._get_or_create_task_system(config, "trello")
+        task_system = ConfigMapper._get_or_create_task_system(settings, "trello")
         task_system.board_provider = "trello"
         task_system.task_system_type = "TRELLO"
 
@@ -142,10 +142,10 @@ class ConfigMapper:
 
     @staticmethod
     def _apply_github_config(
-        github_schema: GitHubConfigSchema, config: AgentSettings
+        github_schema: GitHubConfigSchema, settings: AgentSettings
     ) -> None:
         """Apply GitHub Projects configuration from schema to model."""
-        task_system = ConfigMapper._get_or_create_task_system(config, "github")
+        task_system = ConfigMapper._get_or_create_task_system(settings, "github")
         task_system.board_provider = "github"
         task_system.task_system_type = "GITHUB"
 
@@ -161,10 +161,10 @@ class ConfigMapper:
 
     @staticmethod
     def _get_or_create_task_system(
-        config: AgentSettings, provider: str
+        settings: AgentSettings, provider: str
     ) -> TaskSystem:
         """Get existing TaskSystem for provider or create a new one."""
-        existing = config.get_task_system(provider)
+        existing = settings.get_task_system(provider)
         if existing:
             return existing
 
@@ -172,37 +172,37 @@ class ConfigMapper:
             task_system_type=provider.upper(),
             board_provider=provider,
         )
-        config.task_systems.append(task_system)
+        settings.task_systems.append(task_system)
         return task_system
 
     @staticmethod
-    def model_to_form_data(config: AgentSettings) -> Dict[str, Any]:
+    def model_to_form_data(settings: AgentSettings) -> Dict[str, Any]:
         """Convert AgentSettings model to form data dictionary for template rendering.
 
         Args:
-            config: AgentSettings model to convert.
+            settings: AgentSettings model to convert.
 
         Returns:
             Dictionary suitable for populating the settings form template.
         """
         form_data: Dict[str, Any] = {
-            "agent_skill_level": config.agent_skill_level,
-            "llm_provider": config.llm_provider or "mistral",
-            "llm_model_large": config.llm_model_large,
-            "llm_model_small": config.llm_model_small,
-            "llm_temperature": config.llm_temperature,
+            "agent_skill_level": settings.agent_skill_level,
+            "llm_provider": settings.llm_provider or "mistral",
+            "llm_model_large": settings.llm_model_large,
+            "llm_model_small": settings.llm_model_small,
+            "llm_temperature": settings.llm_temperature,
         }
 
-        ConfigMapper._add_trello_form_data(config, form_data)
-        ConfigMapper._add_github_form_data(config, form_data)
+        ConfigMapper._add_trello_form_data(settings, form_data)
+        ConfigMapper._add_github_form_data(settings, form_data)
         ConfigMapper._add_jira_form_data(form_data)
 
         return form_data
 
     @staticmethod
-    def _add_trello_form_data(config: AgentSettings, form_data: Dict[str, Any]) -> None:
+    def _add_trello_form_data(settings: AgentSettings, form_data: Dict[str, Any]) -> None:
         """Add Trello-specific fields to form data."""
-        task_system = config.get_task_system("trello")
+        task_system = settings.get_task_system("trello")
         if task_system:
             form_data["trello_api_key"] = task_system.api_key
             form_data["trello_api_token"] = task_system.token
@@ -223,9 +223,9 @@ class ConfigMapper:
             form_data["trello_moveto_list"] = None
 
     @staticmethod
-    def _add_github_form_data(config: AgentSettings, form_data: Dict[str, Any]) -> None:
+    def _add_github_form_data(settings: AgentSettings, form_data: Dict[str, Any]) -> None:
         """Add GitHub Projects-specific fields to form data."""
-        task_system = config.get_task_system("github")
+        task_system = settings.get_task_system("github")
         env_token = os.environ.get("GITHUB_TOKEN")
         if task_system:
             form_data["github_api_token"] = task_system.token or env_token

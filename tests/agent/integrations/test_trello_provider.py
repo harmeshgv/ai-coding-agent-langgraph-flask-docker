@@ -13,7 +13,7 @@ from app.core.models import AgentSettings, TaskSystem
 
 
 @pytest.fixture
-def agent_config():
+def agent_settings():
     """Fixture for agent configuration."""
     task_system = TaskSystem(
         board_provider="trello",
@@ -21,15 +21,15 @@ def agent_config():
         token="test_token",
         board_id="test_board_id",
     )
-    config = AgentSettings(task_system_type="TRELLO")
-    config.task_system = task_system
-    return config
+    settings = AgentSettings(task_system_type="TRELLO")
+    settings.task_system = task_system
+    return settings
 
 
 @pytest.fixture
-def trello_provider(agent_config):
+def trello_provider(agent_settings):
     """Fixture for TrelloProvider instance."""
-    return TrelloProvider(agent_config)
+    return TrelloProvider(agent_settings)
 
 
 @pytest.mark.asyncio
@@ -79,7 +79,7 @@ async def test_move_task_to_state(trello_provider):
     ) as mock_move:
         await trello_provider.move_task_to_state("card1", "list2")
         
-        mock_move.assert_called_once_with("card1", "list2", trello_provider.agent_config)
+        mock_move.assert_called_once_with("card1", "list2", trello_provider.agent_settings)
 
 
 @pytest.mark.asyncio
@@ -104,7 +104,7 @@ async def test_add_comment(trello_provider):
     ) as mock_add:
         await trello_provider.add_comment("card1", "Test comment")
         
-        mock_add.assert_called_once_with("card1", "Test comment", trello_provider.agent_config)
+        mock_add.assert_called_once_with("card1", "Test comment", trello_provider.agent_settings)
 
 
 @pytest.mark.asyncio

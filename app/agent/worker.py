@@ -55,7 +55,7 @@ async def _execute_agent_cycle(runtime: AgentRuntimeContext) -> None:
             await stack.enter_async_context(git_mcp)
 
             if runtime.mcp_system_def["command"]:
-                active_task_system = runtime.agent_config.get_active_task_system()
+                active_task_system = runtime.agent_settings.get_active_task_system()
                 if active_task_system:
                     task_mcp = McpServerClient(
                         runtime.mcp_system_def["command"][0],
@@ -72,12 +72,12 @@ async def _execute_agent_cycle(runtime: AgentRuntimeContext) -> None:
         else:
             logger.info("Skipping MCP server startup (ENABLE_MCP_SERVERS is disabled)")
 
-        llm_large: BaseChatModel = get_llm(runtime.agent_config, True)
-        llm_small: BaseChatModel = get_llm(runtime.agent_config, False)
+        llm_large: BaseChatModel = get_llm(runtime.agent_settings, True)
+        llm_small: BaseChatModel = get_llm(runtime.agent_settings, False)
         workflow: StateGraph = create_workflow(
             llm_large,
             llm_small,
-            runtime.agent_config,
+            runtime.agent_settings,
             runtime.agent_stack,
         )
 
@@ -93,7 +93,7 @@ async def _execute_agent_cycle(runtime: AgentRuntimeContext) -> None:
                 "task_name": None,
                 "task_state_id": None,
                 "agent_stack": runtime.agent_stack,
-                "agent_skill_level": runtime.agent_config.agent_skill_level,
+                "agent_skill_level": runtime.agent_settings.agent_skill_level,
                 "task_skill_level": None,
                 "plan_state": None,
             },

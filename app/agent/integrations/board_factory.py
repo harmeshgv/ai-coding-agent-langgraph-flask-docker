@@ -16,16 +16,16 @@ from app.core.models import AgentSettings
 logger = logging.getLogger(__name__)
 
 
-def create_board_provider(agent_config: AgentSettings) -> BoardProvider:
+def create_board_provider(agent_settings: AgentSettings) -> BoardProvider:
     """
     Factory function to create the appropriate board provider.
     
     The provider type is determined by the 'board_provider' key inside
-    AgentSettings.system_config.
+    AgentSettings.task_system_type.
     If not specified, defaults to 'trello' for backward compatibility.
     
     Args:
-        agent_config: Agent configuration containing system configuration settings
+        agent_settings: Agent settings containing system configuration details
     
     Returns:
         An instance of a BoardProvider implementation
@@ -34,18 +34,18 @@ def create_board_provider(agent_config: AgentSettings) -> BoardProvider:
         ValueError: If an unknown provider type is specified
         
     Example:
-        >>> agent_config = AgentSettings(system_config={"board_provider": "trello", ...})
-        >>> provider = create_board_provider(agent_config)
+        >>> agent_settings = AgentSettings(task_system_type="TRELLO", ...})
+        >>> provider = create_board_provider(agent_settings)
     """
-    provider_type = agent_config.task_system_type.lower()
+    provider_type = agent_settings.task_system_type.lower()
 
     logger.info("Creating board provider: %s", provider_type)
 
     if provider_type == "trello":
-        return TrelloProvider(agent_config)
+        return TrelloProvider(agent_settings)
 
     if provider_type == "github":
-        return GitHubProvider(agent_config)
+        return GitHubProvider(agent_settings)
 
     raise ValueError(
         f"Unknown board provider: {provider_type}. "

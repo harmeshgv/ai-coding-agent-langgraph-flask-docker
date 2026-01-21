@@ -25,9 +25,9 @@ class TestConfigMapperSchemaToModel:
             github_repo_url="https://github.com/test/repo.git",
             is_active=True,
         )
-        config = AgentSettings()
+        settings = AgentSettings()
 
-        result = ConfigMapper.schema_to_model(schema, config)
+        result = ConfigMapper.schema_to_model(schema, settings)
 
         assert result.task_system_type == "TRELLO"
         assert result.agent_skill_level == "senior"
@@ -45,9 +45,9 @@ class TestConfigMapperSchemaToModel:
             temperature="0.7",
         )
         schema = SettingsFormSchema(llm_config=llm_config)
-        config = AgentSettings()
+        settings = AgentSettings()
 
-        result = ConfigMapper.schema_to_model(schema, config)
+        result = ConfigMapper.schema_to_model(schema, settings)
 
         assert result.llm_provider == "openai"
         assert result.llm_model_large == "gpt-4"
@@ -70,9 +70,9 @@ class TestConfigMapperSchemaToModel:
             task_system_type="TRELLO",
             trello_config=trello_config,
         )
-        config = AgentSettings()
+        settings = AgentSettings()
 
-        result = ConfigMapper.schema_to_model(schema, config)
+        result = ConfigMapper.schema_to_model(schema, settings)
 
         trello_ts = result.get_task_system("trello")
         assert trello_ts is not None
@@ -91,10 +91,10 @@ class TestConfigMapperSchemaToModel:
             task_system_type="TRELLO",
             trello_config=trello_config,
         )
-        config = AgentSettings()
-        assert len(config.task_systems) == 0
+        settings = AgentSettings()
+        assert len(settings.task_systems) == 0
 
-        result = ConfigMapper.schema_to_model(schema, config)
+        result = ConfigMapper.schema_to_model(schema, settings)
 
         trello_ts = result.get_task_system("trello")
         assert trello_ts is not None
@@ -112,10 +112,10 @@ class TestConfigMapperSchemaToModel:
             task_system_type="TRELLO",
             trello_config=trello_config,
         )
-        config = AgentSettings()
-        config.task_systems.append(existing_task_system)
+        settings = AgentSettings()
+        settings.task_systems.append(existing_task_system)
 
-        result = ConfigMapper.schema_to_model(schema, config)
+        result = ConfigMapper.schema_to_model(schema, settings)
 
         trello_ts = result.get_task_system("trello")
         assert trello_ts is existing_task_system
@@ -274,9 +274,9 @@ class TestConfigMapperGitHub:
             task_system_type="GITHUB",
             github_config=github_config,
         )
-        config = AgentSettings()
+        settings = AgentSettings()
 
-        result = ConfigMapper.schema_to_model(schema, config)
+        result = ConfigMapper.schema_to_model(schema, settings)
 
         github_ts = result.get_task_system("github")
         assert github_ts is not None
@@ -298,10 +298,10 @@ class TestConfigMapperGitHub:
             task_system_type="GITHUB",
             github_config=github_config,
         )
-        config = AgentSettings()
-        assert len(config.task_systems) == 0
+        settings = AgentSettings()
+        assert len(settings.task_systems) == 0
 
-        result = ConfigMapper.schema_to_model(schema, config)
+        result = ConfigMapper.schema_to_model(schema, settings)
 
         github_ts = result.get_task_system("github")
         assert github_ts is not None
@@ -309,7 +309,7 @@ class TestConfigMapperGitHub:
 
     def test_extracts_github_fields(self, app):
         """GitHub fields should be extracted from model."""
-        config = AgentSettings(task_system_type="GITHUB")
+        settings = AgentSettings(task_system_type="GITHUB")
         github_ts = TaskSystem(
             board_provider="github",
             token="ghp_test_token",
@@ -322,9 +322,9 @@ class TestConfigMapperGitHub:
             in_progress_state="In Progress",
             moveto_state="Done",
         )
-        config.task_systems.append(github_ts)
+        settings.task_systems.append(github_ts)
 
-        result = ConfigMapper.model_to_form_data(config)
+        result = ConfigMapper.model_to_form_data(settings)
 
         assert result["github_api_token"] == "ghp_test_token"
         assert result["github_project_owner"] == "octocat"
@@ -371,9 +371,9 @@ class TestConfigMapperGitHub:
 
     def test_handles_missing_github_task_system(self, app):
         """Missing GitHub task_system should result in default values."""
-        config = AgentSettings(task_system_type="TRELLO")
+        settings = AgentSettings(task_system_type="TRELLO")
 
-        result = ConfigMapper.model_to_form_data(config)
+        result = ConfigMapper.model_to_form_data(settings)
 
         assert result["github_api_token"] is None
         assert result["github_project_owner"] is None
@@ -384,8 +384,8 @@ class TestConfigMapperGitHub:
     def test_github_token_prefills_from_env(self, app, monkeypatch):
         """GitHub token should fall back to GITHUB_TOKEN env when not stored."""
         monkeypatch.setenv("GITHUB_TOKEN", "env_token")
-        config = AgentSettings(task_system_type="TRELLO")
+        settings = AgentSettings(task_system_type="TRELLO")
 
-        result = ConfigMapper.model_to_form_data(config)
+        result = ConfigMapper.model_to_form_data(settings)
 
         assert result["github_api_token"] == "env_token"

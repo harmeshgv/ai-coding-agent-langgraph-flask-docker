@@ -12,8 +12,8 @@ from app.core.models import AgentSettings
 
 def test_create_trello_provider():
     """Test creating a Trello provider."""
-    agent_config = AgentSettings(task_system_type="TRELLO")
-    provider = create_board_provider(agent_config)
+    agent_settings = AgentSettings(task_system_type="TRELLO")
+    provider = create_board_provider(agent_settings)
     
     assert isinstance(provider, BoardProvider)
     assert isinstance(provider, TrelloProvider)
@@ -21,15 +21,15 @@ def test_create_trello_provider():
 
 def test_create_trello_provider_default():
     """Test that Trello is the default provider."""
-    agent_config = AgentSettings(task_system_type="TRELLO")
-    provider = create_board_provider(agent_config)
+    agent_settings = AgentSettings(task_system_type="TRELLO")
+    provider = create_board_provider(agent_settings)
     
     assert isinstance(provider, TrelloProvider)
 
 
 def test_create_unknown_provider_raises_error():
     """Test that unknown provider raises ValueError."""
-    agent_config = AgentSettings(task_system_type="UNKNOWN")
+    agent_settings = AgentSettings(task_system_type="UNKNOWN")
 
     with pytest.raises(ValueError, match="Unknown board provider: unknown"):
-        create_board_provider(agent_config)
+        create_board_provider(agent_settings)

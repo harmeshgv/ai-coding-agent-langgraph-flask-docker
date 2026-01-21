@@ -20,11 +20,11 @@ logger = logging.getLogger(__name__)
 GITHUB_GRAPHQL_ENDPOINT = "/graphql"
 
 
-def _get_github_token(agent_config: Optional[AgentSettings] = None) -> str:
+def _get_github_token(agent_settings: Optional[AgentSettings] = None) -> str:
     """Get GitHub token from config or environment variable.
 
     Args:
-        agent_config: Optional agent configuration containing token.
+        agent_settings: Optional agent configuration containing token.
 
     Returns:
         GitHub PAT token.
@@ -32,8 +32,8 @@ def _get_github_token(agent_config: Optional[AgentSettings] = None) -> str:
     Raises:
         ValueError: If no token is available.
     """
-    if agent_config:
-        task_system = agent_config.get_task_system("github")
+    if agent_settings:
+        task_system = agent_settings.get_task_system("github")
         if task_system and task_system.token:
             return task_system.token
 
@@ -46,27 +46,27 @@ def _get_github_token(agent_config: Optional[AgentSettings] = None) -> str:
     return token
 
 
-def _get_base_url(agent_config: AgentSettings) -> str:
+def _get_base_url(agent_settings: AgentSettings) -> str:
     """Get the GitHub API base URL from config or default."""
-    task_system = agent_config.get_task_system("github")
+    task_system = agent_settings.get_task_system("github")
     if task_system and task_system.base_url:
         return task_system.base_url.rstrip("/")
     return "https://api.github.com"
 
 
-def _get_graphql_url(agent_config: AgentSettings) -> str:
+def _get_graphql_url(agent_settings: AgentSettings) -> str:
     """Get the full GraphQL endpoint URL."""
-    return f"{_get_base_url(agent_config)}{GITHUB_GRAPHQL_ENDPOINT}"
+    return f"{_get_base_url(agent_settings)}{GITHUB_GRAPHQL_ENDPOINT}"
 
 
 async def _execute_graphql(
     query: str,
     variables: dict[str, Any],
-    agent_config: AgentSettings,
+    agent_settings: AgentSettings,
 ) -> dict[str, Any]:
     """Execute a GraphQL query against the GitHub API."""
-    url = _get_graphql_url(agent_config)
-    token = _get_github_token(agent_config)
+    url = _get_graphql_url(agent_settings)
+    token = _get_github_token(agent_settings)
 
     headers = {
         "Authorization": f"Bearer {token}",
@@ -94,7 +94,7 @@ async def _execute_graphql(
 async def get_project_id(
     owner: str,
     project_number: int,
-    agent_config: AgentSettings,
+    agent_settings: AgentSettings,
 ) -> str:
     """
     Fetch the project node ID for a GitHub Project v2.
@@ -102,7 +102,7 @@ async def get_project_id(
     Args:
         owner: The user or organization that owns the project.
         project_number: The project number (visible in the URL).
-        agent_config: Agent configuration containing GitHub settings.
+        agent_settings: Agent configuration containing GitHub settings.
 
     Returns:
         The project node ID (e.g., "PVT_kwDOBxxxxxx").
@@ -124,7 +124,7 @@ async def get_project_id(
     variables = {"owner": owner, "number": project_number}
 
     try:
-        data = await _execute_graphql(query, variables, agent_config)
+        data = await _execute_graphql(query, variables, agent_settings)
         project = data.get("data", {}).get("user", {}).get("projectV2")
 
         if project:
@@ -144,7 +144,7 @@ async def get_project_id(
     }
     """
 
-    data = await _execute_graphql(query_org, variables, agent_config)
+    data = await _execute_graphql(query_org, variables, agent_settings)
     project = data.get("data", {}).get("organization", {}).get("projectV2")
 
     if project:
@@ -156,14 +156,14 @@ async def get_project_id(
     )
 
 
-async def get_project_columns(agent_config: AgentSettings) -> list[dict[str, str]]:
+async def get_project_columns(agent_settings: AgentSettings) -> list[dict[str, str]]:
     """
     Fetch all columns (status field options) from the GitHub Project.
 
     Returns:
         List of dicts with 'id' and 'name' keys for each column.
     """
-    task_system = agent_config.get_task_system("github")
+    task_system = agent_settings.get_task_system("github")
     project_id = task_system.board_id if task_system else None
 
     query = """
@@ -185,7 +185,7 @@ async def get_project_columns(agent_config: AgentSettings) -> list[dict[str, str
     """
 
     variables = {"projectId": project_id}
-    data = await _execute_graphql(query, variables, agent_config)
+    data = await _execute_graphql(query, variables, agent_settings)
 
     field = data.get("data", {}).get("node", {}).get("field", {})
     options = field.get("options", [])
@@ -193,9 +193,9 @@ async def get_project_columns(agent_config: AgentSettings) -> list[dict[str, str
     return [{"id": opt["id"], "name": opt["name"]} for opt in options]
 
 
-async def get_status_field_id(agent_config: AgentSettings) -> str:
+async def get_status_field_id(agent_settings: AgentSettings) -> str:
     """Get the ID of the Status field for the project."""
-    task_system = agent_config.get_task_system("github")
+    task_system = agent_settings.get_task_system("github")
     project_id = task_system.board_id if task_system else None
 
     query = """
@@ -213,7 +213,7 @@ async def get_status_field_id(agent_config: AgentSettings) -> str:
     """
 
     variables = {"projectId": project_id}
-    data = await _execute_graphql(query, variables, agent_config)
+    data = await _execute_graphql(query, variables, agent_settings)
 
     field = data.get("data", {}).get("node", {}).get("field", {})
     field_id = field.get("id")
@@ -226,19 +226,19 @@ async def get_status_field_id(agent_config: AgentSettings) -> str:
 
 async def get_items_from_column(
     column_name: str,
-    agent_config: AgentSettings,
+    agent_settings: AgentSettings,
 ) -> list[dict[str, Any]]:
     """
     Fetch all items from a specific column (status) in the GitHub Project.
 
     Args:
         column_name: The name of the column/status to fetch items from.
-        agent_config: Agent configuration.
+        agent_settings: Agent configuration.
 
     Returns:
         List of item dicts with id, title, body, url, and content info.
     """
-    task_system = agent_config.get_task_system("github")
+    task_system = agent_settings.get_task_system("github")
     project_id = task_system.board_id if task_system else None
 
     query = """
@@ -284,7 +284,7 @@ async def get_items_from_column(
 
     while True:
         variables = {"projectId": project_id, "cursor": cursor}
-        data = await _execute_graphql(query, variables, agent_config)
+        data = await _execute_graphql(query, variables, agent_settings)
 
         items_data = data.get("data", {}).get("node", {}).get("items", {})
         nodes = items_data.get("nodes", [])
@@ -315,7 +315,7 @@ async def get_items_from_column(
 async def move_item_to_column(
     item_id: str,
     column_id: str,
-    agent_config: AgentSettings,
+    agent_settings: AgentSettings,
 ) -> None:
     """
     Move a project item to a different column (status).
@@ -323,11 +323,11 @@ async def move_item_to_column(
     Args:
         item_id: The project item node ID.
         column_id: The target column/status option ID.
-        agent_config: Agent configuration.
+        agent_settings: Agent configuration.
     """
-    task_system = agent_config.get_task_system("github")
+    task_system = agent_settings.get_task_system("github")
     project_id = task_system.board_id if task_system else None
-    field_id = await get_status_field_id(agent_config)
+    field_id = await get_status_field_id(agent_settings)
 
     mutation = """
     mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
@@ -353,14 +353,14 @@ async def move_item_to_column(
         "optionId": column_id,
     }
 
-    await _execute_graphql(mutation, variables, agent_config)
+    await _execute_graphql(mutation, variables, agent_settings)
     logger.info("Moved item %s to column %s", item_id, column_id)
 
 
 async def move_item_to_named_column(
     item_id: str,
     column_name: str,
-    agent_config: AgentSettings,
+    agent_settings: AgentSettings,
 ) -> str:
     """
     Move a project item to a column identified by name.
@@ -368,7 +368,7 @@ async def move_item_to_named_column(
     Returns:
         The ID of the target column.
     """
-    columns = await get_project_columns(agent_config)
+    columns = await get_project_columns(agent_settings)
     target_column = next(
         (col for col in columns if col["name"] == column_name), None
     )
@@ -376,14 +376,14 @@ async def move_item_to_named_column(
     if not target_column:
         raise ValueError(f"Column '{column_name}' not found in project")
 
-    await move_item_to_column(item_id, target_column["id"], agent_config)
+    await move_item_to_column(item_id, target_column["id"], agent_settings)
     return target_column["id"]
 
 
 async def add_comment_to_issue(
     issue_id: str,
     comment: str,
-    agent_config: AgentSettings,
+    agent_settings: AgentSettings,
 ) -> None:
     """
     Add a comment to a GitHub issue.
@@ -391,7 +391,7 @@ async def add_comment_to_issue(
     Args:
         issue_id: The issue node ID.
         comment: The comment text to add.
-        agent_config: Agent configuration.
+        agent_settings: Agent configuration.
     """
     mutation = """
     mutation($issueId: ID!, $body: String!) {
@@ -406,13 +406,13 @@ async def add_comment_to_issue(
     """
 
     variables = {"issueId": issue_id, "body": comment}
-    await _execute_graphql(mutation, variables, agent_config)
+    await _execute_graphql(mutation, variables, agent_settings)
     logger.info("Added comment to issue %s", issue_id)
 
 
 async def get_issue_comments(
     issue_id: str,
-    agent_config: AgentSettings,
+    agent_settings: AgentSettings,
 ) -> list[dict[str, Any]]:
     """
     Fetch all comments for a GitHub issue.
@@ -440,7 +440,7 @@ async def get_issue_comments(
     """
 
     variables = {"issueId": issue_id}
-    data = await _execute_graphql(query, variables, agent_config)
+    data = await _execute_graphql(query, variables, agent_settings)
 
     comments = data.get("data", {}).get("node", {}).get("comments", {}).get("nodes", [])
 
@@ -457,7 +457,7 @@ async def get_issue_comments(
 
 async def get_item_status_history(
     item_id: str,
-    agent_config: AgentSettings,
+    agent_settings: AgentSettings,
 ) -> list[dict[str, Any]]:
     """
     Fetch status change history for a project item.
@@ -477,7 +477,7 @@ async def create_draft_issue(
     title: str,
     body: str,
     column_name: str,
-    agent_config: AgentSettings,
+    agent_settings: AgentSettings,
 ) -> dict[str, Any]:
     """
     Create a new draft issue in the GitHub Project.
@@ -486,12 +486,12 @@ async def create_draft_issue(
         title: The title of the draft issue.
         body: The body/description of the draft issue.
         column_name: The column to create the issue in.
-        agent_config: Agent configuration.
+        agent_settings: Agent configuration.
 
     Returns:
         Dict with id, title, and column info.
     """
-    task_system = agent_config.get_task_system("github")
+    task_system = agent_settings.get_task_system("github")
     project_id = task_system.board_id if task_system else None
 
     mutation = """
@@ -516,10 +516,10 @@ async def create_draft_issue(
         "body": body,
     }
 
-    data = await _execute_graphql(mutation, variables, agent_config)
+    data = await _execute_graphql(mutation, variables, agent_settings)
     item_id = data["data"]["addProjectV2DraftIssue"]["projectItem"]["id"]
 
-    await move_item_to_named_column(item_id, column_name, agent_config)
+    await move_item_to_named_column(item_id, column_name, agent_settings)
 
     return {
         "id": item_id,

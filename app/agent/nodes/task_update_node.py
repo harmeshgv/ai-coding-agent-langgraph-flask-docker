@@ -21,12 +21,12 @@ AGENT_DEFAULT_COMMENT = "Task completed by AI Agent."
 logger = logging.getLogger(__name__)
 
 
-def create_task_update_node(agent_config: AgentSettings):
+def create_task_update_node(agent_settings: AgentSettings):
     """
     Factory function that creates the task update node.
 
     Args:
-        agent_config: Agent configuration containing board provider credentials
+        agent_settings: Agent configuration containing board provider credentials
             and settings.
 
     Returns:
@@ -44,7 +44,7 @@ def create_task_update_node(agent_config: AgentSettings):
 
         logger.info("Updating task %s", task_id)
 
-        board_provider = create_board_provider(agent_config)
+        board_provider = create_board_provider(agent_settings)
 
         try:
             final_comments = _build_agent_comments(state)
@@ -55,7 +55,7 @@ def create_task_update_node(agent_config: AgentSettings):
             logger.error("Failed to add comment to task: %s", e)
 
         try:
-            active_task_system = agent_config.get_active_task_system()
+            active_task_system = agent_settings.get_active_task_system()
             if not active_task_system:
                 logger.warning("No active task system configured")
                 return {"task_id": None}

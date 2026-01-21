@@ -30,8 +30,8 @@ if __name__ == "__main__":
         with app.app_context():
             try:
                 # Polling Interval dynamisch aus DB lesen
-                config = AgentSettings.query.first()
-                polling_interval = config.polling_interval_seconds if config else 60
+                settings = AgentSettings.query.first()
+                polling_interval = settings.polling_interval_seconds if settings else 60
 
                 # Den eigentlichen Job ausführen
                 # Hinweis: run_agent_cycle muss so angepasst sein,

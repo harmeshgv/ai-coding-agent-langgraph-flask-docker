@@ -98,25 +98,25 @@ LLM_PROVIDERS: Dict[str, Callable[[str, float], BaseChatModel]] = {
 }
 
 
-def get_llm(agent_config: AgentSettings, large: bool = True) -> BaseChatModel:
+def get_llm(agent_settings: AgentSettings, large: bool = True) -> BaseChatModel:
     """
     Factory function to get an LLM instance based on the provider.
 
-    :param agent_config: Agent configuration providing llm_* fields.
+    :param agent_settings: Agent settings providing llm_* fields.
     :param large: If True, use llm_model_large; otherwise use llm_model_small.
     :return: An instance of a class that inherits from BaseChatModel.
     :raises ValueError: If provider is not specified, model is not specified,
                        or provider is unknown.
     """
-    provider = agent_config.llm_provider
+    provider = agent_settings.llm_provider
     if not provider:
         raise ValueError("llm_provider not specified")
 
-    model = agent_config.llm_model_large if large else agent_config.llm_model_small
+    model = agent_settings.llm_model_large if large else agent_settings.llm_model_small
     if not model:
         raise ValueError("llm_model not specified")
 
-    temperature_value = agent_config.llm_temperature
+    temperature_value = agent_settings.llm_temperature
     temperature = float(temperature_value or 0.0)
 
     provider_factory = LLM_PROVIDERS.get(provider)
