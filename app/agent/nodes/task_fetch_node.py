@@ -69,10 +69,81 @@ async def _ensure_task_in_progress(
     return task_context
 
 
+async def _fetch_rejection_comments(
+    board_provider: BoardProvider,
+    task_id: str,
+    original_state_name: str,
+    task_in_progress_state_name: str,
+    review_state_name: str,
+) -> list:
+    """
+    Fetch comments from review if task was returned from review to in-progress.
+    
+    Returns:
+        List of comments if task was in review and returned, empty list otherwise.
+    """
+    comments = []
+    if original_state_name == task_in_progress_state_name:
+        latest_move = await get_latest_move_to_in_progress(
+            board_provider, task_id, review_state_name, task_in_progress_state_name
+        )
+        logger.info("Latest move: %s", latest_move)
+        if latest_move:
+            all_comments = await board_provider.get_comments(task_id)
+            comments = filter_comments_between_timestamps(
+                all_comments,
+                latest_move["review_timestamp"],
+                latest_move["return_timestamp"],
+            )
+            logger.info("Found move from review to in-progress")
+        else:
+            logger.info("No move from review to in-progress found")
+    else:
+        logger.info("Original state is not in progress")
+
+    if comments:
+        logger.info("Found comments to append")
+    else:
+        logger.info("No comments to append")
+
+    return comments
+
+
+def _build_system_message_content(task_name: str, task_description: str, comments: list) -> str:
+    """
+    Build the system message content including task details and optional review comments.
+    
+    Args:
+        task_name: Name of the task
+        task_description: Description of the task
+        comments: List of review comments (may be empty)
+    
+    Returns:
+        Formatted system message content string
+    """
+    system_content = f"Task: {task_name}\n\nDescription:\n{task_description}"
+    if comments:
+        system_content += (
+            "\n\n--- The Pull Request was rejected with "
+            + "the following review comments: ---\n"
+            + "NOTE: The task description shows the current implementation. "
+            + "The comments below indicate ADDITIONAL work that needs to be done.\n"
+        )
+        for comment in reversed(comments):
+            author = comment.author
+            text = comment.text
+            date = comment.date.isoformat()
+            system_content += f"\n[{date}] {author}:\n{text}\n"
+
+        logger.info("PR review message content: %s", system_content)
+
+    return system_content
+
+
 def create_task_fetch_node(agent_config: AgentConfig):
     """Creates a task fetch node for the agent graph."""
 
-    async def task_fetch(state: AgentState) -> dict:  # pylint: disable=unused-argument,too-many-locals
+    async def task_fetch(state: AgentState) -> dict:  # pylint: disable=unused-argument
         """
         Fetches the first task from the board in a specified list.
         """
@@ -97,8 +168,6 @@ def create_task_fetch_node(agent_config: AgentConfig):
                 return {"task_id": None}
 
             task = task_context["task"]
-
-            # Capture the original state before moving the task
             original_state_name = task_context["state_name"]
 
             task_context = await _ensure_task_in_progress(
@@ -108,62 +177,21 @@ def create_task_fetch_node(agent_config: AgentConfig):
                 task_in_progress_state_name,
             )
 
-            # Only fetch and append comments if:
-            # 1. Original state (before move) was "In Progress"
-            # 2. Latest move was from "In Review" to "In Progress"
-            comments = []
-            if original_state_name == task_in_progress_state_name:
-                latest_move = await get_latest_move_to_in_progress(
-                    board_provider, task.id, review_state_name, task_in_progress_state_name
-                )
-                logger.info("Latest move: %s", latest_move)
-                if latest_move:
-                    # Get comments between review timestamp and return to in-progress
-                    all_comments = await board_provider.get_comments(task.id)
-                    comments = filter_comments_between_timestamps(
-                        all_comments,
-                        latest_move["review_timestamp"],
-                        latest_move["return_timestamp"],
-                    )
-                    logger.info("Found move from review to in-progress")
-                else:
-                    logger.info("No move from review to in-progress found")
-            else:
-                logger.info("Original state is not in progress")
-
-            content = task.name + "\n" + task.description
-            if comments:
-                logger.info("Found comments to append")
-                content += (
-                    "\n\n--- The Pull Request was rejected with "
-                    + "the following comments: ---\n"
-                )
-                for comment in reversed(comments):
-                    author = comment.author
-                    text = comment.text
-                    date = comment.date.isoformat()
-                    content += f"\n[{date}] {author}:\n{text}\n"
-            else:
-                logger.info("No comments to append")
+            comments = await _fetch_rejection_comments(
+                board_provider,
+                task.id,
+                original_state_name,
+                task_in_progress_state_name,
+                review_state_name,
+            )
 
             logger.info("Processing task ID: %s - %s", task.id, task.name)
 
-            # Build SystemMessage with full context including rejection comments if present
-            system_content = f"Task: {task.name}\n\nDescription:\n{task.description}"
-            if comments:
-                system_content += (
-                    "\n\n--- The Pull Request was rejected with "
-                    + "the following review comments: ---\n"
-                    + "NOTE: The task description shows the current implementation. "
-                    + "The comments below indicate ADDITIONAL work that needs to be done.\n"
-                )
-                for comment in reversed(comments):
-                    author = comment.author
-                    text = comment.text
-                    date = comment.date.isoformat()
-                    system_content += f"\n[{date}] {author}:\n{text}\n"
-
-                logger.info("PR review message content: %s", system_content)
+            system_content = _build_system_message_content(
+                task.name,
+                task.description,
+                comments,
+            )
 
             return {
                 "task_id": task.id,

@@ -59,7 +59,7 @@ def create_task_update_node(agent_config: AgentConfig):
             if not active_task_system:
                 logger.warning("No active task system configured")
                 return {"task_id": None}
-            
+
             task_moveto_state = active_task_system.moveto_state
             task_moveto_state_id = await board_provider.move_task_to_named_state(
                 task_id, task_moveto_state
