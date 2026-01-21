@@ -40,16 +40,33 @@ body {
 }
 
 .form-select {
-    color: var(--dark-text);
-    background-color: var(--dark-card);
-    border-color: var(--dark-border);
+    color: var(--dark-text) !important;
+    background-color: var(--dark-card) !important;
+    border-color: var(--dark-border) !important;
 }
 
 .form-control {
-    color: var(--dark-text);
-    background-color: var(--dark-card);
-    border-color: var(--dark-border);
+    color: var(--dark-text) !important;
+    background-color: var(--dark-card) !important;
+    border-color: var(--dark-border) !important;
     font-size: 1.1rem;
+}
+
+.form-control::placeholder {
+    color: #6c757d !important;
+}
+
+.form-control:disabled,
+.form-control[readonly] {
+    color: var(--dark-text) !important;
+    background-color: #1a1d21 !important;
+}
+
+input,
+textarea,
+select {
+    color: var(--dark-text) !important;
+    background-color: var(--dark-card) !important;
 }
 
 .btn-primary {
@@ -61,8 +78,8 @@ body {
 
 .form-control:focus,
 .form-select:focus {
-    color: var(--dark-text);
-    background-color: var(--dark-card);
+    color: var(--dark-text) !important;
+    background-color: var(--dark-card) !important;
 }
 
 .list-group-item {
@@ -84,4 +101,82 @@ body {
 
 .hero-section {
     min-height: 90dvh; /* Passt sich an, wenn die Adressleiste ein/ausblendet */
+}
+
+/* Ensure all text in task description and plan areas is readable in dark theme */
+#task-description,
+#task-description *,
+.card-body p,
+.card-body div,
+.card-body span,
+.card-body li,
+.card-body td,
+.card-body th {
+    color: var(--dark-text) !important;
+}
+
+#task-description a,
+.card-body a {
+    color: #6ea8fe !important;
+}
+
+#task-description code,
+#task-description pre,
+.card-body code,
+.card-body pre {
+    background-color: #1a1d21 !important;
+    color: #e9ecef !important;
+    border-color: var(--dark-border) !important;
+}
+
+#task-description blockquote,
+.card-body blockquote {
+    border-left: 4px solid var(--dark-border);
+    padding-left: 1rem;
+    color: #adb5bd !important;
+}
+
+/* Plan content styling */
+.card-body pre {
+    color: var(--dark-text);
+    background-color: transparent;
+}
+
+/* Override any inline styles that might set dark text colors */
+.card-body [style*="color"],
+#task-description [style*="color"] {
+    color: var(--dark-text) !important;
+}
+
+/* Ensure headings are visible */
+.card-body h1,
+.card-body h2,
+.card-body h3,
+.card-body h4,
+.card-body h5,
+.card-body h6 {
+    color: var(--dark-text-highlight) !important;
+}
+
+/* Table styling for dark theme */
+.card-body table {
+    color: var(--dark-text) !important;
+    border-color: var(--dark-border) !important;
+}
+
+.card-body table th,
+.card-body table td {
+    border-color: var(--dark-border) !important;
+}
+
+/* Strong/bold text */
+.card-body strong,
+.card-body b {
+    color: var(--dark-text-highlight) !important;
+}
+
+/* Muted/secondary text */
+.card-body .text-muted,
+.card-body small {
+    color: #adb5bd !important;
 }

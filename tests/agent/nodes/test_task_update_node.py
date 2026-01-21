@@ -14,16 +14,20 @@ from app.agent.nodes.task_update_node import (
     create_task_update_node,
     get_agent_result,
 )
-from app.core.models import AgentConfig
+from app.core.models import AgentConfig, TaskSystem
 
 
 @pytest.fixture
 def agent_config():
     """Fixture for agent configuration."""
-    return AgentConfig(
+    config = AgentConfig(task_system_type="TRELLO")
+    task_system = TaskSystem(
         task_system_type="TRELLO",
-        task_moveto_state="Done",
+        board_provider="trello",
+        moveto_state="Done",
     )
+    config.task_systems.append(task_system)
+    return config
 
 
 @pytest.fixture

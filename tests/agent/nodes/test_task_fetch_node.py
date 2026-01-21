@@ -15,19 +15,23 @@ from app.agent.nodes.task_fetch_node import (
     filter_comments_between_timestamps,
     get_latest_move_to_in_progress,
 )
-from app.core.models import AgentConfig
+from app.core.models import AgentConfig, TaskSystem
 
 
 @pytest.fixture
 def agent_config():
     """Fixture for agent configuration."""
-    return AgentConfig(
+    config = AgentConfig(task_system_type="TRELLO")
+    task_system = TaskSystem(
         task_system_type="TRELLO",
-        task_backlog_state="Backlog",
-        task_readfrom_state="To Do",
-        task_in_progress_state="In Progress",
-        task_moveto_state="In Review",
+        board_provider="trello",
+        backlog_state="Backlog",
+        readfrom_state="To Do",
+        in_progress_state="In Progress",
+        moveto_state="In Review",
     )
+    config.task_systems.append(task_system)
+    return config
 
 
 @pytest.fixture
@@ -80,13 +84,16 @@ async def test_task_fetch_node_success(agent_config, mock_board_provider):
 @pytest.mark.asyncio
 async def test_task_fetch_node_no_review_list(agent_config, mock_board_provider):
     """Test task fetch when no review list is configured."""
-    temp_config = AgentConfig(
-        task_system_type=agent_config.task_system_type,
-        task_backlog_state=agent_config.task_backlog_state,
-        task_readfrom_state=agent_config.task_readfrom_state,
-        task_in_progress_state=agent_config.task_in_progress_state,
-        task_moveto_state=None,
+    temp_config = AgentConfig(task_system_type="TRELLO")
+    task_system = TaskSystem(
+        task_system_type="TRELLO",
+        board_provider="trello",
+        backlog_state="Backlog",
+        readfrom_state="To Do",
+        in_progress_state="In Progress",
+        moveto_state=None,
     )
+    temp_config.task_systems.append(task_system)
     
     with patch(
         "app.agent.nodes.task_fetch_node.create_board_provider",

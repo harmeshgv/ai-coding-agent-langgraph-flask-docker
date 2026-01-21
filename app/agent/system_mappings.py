@@ -63,6 +63,12 @@ MCP_SYSTEM_DEFINITIONS = {
         "polling_args": {"boardId": "{trello_todo_list_id}"},
         "response_parser": trello_response_parser,
     },
+    "GITHUB": {
+        "command": [],
+        "polling_tool": None,
+        "polling_args": {},
+        "response_parser": None,
+    },
     # Future systems like JIRA can be added here
     # "JIRA": {
     #     "command": ["npx", "-y", "@modelcontextprotocol/server-jira"],

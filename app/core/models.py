@@ -116,22 +116,27 @@ class AgentConfig(db.Model):
     polling_interval_seconds = db.Column(db.Integer, nullable=False, default=60)
     is_active = db.Column(db.Boolean, nullable=False, default=False)
     agent_skill_level = db.Column(db.String(50), nullable=True)
-    task_system_id = db.Column(
-        db.Integer,
-        ForeignKey("task_system.id"),
-        nullable=True,
-        unique=True,
-        index=True,
-    )
-
-    task_system = db.relationship(
+    task_systems = db.relationship(
         "TaskSystem",
         back_populates="agent_config",
-        uselist=False,
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
+    def get_task_system(self, provider: str) -> "TaskSystem | None":
+        """Get TaskSystem by provider name."""
+        for ts in self.task_systems:
+            if ts.board_provider == provider:
+                return ts
+        return None
+
+    def get_active_task_system(self) -> "TaskSystem | None":
+        """Get the currently active TaskSystem based on task_system_type."""
+        provider = "trello" if self.task_system_type == "TRELLO" else self.task_system_type.lower()
+        return self.get_task_system(provider)
+
     def __repr__(self):
-        return f"<AgentConfig {self.id} task_system_id={self.task_system_id}>"
+        return f"<AgentConfig {self.id} type={self.task_system_type}>"
 
     def as_dict(self) -> Dict[str, Any]:
         """Return a plain dictionary of column values for logging/debugging."""
@@ -142,27 +147,43 @@ class AgentConfig(db.Model):
 
 
 class TaskSystem(db.Model):
-    """Represents an external task system configuration (e.g., Trello)."""
+    """Represents an external task system configuration (e.g., Trello, GitHub Projects)."""
 
     __tablename__ = "task_system"
 
     id = db.Column(db.Integer, primary_key=True)
+    agent_config_id = db.Column(
+        db.Integer,
+        ForeignKey("agent_config.id"),
+        nullable=False,
+        index=True,
+    )
     task_system_type = db.Column(db.String(50), nullable=False, default="TRELLO")
     board_provider = db.Column(db.String(50), nullable=False)
     api_key = db.Column(EncryptedString, nullable=True)
     token = db.Column(EncryptedString, nullable=True)
     base_url = db.Column(db.String(200), nullable=True)
     board_id = db.Column(db.String(100), nullable=True)
+    # GitHub Projects specific fields
+    project_owner = db.Column(db.String(100), nullable=True)
+    project_number = db.Column(db.Integer, nullable=True)
+    # State mappings per provider
+    backlog_state = db.Column(db.String(100), nullable=True)
+    readfrom_state = db.Column(db.String(100), nullable=True)
+    in_progress_state = db.Column(db.String(100), nullable=True)
+    moveto_state = db.Column(db.String(100), nullable=True)
 
     agent_config = db.relationship(
         "AgentConfig",
-        back_populates="task_system",
-        cascade="all, delete-orphan",
-        uselist=False,
+        back_populates="task_systems",
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint('agent_config_id', 'board_provider', name='uq_agent_config_provider'),
     )
 
     def __repr__(self):
-        return f"<TaskSystem {self.id} type={self.task_system_type}>"
+        return f"<TaskSystem {self.id} provider={self.board_provider}>"
 
 # pylint: disable=too-few-public-methods
 class Task(db.Model):

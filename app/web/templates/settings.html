@@ -7,7 +7,7 @@
             <div class="col-md-3">
                 <div class="list-group">
                     <a class="list-group-item list-group-item-action active mb-2" data-bs-toggle="list" href="#agent-config">Agent Configuration</a>
-                    <a class="list-group-item list-group-item-action mb-2" data-bs-toggle="list" href="#trello-config">Trello Configuration</a>
+                    <a class="list-group-item list-group-item-action mb-2" data-bs-toggle="list" href="#task-system">Task System</a>
                     <a class="list-group-item list-group-item-action mb-2" data-bs-toggle="list" href="#source-code">Source Code</a>
                     <a class="list-group-item list-group-item-action mb-2" data-bs-toggle="list" href="#llm-config">LLM Configuration</a>
                 </div>
@@ -19,13 +19,6 @@
                         <div class="card">
                             <div class="card-header"><h5>Agent Configuration</h5></div>
                             <div class="card-body">
-                                <div class="mb-3">
-                                    <label class="form-label">Active Task System</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="task_system_type" id="radio-trello" value="TRELLO" {% if config.task_system_type=="TRELLO" %}checked{% endif %}>
-                                        <label class="form-check-label" for="radio-trello">Trello</label>
-                                    </div>
-                                </div>
                                 <div class="mb-3">
                                     <label for="polling_interval_seconds" class="form-label">Polling Interval (seconds)</label>
                                     <input type="number" class="form-control" id="polling_interval_seconds" name="polling_interval_seconds" value="{{ config.polling_interval_seconds or 60 }}" required>
@@ -50,44 +43,119 @@
                             </div>
                         </div>
                     </div>
-                    <div class="tab-pane fade" id="trello-config">
+                    <div class="tab-pane fade" id="task-system">
                         <div class="card">
-                            <div class="card-header"><h5>Trello Configuration</h5></div>
+                            <div class="card-header">
+                                <h5>Task System</h5>
+                            </div>
                             <div class="card-body">
-                                <fieldset id="fieldset-trello">
-                                    <div class="mb-3">
-                                        <label for="trello_api_key" class="form-label">Trello API Key</label>
-                                        <input type="text" class="form-control" id="trello_api_key" name="trello_api_key" value="{{ form_data.trello_api_key or '' }}">
+                                <div class="mb-3">
+                                    <label class="form-label">Active Task System</label>
+                                    <div class="d-flex gap-3">
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="task_system_type" id="radio-trello" value="TRELLO" {% if config.task_system_type=="TRELLO" %}checked{% endif %}>
+                                            <label class="form-check-label" for="radio-trello">Trello</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="task_system_type" id="radio-github" value="GITHUB" {% if config.task_system_type=="GITHUB" %}checked{% endif %}>
+                                            <label class="form-check-label" for="radio-github">GitHub Project Board</label>
+                                        </div>
                                     </div>
-                                    <div class="mb-3">
-                                        <label for="trello_api_token" class="form-label">Trello API Token</label>
-                                        <input type="password" class="form-control" id="trello_api_token" name="trello_api_token" value="{{ form_data.trello_api_token or '' }}">
+                                </div>
+                                <hr>
+                                <ul class="nav nav-tabs" id="taskSystemTabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="trello-tab" data-bs-toggle="tab" data-bs-target="#trello-config" type="button" role="tab" aria-controls="trello-config" aria-selected="true">Trello</button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="github-tab" data-bs-toggle="tab" data-bs-target="#github-config" type="button" role="tab" aria-controls="github-config" aria-selected="false">GitHub Project Board</button>
+                                    </li>
+                                </ul>
+                                <div class="tab-content pt-3" id="taskSystemTabContent">
+                                    <div class="tab-pane fade show active" id="trello-config" role="tabpanel" aria-labelledby="trello-tab">
+                                        <fieldset id="fieldset-trello">
+                                            <div class="mb-3">
+                                                <label for="trello_api_key" class="form-label">Trello API Key</label>
+                                                <input type="text" class="form-control" id="trello_api_key" name="trello_api_key" value="{{ form_data.trello_api_key or '' }}">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="trello_api_token" class="form-label">Trello API Token</label>
+                                                <input type="password" class="form-control" id="trello_api_token" name="trello_api_token" value="{{ form_data.trello_api_token or '' }}">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="trello_board_id" class="form-label">Board ID</label>
+                                                <input type="text" class="form-control" id="trello_board_id" name="trello_board_id" value="{{ form_data.trello_board_id or '' }}">
+                                            </div>
+                                            <hr>
+                                            <h6 class="mb-3">Column Mapping</h6>
+                                            <div class="mb-3">
+                                                <label for="trello_backlog_list" class="form-label">Backlog state</label>
+                                                <input type="text" class="form-control" id="trello_backlog_list" name="trello_backlog_list" value="{{ form_data.trello_backlog_list or '' }}">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="trello_readfrom_list" class="form-label">Read first card from state</label>
+                                                <input type="text" class="form-control" id="trello_readfrom_list" name="trello_readfrom_list" value="{{ form_data.trello_readfrom_list or '' }}">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="trello_progress_list" class="form-label">Move card to in progress state</label>
+                                                <input type="text" class="form-control" id="trello_progress_list" name="trello_progress_list" value="{{ form_data.trello_progress_list or '' }}">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="trello_moveto_list" class="form-label">Move updated card to state</label>
+                                                <input type="text" class="form-control" id="trello_moveto_list" name="trello_moveto_list" value="{{ form_data.trello_moveto_list or '' }}">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="trello_base_url" class="form-label">Trello Base URL</label>
+                                                <input type="text" class="form-control" id="trello_base_url" name="trello_base_url" value="{{ form_data.trello_base_url or 'https://api.trello.com' }}">
+                                            </div>
+                                        </fieldset>
                                     </div>
-                                    <div class="mb-3">
-                                        <label for="trello_board_id" class="form-label">Board ID</label>
-                                        <input type="text" class="form-control" id="trello_board_id" name="trello_board_id" value="{{ form_data.trello_board_id or '' }}">
+                                    <div class="tab-pane fade" id="github-config" role="tabpanel" aria-labelledby="github-tab">
+                                        <fieldset id="fieldset-github">
+                                            <div class="mb-3">
+                                                <label for="github_api_token" class="form-label">GitHub API Token (PAT)</label>
+                                                <input type="password" class="form-control" id="github_api_token" name="github_api_token" value="{{ form_data.github_api_token or '' }}">
+                                                <small class="form-text text-muted">Personal Access Token for board operations. Leave the content as is to use the GITHUB_TOKEN environment variable.</small>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="github_project_owner" class="form-label">Project Owner (User or Organization)</label>
+                                                <input type="text" class="form-control" id="github_project_owner" name="github_project_owner" value="{{ form_data.github_project_owner or '' }}" placeholder="e.g. octocat or my-org">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="github_project_number" class="form-label">Project Number</label>
+                                                <input type="number" class="form-control" id="github_project_number" name="github_project_number" value="{{ form_data.github_project_number or '' }}" placeholder="e.g. 1">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="github_board_id" class="form-label">Project ID (fetched automatically)</label>
+                                                <input type="text" class="form-control" id="github_board_id" name="github_board_id" value="{{ form_data.github_board_id or '' }}" readonly>
+                                                <small class="form-text text-muted">This field is populated automatically when you save with a valid project owner and number.</small>
+                                            </div>
+                                            <hr>
+                                            <h6 class="mb-3">Column Mapping</h6>
+                                            <div class="mb-3">
+                                                <label for="github_backlog_list" class="form-label">Backlog Column</label>
+                                                <input type="text" class="form-control" id="github_backlog_list" name="github_backlog_list" value="{{ form_data.github_backlog_list or '' }}" placeholder="e.g. Backlog">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="github_readfrom_list" class="form-label">Read Tasks From Column</label>
+                                                <input type="text" class="form-control" id="github_readfrom_list" name="github_readfrom_list" value="{{ form_data.github_readfrom_list or '' }}" placeholder="e.g. Todo">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="github_progress_list" class="form-label">In Progress Column</label>
+                                                <input type="text" class="form-control" id="github_progress_list" name="github_progress_list" value="{{ form_data.github_progress_list or '' }}" placeholder="e.g. In Progress">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="github_moveto_list" class="form-label">Move Completed To Column</label>
+                                                <input type="text" class="form-control" id="github_moveto_list" name="github_moveto_list" value="{{ form_data.github_moveto_list or '' }}" placeholder="e.g. Done">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="github_base_url" class="form-label">GitHub API Base URL</label>
+                                                <input type="text" class="form-control" id="github_base_url" name="github_base_url" value="{{ form_data.github_base_url or 'https://api.github.com' }}">
+                                                <small class="form-text text-muted">Change this for GitHub Enterprise installations.</small>
+                                            </div>
+                                        </fieldset>
                                     </div>
-                                    <div class="mb-3">
-                                        <label for="trello_backlog_list" class="form-label">Backlog state</label>
-                                        <input type="text" class="form-control" id="trello_backlog_list" name="trello_backlog_list" value="{{ form_data.trello_backlog_list or '' }}">
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="trello_readfrom_list" class="form-label">Read first card from state</label>
-                                        <input type="text" class="form-control" id="trello_readfrom_list" name="trello_readfrom_list" value="{{ form_data.trello_readfrom_list or '' }}">
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="trello_progress_list" class="form-label">Move card to in progress state</label>
-                                        <input type="text" class="form-control" id="trello_progress_list" name="trello_progress_list" value="{{ form_data.trello_progress_list or '' }}">
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="trello_moveto_list" class="form-label">Move updated card to state</label>
-                                        <input type="text" class="form-control" id="trello_moveto_list" name="trello_moveto_list" value="{{ form_data.trello_moveto_list or '' }}">
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="trello_base_url" class="form-label">Trello Base URL</label>
-                                        <input type="text" class="form-control" id="trello_base_url" name="trello_base_url" value="{{ form_data.trello_base_url or 'https://api.trello.com' }}">
-                                    </div>
-                                </fieldset>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -136,11 +204,11 @@
                                 </div>
                                 <div class="mb-3">
                                     <label for="llm_model_large" class="form-label">LLM for complex tasks</label>
-                                    <input type="text" class="form-control" id="llm_model_large" name="llm_model_large" placeholder="e.g. mistral-large-latest or gpt-4o" value="{{ form_data.llm_model_large or '' }}">
+                                    <input type="text" class="form-control" id="llm_model_large" name="llm_model_large" placeholder="e.g. devstral-latest or gpt-4o" value="{{ form_data.llm_model_large or '' }}">
                                 </div>
                                 <div class="mb-3">
                                     <label for="llm_model_small" class="form-label">LLM for simple tasks</label>
-                                    <input type="text" class="form-control" id="llm_model_small" name="llm_model_small" placeholder="e.g. mistral-large-latest or gpt-4o" value="{{ form_data.llm_model_small or '' }}">
+                                    <input type="text" class="form-control" id="llm_model_small" name="llm_model_small" placeholder="e.g. devstral-latest or gpt-4o" value="{{ form_data.llm_model_small or '' }}">
                                 </div>
                                 <div class="mb-3">
                                     <label for="llm_temperature" class="form-label">Temperature (Creativity) <span id="temperature_value">{{ form_data.llm_temperature or 0.0 }}</span></label>

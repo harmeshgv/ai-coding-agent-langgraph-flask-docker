@@ -131,7 +131,8 @@ def create_workflow(
 ) -> StateGraph:
     """Creates and configures the main LangGraph workflow."""
     # --- Tool Sets ---
-    impl_task_target_state = agent_config.task_backlog_state
+    active_task_system = agent_config.get_active_task_system()
+    impl_task_target_state = active_task_system.backlog_state if active_task_system else None
     analyst_tools = [
         list_files,
         read_file,

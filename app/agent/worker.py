@@ -52,18 +52,23 @@ async def _execute_agent_cycle(runtime: AgentRuntimeContext) -> None:
                 args=["-m", "mcp_server_git", "--repository", get_codespace()],
                 env=os.environ.copy(),
             )
-            task_mcp = McpServerClient(
-                runtime.mcp_system_def["command"][0],
-                runtime.mcp_system_def["command"][1:],
-                env={
-                    "TRELLO_API_KEY": runtime.agent_config.task_system.api_key,
-                    "TRELLO_TOKEN": runtime.agent_config.task_system.token,
-                    "TRELLO_BASE_URL": runtime.agent_config.task_system.base_url,
-                },
-            )
-
             await stack.enter_async_context(git_mcp)
-            await stack.enter_async_context(task_mcp)
+
+            if runtime.mcp_system_def["command"]:
+                active_task_system = runtime.agent_config.get_active_task_system()
+                if active_task_system:
+                    task_mcp = McpServerClient(
+                        runtime.mcp_system_def["command"][0],
+                        runtime.mcp_system_def["command"][1:],
+                        env={
+                            "TRELLO_API_KEY": active_task_system.api_key,
+                            "TRELLO_TOKEN": active_task_system.token,
+                            "TRELLO_BASE_URL": active_task_system.base_url,
+                        },
+                    )
+                    await stack.enter_async_context(task_mcp)
+                else:
+                    logger.warning("No active task system found for MCP server startup")
         else:
             logger.info("Skipping MCP server startup (ENABLE_MCP_SERVERS is disabled)")
 

@@ -9,6 +9,7 @@ different board systems (Trello, GitHub, Jira, etc.).
 import logging
 
 from app.agent.integrations.board_provider import BoardProvider
+from app.agent.integrations.github_provider import GitHubProvider
 from app.agent.integrations.trello_provider import TrelloProvider
 from app.core.models import AgentConfig
 
@@ -43,7 +44,10 @@ def create_board_provider(agent_config: AgentConfig) -> BoardProvider:
     if provider_type == "trello":
         return TrelloProvider(agent_config)
 
+    if provider_type == "github":
+        return GitHubProvider(agent_config)
+
     raise ValueError(
         f"Unknown board provider: {provider_type}. "
-        f"Supported providers: trello"
+        f"Supported providers: trello, github"
     )
