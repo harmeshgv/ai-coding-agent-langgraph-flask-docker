@@ -136,6 +136,7 @@ def create_agent_skill_level_node(llm):
             return {
                 "task_skill_level": response.classification,
                 "agent_summary": summary_entries,
+                "current_node": "agent_skill_level",
             }
         except OutputParserException as e:
             logger.warning(

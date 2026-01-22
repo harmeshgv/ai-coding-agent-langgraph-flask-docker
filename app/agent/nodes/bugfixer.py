@@ -96,7 +96,10 @@ def create_bugfixer_node(llm, tools, agent_stack):
             "bugfixer",
             fallback_message,
         )
-        result: dict[str, Any] = {"messages": [fallback_message]}
+        result: dict[str, Any] = {
+            "messages": [fallback_message],
+            "current_node": "bugfixer",
+        }
         if recorded:
             result["agent_summary"] = agent_summary
         return result

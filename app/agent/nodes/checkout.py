@@ -8,11 +8,11 @@ from typing import Any, Dict
 from flask import current_app
 from git import Repo
 
-from app.core.task_repository import get_branch_for_task, upsert_task
 from app.agent.services.git_workspace import checkout_branch
 from app.agent.state import AgentState
 from app.agent.utils import get_codespace
 from app.core.models import AgentConfig
+from app.core.task_repository import get_branch_for_task, upsert_task
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ def create_checkout_node(agent_config: AgentConfig):
         else:
             raise ValueError("Missing task_id or task_name in AgentState")
 
-        return {}
+        return {"current_node": "checkout"}
 
     return checkout_node
 

@@ -78,6 +78,7 @@ def create_tester_node(llm, tools, agent_stack):
         return {
             "messages": [response],
             "agent_summary": summary_entries,
+            "current_node": "tester",
         }
 
     return tester_node

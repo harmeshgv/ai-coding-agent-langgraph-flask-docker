@@ -33,7 +33,8 @@ def create_correction_node():
                     content="ERROR: You responded with text but NO tool call. "
                     + "You MUST call a tool (e.g. thinking, write_to_file)."
                 )
-            ]
+            ],
+            "current_node": "correction",
         }
 
     return correction_node

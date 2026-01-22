@@ -41,7 +41,7 @@ def create_pull_request_node():
         else:
             logger.error("Pull request creation failed")
 
-        return {"agent_summary": summary_entries}
+        return {"agent_summary": summary_entries, "current_node": "pull_request"}
 
     return pull_request_node
 

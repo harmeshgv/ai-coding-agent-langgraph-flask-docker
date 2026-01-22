@@ -10,13 +10,17 @@ from datetime import datetime
 
 from langchain_core.messages import SystemMessage
 
-from app.core.task_repository import remove_task_from_db
 from app.agent.integrations.board_factory import create_board_provider
-from app.agent.integrations.board_provider import BoardProvider, BoardTask  # pylint: disable=unused-import
-from app.core.models import AgentConfig
+from app.agent.integrations.board_provider import (  # pylint: disable=unused-import
+    BoardProvider,
+    BoardTask,
+)
 from app.agent.state import AgentState
+from app.core.models import AgentConfig
+from app.core.task_repository import remove_task_from_db
 
 logger = logging.getLogger(__name__)
+
 
 async def _get_task_context(board_provider: BoardProvider, agent_config: AgentConfig):
     active_task_system = agent_config.get_active_task_system()
@@ -38,9 +42,7 @@ async def _get_task_context(board_provider: BoardProvider, agent_config: AgentCo
         )
 
     if not task_context:
-        task_context = await fetch_task_from_state(
-            board_provider, incoming_state_name
-        )
+        task_context = await fetch_task_from_state(board_provider, incoming_state_name)
     return task_context
 
 
@@ -78,7 +80,7 @@ async def _fetch_rejection_comments(
 ) -> list:
     """
     Fetch comments from review if task was returned from review to in-progress.
-    
+
     Returns:
         List of comments if task was in review and returned, empty list otherwise.
     """
@@ -109,15 +111,17 @@ async def _fetch_rejection_comments(
     return comments
 
 
-def _build_system_message_content(task_name: str, task_description: str, comments: list) -> str:
+def _build_system_message_content(
+    task_name: str, task_description: str, comments: list
+) -> str:
     """
     Build the system message content including task details and optional review comments.
-    
+
     Args:
         task_name: Name of the task
         task_description: Description of the task
         comments: List of review comments (may be empty)
-    
+
     Returns:
         Formatted system message content string
     """
@@ -198,10 +202,9 @@ def create_task_fetch_node(agent_config: AgentConfig):
                 "task_name": task.name,
                 "task_state_id": task_context["state_id"],
                 "task_description": task.description,
-                "messages": [
-                    SystemMessage(content=system_content)
-                ],
+                "messages": [SystemMessage(content=system_content)],
                 "task_comments": comments,
+                "current_node": "task_fetch",
             }
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Error fetching tasks: %s", e)
@@ -256,7 +259,9 @@ async def move_task_to_in_progress(
         )
     else:
         logger.info(
-            "Moving task %s to in-progress state: %s", task_id, task_in_progress_state_name
+            "Moving task %s to in-progress state: %s",
+            task_id,
+            task_in_progress_state_name,
         )
 
         try:
@@ -281,7 +286,7 @@ async def get_latest_move_to_in_progress(
     in_progress_state_name: str,
 ) -> dict | None:
     """Returns timestamps if the latest move was from review to in-progress.
-    
+
     Returns:
         dict with 'review_timestamp' and 'return_timestamp' if the latest move
         was from review to in-progress, None otherwise.
@@ -320,10 +325,12 @@ async def get_latest_move_to_in_progress(
 
             # If we can't find when it entered review, skip this move
             if review_timestamp:
-                review_to_progress_moves.append({
-                    "review_timestamp": review_timestamp,  # When it entered review
-                    "return_timestamp": move.date,          # When it moved back to in-progress
-                })
+                review_to_progress_moves.append(
+                    {
+                        "review_timestamp": review_timestamp,  # When it entered review
+                        "return_timestamp": move.date,  # When it moved back to in-progress
+                    }
+                )
 
     if not review_to_progress_moves:
         logger.info(

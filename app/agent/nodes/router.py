@@ -61,7 +61,7 @@ def create_router_node(llm):
             try:
                 response = await structured_llm.ainvoke(current_messages)
                 logger.info("Router decided: %s", response.role)
-                return {"next_step": response.role}
+                return {"next_step": response.role, "current_node": "router"}
             except OutputParserException as exc:
                 logger.warning(
                     "Router invalid JSON attempt %d/3: %s",
