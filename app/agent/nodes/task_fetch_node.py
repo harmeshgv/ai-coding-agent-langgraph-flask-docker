@@ -10,16 +10,22 @@ from datetime import datetime
 
 from langchain_core.messages import SystemMessage
 
-from app.core.task_repository import remove_task_from_db, get_branch_for_task
 from app.agent.integrations.board_factory import create_board_provider
-from app.agent.integrations.board_provider import BoardProvider, BoardTask  # pylint: disable=unused-import
-from app.core.models import AgentSettings
-from app.agent.state import AgentState
+from app.agent.integrations.board_provider import (  # pylint: disable=unused-import
+    BoardProvider,
+    BoardTask,
+)
 from app.agent.services.pull_request import check_pr_exists_for_branch
+from app.agent.state import AgentState
+from app.core.models import AgentSettings
+from app.core.task_repository import get_branch_for_task, remove_task_from_db
 
 logger = logging.getLogger(__name__)
 
-async def _get_task_context(board_provider: BoardProvider, agent_settings: AgentSettings):
+
+async def _get_task_context(
+    board_provider: BoardProvider, agent_settings: AgentSettings
+):
     active_task_system = agent_settings.get_active_task_system()
     if not active_task_system:
         logger.warning("No active task system configured")
@@ -78,8 +84,6 @@ async def _fetch_review_comments(
     """
     Fetch comments from review if task was returned from review to in-progress.
 
-<<<<<<< HEAD
-=======
     Args:
         board_provider: BoardProvider
         task_id: id of task
@@ -87,7 +91,6 @@ async def _fetch_review_comments(
         task_in_progress_state_name: name of in-progress state
         review_state_name: name of review state
 
->>>>>>> master
     Returns:
         List of comments if task was in review and returned, empty list otherwise.
     """

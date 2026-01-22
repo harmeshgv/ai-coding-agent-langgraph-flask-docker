@@ -12,9 +12,6 @@ from langchain_core.messages import AIMessage
 from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolNode
 
-from app.core.models import AgentSettings
-
-from app.agent.nodes.agent_skill_level import create_agent_skill_level_node
 from app.agent.nodes.analyst import create_analyst_node
 from app.agent.nodes.bugfixer import create_bugfixer_node
 from app.agent.nodes.checkout import create_checkout_node
@@ -36,6 +33,7 @@ from app.agent.tools.file_tools import (
 from app.agent.tools.finish_task import finish_task
 from app.agent.tools.run_command import run_command
 from app.agent.tools.thinking import thinking
+from app.core.models import AgentSettings
 
 
 def route_after_tools_tester(state: AgentState):
@@ -132,7 +130,9 @@ def create_workflow(
     """Creates and configures the main LangGraph workflow."""
     # --- Tool Sets ---
     active_task_system = agent_settings.get_active_task_system()
-    impl_task_target_state = active_task_system.backlog_state if active_task_system else None
+    impl_task_target_state = (
+        active_task_system.backlog_state if active_task_system else None
+    )
     analyst_tools = [
         list_files,
         read_file,
@@ -159,7 +159,6 @@ def create_workflow(
     workflow.add_node("task_fetch", create_task_fetch_node(agent_settings))
     workflow.add_node("checkout", create_checkout_node(agent_settings))
     workflow.add_node("router", create_router_node(llm_small))
-    workflow.add_node("agent_skill_level", create_agent_skill_level_node(llm_small))
 
     workflow.add_node("coder", create_coder_node(llm_large, coder_tools, agent_stack))
     workflow.add_node(
@@ -199,15 +198,12 @@ def create_workflow(
     workflow.add_conditional_edges(
         "router",
         lambda state: state.get("next_step", "coder"),
-        {"coder": "agent_skill_level", "bugfixer": "bugfixer", "analyst": "analyst"},
-    )
-
-    # 2a. Skill level -> Coder | Task_update
-    workflow.add_conditional_edges(
-        "agent_skill_level",
-        lambda state: state["task_skill_level"] == "junior"
-        or state["agent_skill_level"] == "senior",
-        {True: "coder", False: "task_update"},
+        {
+            "reject": "task_update",
+            "coder": "coder",
+            "bugfixer": "bugfixer",
+            "analyst": "analyst",
+        },
     )
 
     # 3. Coder -> Tools | Correction
