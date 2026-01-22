@@ -12,6 +12,7 @@ from app.agent.services.git_workspace import checkout_branch
 from app.agent.state import AgentState
 from app.agent.utils import get_codespace
 from app.core.models import AgentSettings
+from app.core.task_repository import get_branch_for_task, upsert_task
 
 logger = logging.getLogger(__name__)
 

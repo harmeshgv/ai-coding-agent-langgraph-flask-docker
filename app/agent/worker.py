@@ -10,7 +10,7 @@ import logging
 import os
 import sys
 from contextlib import AsyncExitStack
-from typing import Optional, cast
+from typing import Optional
 
 from flask import Flask
 from langchain.chat_models import BaseChatModel
@@ -22,10 +22,7 @@ from app.agent.integrations.mcp.adapter import McpServerClient
 from app.agent.runtime import AgentRuntimeContext, prepare_runtime
 from app.agent.services.graph_assets import save_graph_as_mermaid, save_graph_as_png
 from app.agent.services.llm_factory import get_llm
-from app.agent.services.logging import log_agent_state
-from app.agent.state import AgentState
 from app.agent.utils import get_codespace, save_state_to_workspace
-from app.core.models import AgentConfig
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +93,7 @@ async def _execute_agent_cycle(runtime: AgentRuntimeContext) -> None:
             "task_name": None,
             "task_state_id": None,
             "agent_stack": runtime.agent_stack,
-            "agent_skill_level": runtime.agent_config.agent_skill_level,
+            "agent_skill_level": runtime.agent_settings.agent_skill_level,
             "task_skill_level": None,
             "plan_state": None,
         }

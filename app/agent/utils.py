@@ -5,12 +5,9 @@ from __future__ import annotations
 import json
 import os
 import shutil
-from datetime import datetime
-from typing import Final
 import subprocess
+from datetime import datetime
 from typing import Final, Optional
-
-from app.agent.state import AgentState, PlanState
 
 __all__ = [
     "get_workbench",
@@ -78,6 +75,8 @@ def save_state_to_workspace(state: dict, filename: str = "agent_state.json") -> 
     # 2. Atomares Verschieben (Das ist im OS eine einzige Operation)
     shutil.move(temp_path, file_path)
     return file_path
+
+
 def get_current_git_branch() -> Optional[str]:
     """
     Get the current git branch name.
