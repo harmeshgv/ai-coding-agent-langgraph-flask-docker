@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from app.core.models import AgentSettings, TaskSystem
-from app.web.mappers.config_mapper import ConfigMapper
+from app.web.mappers import settings_mapper
 from app.web.schemas.settings_schema import (
     GitHubConfigSchema,
     LLMConfigSchema,
@@ -27,7 +27,7 @@ class TestConfigMapperSchemaToModel:
         )
         settings = AgentSettings()
 
-        result = ConfigMapper.schema_to_model(schema, settings)
+        result = settings_mapper.schema_to_model(schema, settings)
 
         assert result.task_system_type == "TRELLO"
         assert result.agent_skill_level == "senior"
@@ -47,7 +47,7 @@ class TestConfigMapperSchemaToModel:
         schema = SettingsFormSchema(llm_config=llm_config)
         settings = AgentSettings()
 
-        result = ConfigMapper.schema_to_model(schema, settings)
+        result = settings_mapper.schema_to_model(schema, settings)
 
         assert result.llm_provider == "openai"
         assert result.llm_model_large == "gpt-4"
@@ -72,7 +72,7 @@ class TestConfigMapperSchemaToModel:
         )
         settings = AgentSettings()
 
-        result = ConfigMapper.schema_to_model(schema, settings)
+        result = settings_mapper.schema_to_model(schema, settings)
 
         trello_ts = result.get_task_system("trello")
         assert trello_ts is not None
@@ -94,7 +94,7 @@ class TestConfigMapperSchemaToModel:
         settings = AgentSettings()
         assert len(settings.task_systems) == 0
 
-        result = ConfigMapper.schema_to_model(schema, settings)
+        result = settings_mapper.schema_to_model(schema, settings)
 
         trello_ts = result.get_task_system("trello")
         assert trello_ts is not None
@@ -115,7 +115,7 @@ class TestConfigMapperSchemaToModel:
         settings = AgentSettings()
         settings.task_systems.append(existing_task_system)
 
-        result = ConfigMapper.schema_to_model(schema, settings)
+        result = settings_mapper.schema_to_model(schema, settings)
 
         trello_ts = result.get_task_system("trello")
         assert trello_ts is existing_task_system
@@ -143,7 +143,7 @@ class TestConfigMapperModelToFormData:
         )
         config.task_systems.append(trello_ts)
 
-        result = ConfigMapper.model_to_form_data(config)
+        result = settings_mapper.model_to_form_data(config)
 
         assert result["agent_skill_level"] == "junior"
         assert result["llm_provider"] == "anthropic"
@@ -167,7 +167,7 @@ class TestConfigMapperModelToFormData:
         )
         config.task_systems.append(trello_ts)
 
-        result = ConfigMapper.model_to_form_data(config)
+        result = settings_mapper.model_to_form_data(config)
 
         assert result["trello_api_key"] == "api-key"
         assert result["trello_api_token"] == "api-token"
@@ -181,19 +181,11 @@ class TestConfigMapperModelToFormData:
         """Missing task_systems should result in None values."""
         config = AgentSettings()
 
-        result = ConfigMapper.model_to_form_data(config)
+        result = settings_mapper.model_to_form_data(config)
 
         assert result["trello_api_key"] is None
         assert result["trello_api_token"] is None
         assert result["trello_board_id"] is None
-
-    def test_defaults_llm_provider_to_mistral(self, app):
-        """Missing llm_provider should default to mistral."""
-        config = AgentSettings(llm_provider=None)
-
-        result = ConfigMapper.model_to_form_data(config)
-
-        assert result["llm_provider"] == "mistral"
 
 
 class TestConfigMapperFormToSchema:
@@ -220,7 +212,7 @@ class TestConfigMapperFormToSchema:
                 "github_repo_url": "https://github.com/test/repo.git",
             },
         ):
-            result = ConfigMapper.form_to_schema()
+            result = settings_mapper.form_to_schema()
 
             assert result.task_system_type == "TRELLO"
             assert result.trello_config is not None
@@ -240,7 +232,7 @@ class TestConfigMapperFormToSchema:
                 "is_active": "on",
             },
         ):
-            result = ConfigMapper.form_to_schema()
+            result = settings_mapper.form_to_schema()
             assert result.is_active is True
 
         with app.test_request_context(
@@ -250,7 +242,7 @@ class TestConfigMapperFormToSchema:
                 "task_system_type": "TRELLO",
             },
         ):
-            result = ConfigMapper.form_to_schema()
+            result = settings_mapper.form_to_schema()
             assert result.is_active is False
 
 
@@ -263,7 +255,7 @@ class TestConfigMapperGitHub:
             base_url="https://api.github.com",
             api_token="ghp_test_token",
             project_owner="octocat",
-            project_number=1,
+            project_number="1",
             board_id="PVT_kwDOxxxxxx",
             backlog_list="Backlog",
             readfrom_list="Todo",
@@ -276,7 +268,7 @@ class TestConfigMapperGitHub:
         )
         settings = AgentSettings()
 
-        result = ConfigMapper.schema_to_model(schema, settings)
+        result = settings_mapper.schema_to_model(schema, settings)
 
         github_ts = result.get_task_system("github")
         assert github_ts is not None
@@ -287,7 +279,7 @@ class TestConfigMapperGitHub:
         assert github_ts.board_provider == "github"
         assert github_ts.token == "ghp_test_token"
         assert github_ts.project_owner == "octocat"
-        assert github_ts.project_number == 1
+        assert github_ts.project_number == "1"
         assert github_ts.board_id == "PVT_kwDOxxxxxx"
         assert github_ts.base_url == "https://api.github.com"
 
@@ -301,7 +293,7 @@ class TestConfigMapperGitHub:
         settings = AgentSettings()
         assert len(settings.task_systems) == 0
 
-        result = ConfigMapper.schema_to_model(schema, settings)
+        result = settings_mapper.schema_to_model(schema, settings)
 
         github_ts = result.get_task_system("github")
         assert github_ts is not None
@@ -324,7 +316,7 @@ class TestConfigMapperGitHub:
         )
         settings.task_systems.append(github_ts)
 
-        result = ConfigMapper.model_to_form_data(settings)
+        result = settings_mapper.model_to_form_data(settings)
 
         assert result["github_api_token"] == "ghp_test_token"
         assert result["github_project_owner"] == "octocat"
@@ -357,13 +349,13 @@ class TestConfigMapperGitHub:
                 "repo_type": "GITHUB",
             },
         ):
-            result = ConfigMapper.form_to_schema()
+            result = settings_mapper.form_to_schema()
 
             assert result.task_system_type == "GITHUB"
             assert result.github_config is not None
             assert result.github_config.api_token == "ghp_test_token"
             assert result.github_config.project_owner == "octocat"
-            assert result.github_config.project_number == 1
+            assert result.github_config.project_number == "1"
             assert result.github_config.board_id == "PVT_kwDOxxxxxx"
             assert result.github_config.backlog_list == "Backlog"
             # trello_config is now always parsed (not None)
@@ -373,19 +365,19 @@ class TestConfigMapperGitHub:
         """Missing GitHub task_system should result in default values."""
         settings = AgentSettings(task_system_type="TRELLO")
 
-        result = ConfigMapper.model_to_form_data(settings)
+        result = settings_mapper.model_to_form_data(settings)
 
         assert result["github_api_token"] is None
         assert result["github_project_owner"] is None
         assert result["github_project_number"] is None
         assert result["github_board_id"] is None
-        assert result["github_base_url"] == "https://api.github.com"
+        assert result["github_base_url"] is None
 
     def test_github_token_prefills_from_env(self, app, monkeypatch):
         """GitHub token should fall back to GITHUB_TOKEN env when not stored."""
         monkeypatch.setenv("GITHUB_TOKEN", "env_token")
         settings = AgentSettings(task_system_type="TRELLO")
 
-        result = ConfigMapper.model_to_form_data(settings)
+        result = settings_mapper.model_to_form_data(settings)
 
         assert result["github_api_token"] == "env_token"

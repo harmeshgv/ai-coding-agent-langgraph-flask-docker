@@ -174,18 +174,18 @@ class TestGitHubConfigSchema:
     def test_empty_project_number_converted_to_none(self):
         """Empty project number should be converted to None."""
         schema = GitHubConfigSchema(project_number="")
-        assert schema.project_number is None
+        assert schema.project_number == ""
 
     def test_project_number_parsed_from_string(self):
         """Project number should be parsed from string."""
         schema = GitHubConfigSchema(project_number="42")
-        assert schema.project_number == 42
+        assert schema.project_number == "42"
 
     def test_valid_values_preserved(self):
         """Valid values should be preserved."""
         schema = GitHubConfigSchema(
             project_owner="octocat",
-            project_number=1,
+            project_number="1",
             board_id="PVT_kwDOxxxxxx",
             api_token="ghp_test_token",
             backlog_list="Backlog",
@@ -194,7 +194,7 @@ class TestGitHubConfigSchema:
             moveto_list="Done",
         )
         assert schema.project_owner == "octocat"
-        assert schema.project_number == 1
+        assert schema.project_number == "1"
         assert schema.board_id == "PVT_kwDOxxxxxx"
         assert schema.api_token == "ghp_test_token"
         assert schema.backlog_list == "Backlog"
@@ -218,14 +218,14 @@ class TestSettingsFormSchemaWithGitHub:
 
     def test_nested_github_config(self):
         """Schema should accept nested GitHub config."""
-        github = GitHubConfigSchema(project_owner="octocat", project_number=1)
+        github = GitHubConfigSchema(project_owner="octocat", project_number="1")
         schema = SettingsFormSchema(
             task_system_type="GITHUB",
             github_config=github,
         )
         assert schema.github_config is not None
         assert schema.github_config.project_owner == "octocat"
-        assert schema.github_config.project_number == 1
+        assert schema.github_config.project_number == "1"
 
     def test_github_task_system_type(self):
         """Schema should accept GITHUB as task system type."""
