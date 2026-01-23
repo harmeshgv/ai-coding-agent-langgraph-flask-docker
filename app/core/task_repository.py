@@ -65,3 +65,44 @@ def remove_task_from_db(task_id: str) -> bool:
         return True
 
     return False
+
+
+def update_task_pr_info(task_id: str, pr_number: int, pr_url: str) -> Optional[Task]:
+    """
+    Updates the PR information for an existing task.
+
+    Args:
+        task_id: The task ID to update
+        pr_number: The PR number
+        pr_url: The PR URL
+
+    Returns:
+        The updated Task object, or None if task not found
+    """
+    task = Task.query.filter_by(task_id=task_id).first()
+
+    if task:
+        task.pr_number = pr_number
+        task.pr_url = pr_url
+        db.session.commit()
+        return task
+
+    return None
+
+
+def get_pr_info_for_task(task_id: str) -> tuple[Optional[int], Optional[str]]:
+    """
+    Retrieves the PR number and URL for a task.
+
+    Args:
+        task_id: The task ID to look up
+
+    Returns:
+        Tuple of (pr_number, pr_url), both None if task not found or no PR info
+    """
+    task = Task.query.filter_by(task_id=task_id).first()
+
+    if task:
+        return task.pr_number, task.pr_url
+
+    return None, None

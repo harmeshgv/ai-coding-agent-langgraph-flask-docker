@@ -12,6 +12,7 @@ from app.agent.services.summaries import (
 from app.agent.services.pull_request import create_or_update_pr
 from app.agent.state import AgentState
 from app.agent.utils import get_codespace, get_current_git_branch
+from app.core.task_repository import update_task_pr_info
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +68,13 @@ def _create_or_update_pr(state: AgentState):
         logger.warning("PR creation succeeded but no URL was returned")
         return False, summary_entries
 
+    task_id = state.get("task_id")
+    if task_id and pr_url:
+        pr_number = _extract_pr_number_from_url(pr_url)
+        if pr_number:
+            update_task_pr_info(task_id, pr_number, pr_url)
+            logger.info("Stored PR #%d for task %s", pr_number, task_id)
+
     summary_entries = append_agent_summary(
         summary_entries,
         "PR",
@@ -74,6 +82,25 @@ def _create_or_update_pr(state: AgentState):
     )
     state["agent_summary"] = summary_entries
     return True, summary_entries
+
+
+def _extract_pr_number_from_url(pr_url: str) -> int | None:
+    """
+    Extract the PR number from a GitHub PR URL.
+
+    Args:
+        pr_url: GitHub PR URL (e.g., https://github.com/owner/repo/pull/123)
+
+    Returns:
+        The PR number, or None if extraction fails
+    """
+    try:
+        parts = pr_url.rstrip("/").split("/")
+        if len(parts) >= 2 and parts[-2] == "pull":
+            return int(parts[-1])
+    except (ValueError, IndexError):
+        pass
+    return None
 
 
 def _build_pr_inputs(state: AgentState) -> tuple[str, str]:

@@ -68,6 +68,12 @@ async def test_task_fetch_node_success(agent_settings, mock_board_provider):
     with patch(
         "app.agent.nodes.task_fetch_node.create_board_provider",
         return_value=mock_board_provider,
+    ), patch(
+        "app.agent.nodes.task_fetch_node.get_pr_info_for_task",
+        return_value=(None, None),
+    ), patch(
+        "app.agent.nodes.task_fetch_node.get_branch_for_task",
+        return_value=None,
     ):
         task_fetch = create_task_fetch_node(agent_settings)
         result = await task_fetch({})
@@ -98,6 +104,12 @@ async def test_task_fetch_node_no_review_list(agent_settings, mock_board_provide
     with patch(
         "app.agent.nodes.task_fetch_node.create_board_provider",
         return_value=mock_board_provider,
+    ), patch(
+        "app.agent.nodes.task_fetch_node.get_pr_info_for_task",
+        return_value=(None, None),
+    ), patch(
+        "app.agent.nodes.task_fetch_node.get_branch_for_task",
+        return_value=None,
     ):
         task_fetch = create_task_fetch_node(temp_settings)
         result = await task_fetch({})
@@ -113,6 +125,12 @@ async def test_task_fetch_node_no_cards(agent_settings, mock_board_provider):
     with patch(
         "app.agent.nodes.task_fetch_node.create_board_provider",
         return_value=mock_board_provider,
+    ), patch(
+        "app.agent.nodes.task_fetch_node.get_pr_info_for_task",
+        return_value=(None, None),
+    ), patch(
+        "app.agent.nodes.task_fetch_node.get_branch_for_task",
+        return_value=None,
     ):
         task_fetch = create_task_fetch_node(agent_settings)
         result = await task_fetch({})
@@ -169,6 +187,12 @@ async def test_task_fetch_node_with_comments(agent_settings, mock_board_provider
     with patch(
         "app.agent.nodes.task_fetch_node.create_board_provider",
         return_value=mock_board_provider,
+    ), patch(
+        "app.agent.nodes.task_fetch_node.get_pr_info_for_task",
+        return_value=(None, None),
+    ), patch(
+        "app.agent.nodes.task_fetch_node.get_branch_for_task",
+        return_value=None,
     ):
         task_fetch = create_task_fetch_node(agent_settings)
         result = await task_fetch({})
@@ -221,6 +245,12 @@ async def test_task_fetch_node_no_comments_from_todo(agent_settings, mock_board_
     with patch(
         "app.agent.nodes.task_fetch_node.create_board_provider",
         return_value=mock_board_provider,
+    ), patch(
+        "app.agent.nodes.task_fetch_node.get_pr_info_for_task",
+        return_value=(None, None),
+    ), patch(
+        "app.agent.nodes.task_fetch_node.get_branch_for_task",
+        return_value=None,
     ):
         task_fetch = create_task_fetch_node(agent_settings)
         result = await task_fetch({})

@@ -15,10 +15,19 @@ from app.agent.integrations.board_provider import (  # pylint: disable=unused-im
     BoardProvider,
     BoardTask,
 )
-from app.agent.services.pull_request import check_pr_exists_for_branch
+from app.agent.services.pull_request import (
+    check_pr_exists_for_branch,
+    format_pr_review_message,
+    get_latest_open_pr_for_branch,
+    get_latest_pr_review_status,
+)
 from app.agent.state import AgentState
 from app.core.models import AgentSettings
-from app.core.task_repository import get_branch_for_task, remove_task_from_db
+from app.core.task_repository import (
+    get_branch_for_task,
+    get_pr_info_for_task,
+    remove_task_from_db,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -131,8 +140,56 @@ async def _fetch_review_comments(
     return comments
 
 
+def _fetch_pr_review_info(task_id: str) -> tuple[bool, str]:
+    """
+    Fetch PR review info if a PR exists for the task.
+
+    Args:
+        task_id: The task ID to check
+
+    Returns:
+        Tuple of (is_approved, formatted_review_message)
+        - is_approved: True if PR is approved or no PR exists
+        - formatted_review_message: Formatted message for SystemMessage, empty if approved
+    """
+    pr_number, pr_url = get_pr_info_for_task(task_id)
+
+    if not pr_number:
+        branch_name = get_branch_for_task(task_id)
+        if branch_name:
+            pr = get_latest_open_pr_for_branch(branch_name)
+            if pr:
+                pr_number = pr.number
+                pr_url = pr.html_url
+
+    if not pr_number:
+        logger.info("No PR found for task %s", task_id)
+        return True, ""
+
+    is_approved, rejection_reviews, code_comments = get_latest_pr_review_status(
+        pr_number
+    )
+
+    if is_approved:
+        logger.info("PR #%d for task %s is approved", pr_number, task_id)
+        return True, ""
+
+    logger.info(
+        "PR #%d for task %s has %d rejections and %d code comments",
+        pr_number,
+        task_id,
+        len(rejection_reviews),
+        len(code_comments),
+    )
+
+    return False, format_pr_review_message(pr_url or "", rejection_reviews, code_comments)
+
+
 def _build_system_message_content(
-    task_name: str, task_description: str, comments: list
+    task_name: str,
+    task_description: str,
+    comments: list,
+    pr_review_message: str = "",
 ) -> str:
     """
     Build the system message content including task details and optional review comments.
@@ -140,12 +197,14 @@ def _build_system_message_content(
     Args:
         task_name: Name of the task
         task_description: Description of the task
-        comments: List of review comments (may be empty)
+        comments: List of board review comments (may be empty)
+        pr_review_message: Formatted PR review feedback (may be empty)
 
     Returns:
         Formatted system message content string
     """
     system_content = f"Task: {task_name}\n\nDescription:\n{task_description}"
+
     if comments:
         system_content += (
             "\n\n--- The Pull Request was rejected with "
@@ -159,7 +218,11 @@ def _build_system_message_content(
             date = comment.date.isoformat()
             system_content += f"\n[{date}] {author}:\n{text}\n"
 
-        logger.info("PR review message content: %s", system_content)
+        logger.info("Board review message content: %s", system_content)
+
+    if pr_review_message:
+        system_content += pr_review_message
+        logger.info("PR review message appended")
 
     return system_content
 
@@ -209,12 +272,15 @@ def create_task_fetch_node(agent_settings: AgentSettings):
                 review_state_name,
             )
 
+            _, pr_review_message = _fetch_pr_review_info(task.id)
+
             logger.info("Processing task ID: %s - %s", task.id, task.name)
 
             system_content = _build_system_message_content(
                 task.name,
                 task.description,
                 comments,
+                pr_review_message,
             )
 
             return {
