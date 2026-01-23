@@ -446,14 +446,15 @@ def fetch_pr_review_comments(
         if response.status_code == 200:
             comments_data = response.json()
             logger.info("Raw review comments response: %s", json.dumps(comments_data, indent=2))
-            
+
             comments = [
                 PRReviewComment(
                     id=str(c["id"]),
                     reviewer=c.get("user", {}).get("login", "unknown"),
                     body=c.get("body", "") or "",
                     path=c.get("path"),
-                    # We should also handle the case where the comment is on a deleted file or a deleted part of the file
+                    # We should also handle the case where the comment is
+                    # on a deleted file or a deleted part of the file
                     start_line=c.get("start_line") or c.get("original_start_line"),
                     end_line=c.get("line") or c.get("original_line"),
                     created_at=c.get("created_at", ""),
