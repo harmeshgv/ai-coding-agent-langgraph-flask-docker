@@ -9,11 +9,12 @@ import asyncio
 import logging
 import os
 import sys
-from typing import Optional
 from contextlib import AsyncExitStack
+from typing import Optional
 
 from flask import Flask
 from langchain.chat_models import BaseChatModel
+from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph
 
 from app.agent.graph import create_workflow
@@ -21,8 +22,7 @@ from app.agent.integrations.mcp.adapter import McpServerClient
 from app.agent.runtime import AgentRuntimeContext, prepare_runtime
 from app.agent.services.graph_assets import save_graph_as_mermaid, save_graph_as_png
 from app.agent.services.llm_factory import get_llm
-from app.agent.services.logging import log_agent_state
-from app.agent.utils import get_codespace
+from app.agent.utils import get_codespace, save_state_to_workspace
 
 logger = logging.getLogger(__name__)
 
@@ -84,22 +84,37 @@ async def _execute_agent_cycle(runtime: AgentRuntimeContext) -> None:
         app_graph = workflow.compile()
         save_graph_as_png(app_graph)
         save_graph_as_mermaid(app_graph)
-        logger.info("Executing graph...")
-        final_state = await app_graph.ainvoke(
-            {
-                "messages": [],
-                "next_step": "",
-                "task_id": None,
-                "task_name": None,
-                "task_state_id": None,
-                "agent_stack": runtime.agent_stack,
-                "agent_skill_level": runtime.agent_settings.agent_skill_level,
-                "task_skill_level": None,
-                "plan_state": None,
-            },
-            {"recursion_limit": 200},
-        )
-        log_agent_state(final_state)
+        logger.info("Executing graph cycle...")
+
+        inputs = {
+            "messages": [],
+            "next_step": "",
+            "task_id": None,
+            "task_name": None,
+            "task_state_id": None,
+            "agent_stack": runtime.agent_stack,
+            "agent_skill_level": runtime.agent_settings.agent_skill_level,
+            "task_skill_level": None,
+            "plan_state": None,
+            "current_node": None,
+        }
+        # Config for threa level persistence
+        thread_config: RunnableConfig = {
+            "configurable": {"thread_id": "1"},
+            "recursion_limit": 200,
+        }
+
+        # stream_mode="values" gibt uns den kompletten State nach jedem Node zurück
+        async for current_state in app_graph.astream(
+            inputs, config=thread_config, stream_mode="values"
+        ):
+            if (
+                current_state["current_node"]
+                and current_state["current_node"] != "task_fetch"
+            ):
+                save_state_to_workspace(current_state)
+
+        logger.info("Finish graph cycle.")
 
 
 def run_agent_cycle(app: Flask) -> None:

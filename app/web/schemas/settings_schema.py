@@ -53,7 +53,7 @@ class GitHubConfigSchema(BaseModel):
     project_owner: Optional[str] = Field(
         default=None, description="GitHub project owner (user or organization)"
     )
-    project_number: Optional[int] = Field(
+    project_number: Optional[str] = Field(
         default=None, description="GitHub project number"
     )
     board_id: Optional[str] = Field(
@@ -79,17 +79,6 @@ class GitHubConfigSchema(BaseModel):
         if v == "":
             return None
         return v
-
-    @field_validator("project_number", mode="before")
-    @classmethod
-    def empty_str_to_none_int(cls, v) -> Optional[int]:
-        """Convert empty strings to None, parse int."""
-        if v == "" or v is None:
-            return None
-        try:
-            return int(v)
-        except (ValueError, TypeError):
-            return None
 
 
 class JiraConfigSchema(BaseModel):

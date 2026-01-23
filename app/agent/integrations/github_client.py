@@ -128,7 +128,9 @@ async def get_project_id(
         project = data.get("data", {}).get("user", {}).get("projectV2")
 
         if project:
-            logger.info("Found user project: %s (id: %s)", project["title"], project["id"])
+            logger.info(
+                "Found user project: %s (id: %s)", project["title"], project["id"]
+            )
             return project["id"]
     except RuntimeError:
         pass
@@ -295,14 +297,16 @@ async def get_items_from_column(
 
             if status_name == column_name:
                 content = node.get("content", {}) or {}
-                all_items.append({
-                    "id": node["id"],
-                    "content_id": content.get("id", ""),
-                    "title": content.get("title", ""),
-                    "body": content.get("body", ""),
-                    "url": content.get("url", ""),
-                    "number": content.get("number"),
-                })
+                all_items.append(
+                    {
+                        "id": node["id"],
+                        "content_id": content.get("id", ""),
+                        "title": content.get("title", ""),
+                        "body": content.get("body", ""),
+                        "url": content.get("url", ""),
+                        "number": content.get("number"),
+                    }
+                )
 
         page_info = items_data.get("pageInfo", {})
         if not page_info.get("hasNextPage"):
@@ -424,9 +428,7 @@ async def move_item_to_named_column(
         The ID of the target column.
     """
     columns = await get_project_columns(agent_settings)
-    target_column = next(
-        (col for col in columns if col["name"] == column_name), None
-    )
+    target_column = next((col for col in columns if col["name"] == column_name), None)
 
     if not target_column:
         raise ValueError(f"Column '{column_name}' not found in project")
@@ -441,17 +443,17 @@ async def _resolve_to_issue_id(
 ) -> str:
     """
     Resolve a node ID to an Issue ID.
-    
+
     If the node_id is a ProjectV2Item, extract the content Issue ID.
     If it's already an Issue ID, return it as-is.
-    
+
     Args:
         node_id: Either an Issue ID or ProjectV2Item ID
         agent_settings: Agent configuration
-        
+
     Returns:
         The Issue ID
-        
+
     Raises:
         RuntimeError: If the node cannot be resolved to an Issue
     """
@@ -472,20 +474,20 @@ async def _resolve_to_issue_id(
         }
     }
     """
-    
+
     variables = {"nodeId": node_id}
     data = await _execute_graphql(query, variables, agent_settings)
-    
+
     node = data.get("data", {}).get("node", {})
     if not node:
         raise RuntimeError(f"Could not resolve node {node_id}")
-    
+
     node_type = node.get("__typename")
-    
+
     # If it's already an Issue, return its ID
     if node_type == "Issue":
         return node.get("id", node_id)
-    
+
     # If it's a ProjectV2Item, extract the Issue ID from content
     if node_type == "ProjectV2Item":
         content = node.get("content", {})
@@ -493,8 +495,10 @@ async def _resolve_to_issue_id(
         if issue_id:
             return issue_id
         raise RuntimeError(f"ProjectV2Item {node_id} does not have an Issue as content")
-    
-    raise RuntimeError(f"Node {node_id} is neither an Issue nor a ProjectV2Item (type: {node_type})")
+
+    raise RuntimeError(
+        f"Node {node_id} is neither an Issue nor a ProjectV2Item (type: {node_type})"
+    )
 
 
 async def add_comment_to_issue(
@@ -512,7 +516,7 @@ async def add_comment_to_issue(
     """
     # First, resolve the ID to get the actual Issue ID if it's a ProjectV2Item
     resolved_issue_id = await _resolve_to_issue_id(issue_id, agent_settings)
-    
+
     mutation = """
     mutation($issueId: ID!, $body: String!) {
         addComment(input: { subjectId: $issueId, body: $body }) {
@@ -582,10 +586,10 @@ async def get_issue_comments(
     data = await _execute_graphql(query, variables, agent_settings)
 
     node = data.get("data", {}).get("node", {})
-    
+
     # Try to get comments directly (if it's an Issue)
     comments = node.get("comments", {}).get("nodes", [])
-    
+
     # If no comments found, try to get from ProjectV2Item content
     if not comments:
         content = node.get("content", {})
@@ -614,8 +618,8 @@ async def get_item_status_history(
     tracked via issue timeline events or external logging.
     """
     logger.warning(
-        "GitHub Projects v2 doesn't provide direct status change history. "
-        "Item: %s", item_id
+        "GitHub Projects v2 doesn't provide direct status change history. Item: %s",
+        item_id,
     )
     return []
 
@@ -678,7 +682,7 @@ async def create_draft_issue(
 
 def get_project_id_sync(
     owner: str,
-    project_number: int,
+    project_number: str,
     base_url: str = "https://api.github.com",
     api_token: Optional[str] = None,
 ) -> str:
@@ -735,7 +739,9 @@ def get_project_id_sync(
         if "errors" not in data:
             project = data.get("data", {}).get("user", {}).get("projectV2")
             if project:
-                logger.info("Found user project: %s (id: %s)", project["title"], project["id"])
+                logger.info(
+                    "Found user project: %s (id: %s)", project["title"], project["id"]
+                )
                 return project["id"]
 
     query_org = """

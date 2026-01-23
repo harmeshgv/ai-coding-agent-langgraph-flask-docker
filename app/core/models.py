@@ -8,14 +8,10 @@ import os
 from typing import Any, Dict
 
 from cryptography.fernet import Fernet
+from flask import current_app
 from sqlalchemy import ForeignKey, LargeBinary, TypeDecorator
 
 from app.core.extensions import db
-
-key = os.environ.get("ENCRYPTION_KEY")
-if not key:
-    raise ValueError("ENCRYPTION_KEY is not set. Application cannot start.")
-encryption_key = Fernet(key.encode())
 
 
 # pylint: disable=too-many-ancestors
@@ -24,6 +20,30 @@ class EncryptedString(TypeDecorator):
 
     impl = LargeBinary
     cache_ok = True
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._encryption_key = None
+
+    @property
+    def encryption_key(self):
+        """Lazy load the encryption key."""
+        if self._encryption_key:
+            return self._encryption_key
+
+        key = None
+        if current_app:
+            key = current_app.config.get("ENCRYPTION_KEY")
+
+        if not key:
+            # Fallback to environment variable for non-app contexts (e.g., shell)
+            key = os.environ.get("ENCRYPTION_KEY")
+
+        if not key:
+            raise ValueError("ENCRYPTION_KEY is not set in app config or environment.")
+
+        self._encryption_key = Fernet(key.encode())
+        return self._encryption_key
 
     @property
     def python_type(self):
@@ -39,7 +59,7 @@ class EncryptedString(TypeDecorator):
             raise TypeError("EncryptedString only supports string values.")
 
         value_bytes = value.encode("utf-8")
-        return encryption_key.encrypt(value_bytes)
+        return self.encryption_key.encrypt(value_bytes)
 
     def process_result_value(self, value, dialect):  # pylint: disable=unused-argument
         """Decrypt after loading."""
@@ -52,7 +72,7 @@ class EncryptedString(TypeDecorator):
             return value
 
         try:
-            decrypted_value = encryption_key.decrypt(value)
+            decrypted_value = self.encryption_key.decrypt(value)
             return decrypted_value.decode("utf-8")
         except Exception:  # pylint: disable=broad-exception-caught
             # If decryption fails, assume it's legacy unencrypted data
@@ -109,10 +129,7 @@ class AgentSettings(db.Model):
     repo_type = db.Column(
         db.String(50), nullable=False, default="GITHUB"
     )  # e.g., "GITHUB", "BITBUCKET"
-    github_repo_url = db.Column(
-        db.String(200),
-        default="https://github.com/tomwey2/calculator-spring-docker-jenkins.git",
-    )
+    github_repo_url = db.Column(db.String(200))
     polling_interval_seconds = db.Column(db.Integer, nullable=False, default=60)
     is_active = db.Column(db.Boolean, nullable=False, default=False)
     agent_skill_level = db.Column(db.String(50), nullable=True)
@@ -186,6 +203,7 @@ class TaskSystem(db.Model):
 
     def __repr__(self):
         return f"<TaskSystem {self.id} provider={self.board_provider}>"
+
 
 # pylint: disable=too-few-public-methods
 class Task(db.Model):

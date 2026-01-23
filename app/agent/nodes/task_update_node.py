@@ -67,6 +67,7 @@ def create_task_update_node(agent_settings: AgentSettings):
 
             return {
                 "task_state_id": task_moveto_state_id,
+                "current_node": "task_update",
             }
         except ValueError as exc:
             logger.warning(str(exc))

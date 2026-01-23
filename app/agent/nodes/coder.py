@@ -64,7 +64,7 @@ def create_coder_node(llm, tools, agent_stack):
                         "coder",
                         response,
                     )
-                    result = {"messages": [response]}
+                    result = {"messages": [response], "current_node": "coder"}
                     if recorded:
                         result["agent_summary"] = agent_summary
                     return result

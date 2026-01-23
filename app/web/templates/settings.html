@@ -58,30 +58,46 @@
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
-                                    <label class="form-label">Active Task System</label>
-                                    <div class="d-flex gap-3">
-                                        <div class="form-check form-check-inline">
-                                            <input class="form-check-input" type="radio" name="task_system_type" id="radio-trello" value="TRELLO" {% if settings.task_system_type=="TRELLO" %}checked{% endif %}>
-                                            <label class="form-check-label" for="radio-trello">Trello</label>
-                                        </div>
-                                        <div class="form-check form-check-inline">
-                                            <input class="form-check-input" type="radio" name="task_system_type" id="radio-github" value="GITHUB" {% if settings.task_system_type=="GITHUB" %}checked{% endif %}>
-                                            <label class="form-check-label" for="radio-github">GitHub Project Board</label>
-                                        </div>
-                                    </div>
+                                    <label
+                                        for="task_system_type"
+                                        class="form-label"
+                                        >Active Task System</label
+                                    >
+                                    <select
+                                        class="form-select"
+                                        id="task_system_type"
+                                        name="task_system_type"
+                                    >
+                                        <option
+                                            value="TRELLO"
+                                            {%
+                                            if
+                                            settings.task_system_type=="TRELLO"
+                                            %}selected{%
+                                            endif
+                                            %}
+                                        >
+                                            Trello
+                                        </option>
+                                        <option
+                                            value="GITHUB"
+                                            {%
+                                            if
+                                            settings.task_system_type=="GITHUB"
+                                            %}selected{%
+                                            endif
+                                            %}
+                                        >
+                                            GitHub Projects
+                                        </option>
+                                    </select>
                                 </div>
-                                <hr>
-                                <ul class="nav nav-tabs" id="taskSystemTabs" role="tablist">
-                                    <li class="nav-item" role="presentation">
-                                        <button class="nav-link active" id="trello-tab" data-bs-toggle="tab" data-bs-target="#trello-config" type="button" role="tab" aria-controls="trello-config" aria-selected="true">Trello</button>
-                                    </li>
-                                    <li class="nav-item" role="presentation">
-                                        <button class="nav-link" id="github-tab" data-bs-toggle="tab" data-bs-target="#github-config" type="button" role="tab" aria-controls="github-config" aria-selected="false">GitHub Project Board</button>
-                                    </li>
-                                </ul>
-                                <div class="tab-content pt-3" id="taskSystemTabContent">
-                                    <div class="tab-pane fade show active" id="trello-config" role="tabpanel" aria-labelledby="trello-tab">
-                                        <fieldset id="fieldset-trello">
+                                <div id="task-system-configs">
+                                    <div class="card" id="trello-settings-card">
+                                        <div class="card-header">
+                                            <h5>Trello Configuration</h5>
+                                        </div>
+                                        <div class="card-body">
                                             <div class="mb-3">
                                                 <label for="trello_api_key" class="form-label">Trello API Key</label>
                                                 <input type="text" class="form-control" id="trello_api_key" name="trello_api_key" value="{{ form_data.trello_api_key or '' }}" placeholder="Enter Trello API key">
@@ -116,10 +132,13 @@
                                                 <label for="trello_base_url" class="form-label">Trello Base URL</label>
                                                 <input type="text" class="form-control" id="trello_base_url" name="trello_base_url" value="{{ form_data.trello_base_url or 'https://api.trello.com' }}" placeholder="https://api.trello.com/1">
                                             </div>
-                                        </fieldset>
+                                        </div>
                                     </div>
-                                    <div class="tab-pane fade" id="github-config" role="tabpanel" aria-labelledby="github-tab">
-                                        <fieldset id="fieldset-github">
+                                    <div class="card mt-4" id="github-settings-card">
+                                        <div class="card-header">
+                                            <h5>GitHub Projects Configuration</h5>
+                                        </div>
+                                        <div class="card-body">
                                             <div class="mb-3">
                                                 <label for="github_api_token" class="form-label">GitHub API Token (PAT)</label>
                                                 <input type="password" class="form-control" id="github_api_token" name="github_api_token" value="{{ form_data.github_api_token or '' }}" placeholder="Enter GitHub PAT">
@@ -161,7 +180,7 @@
                                                 <input type="text" class="form-control" id="github_base_url" name="github_base_url" value="{{ form_data.github_base_url or 'https://api.github.com' }}" placeholder="https://api.github.com">
                                                 <small class="form-text text-muted">Change this for GitHub Enterprise installations.</small>
                                             </div>
-                                        </fieldset>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -244,8 +263,6 @@
     // Restore active tabs from sessionStorage
     document.addEventListener('DOMContentLoaded', function() {
         const activeSection = sessionStorage.getItem('activeSection');
-        const activeTaskTab = sessionStorage.getItem('activeTaskTab');
-        
         if (activeSection) {
             const sectionLink = document.querySelector(`[href="#${activeSection}"]`);
             if (sectionLink) {
@@ -253,13 +270,26 @@
                 tab.show();
             }
         }
-        
-        if (activeTaskTab) {
-            const taskTabButton = document.querySelector(`[data-bs-target="#${activeTaskTab}"]`);
-            if (taskTabButton) {
-                const tab = new bootstrap.Tab(taskTabButton);
-                tab.show();
+
+        // Logic to show/hide task system cards based on dropdown
+        const taskSystemSelect = document.getElementById('task_system_type');
+        const trelloCard = document.getElementById('trello-settings-card');
+        const githubCard = document.getElementById('github-settings-card');
+
+        function toggleTaskSystemCards() {
+            if (!taskSystemSelect) return;
+            const selectedSystem = taskSystemSelect.value;
+            if (trelloCard) {
+                trelloCard.style.display = selectedSystem === 'TRELLO' ? 'block' : 'none';
             }
+            if (githubCard) {
+                githubCard.style.display = selectedSystem === 'GITHUB' ? 'block' : 'none';
+            }
+        }
+
+        if (taskSystemSelect) {
+            toggleTaskSystemCards(); // Set initial state on page load
+            taskSystemSelect.addEventListener('change', toggleTaskSystemCards);
         }
     });
 
@@ -268,14 +298,6 @@
         item.addEventListener('shown.bs.tab', function(event) {
             const targetId = event.target.getAttribute('href').substring(1);
             sessionStorage.setItem('activeSection', targetId);
-        });
-    });
-
-    // Save active task system tab when changed
-    document.querySelectorAll('#taskSystemTabs [data-bs-toggle="tab"]').forEach(function(button) {
-        button.addEventListener('shown.bs.tab', function(event) {
-            const targetId = event.target.getAttribute('data-bs-target').substring(1);
-            sessionStorage.setItem('activeTaskTab', targetId);
         });
     });
 </script>

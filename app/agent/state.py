@@ -7,6 +7,7 @@ all the necessary information for the agent to function, such as message history
 task details, and internal counters.
 """
 
+from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Optional, TypedDict
 
@@ -23,6 +24,15 @@ class PlanState(StrEnum):
     APPROVED = "approved"
 
 
+class TaskType(StrEnum):
+    """Defines the types of tasks."""
+
+    UNKNOWN = "unknown"
+    CODING = "coding"
+    BUGFIXING = "bugfixing"
+    ANALYZING = "analyzing"
+
+
 class AgentState(TypedDict):
     """
     Represents the state of the agent graph.
@@ -34,15 +44,19 @@ class AgentState(TypedDict):
 
     messages: Annotated[list[BaseMessage], add_messages]
     next_step: str
+    task_type: Optional[TaskType]
+    task_id: Optional[str]
+    task_name: Optional[str]
+    task_description: Optional[str]
+    task_state_id: Optional[str]
+    task_skill_level: Optional[str]
     agent_stack: str  # Backend or Frontend
     retry_count: int  # Attempts: how often switched between coder and tester
     test_result: Optional[str]
     error_log: Optional[str]  # Optional: Stores the last error explicitly
-    task_id: Optional[str]
-    task_name: Optional[str]
-    task_state_id: Optional[str]
     git_branch: Optional[str]
     agent_skill_level: Optional[str]
-    task_skill_level: Optional[str]
     agent_summary: Optional[list[str]]
     plan_state: Optional[PlanState]
+    current_node: Optional[str]
+    last_update: Optional[datetime]

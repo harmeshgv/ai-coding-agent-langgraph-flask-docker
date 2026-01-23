@@ -12,8 +12,7 @@ from app.web.schemas.settings_schema import (
     LLMConfigSchema,
     SettingsFormSchema,
 )
-from app.web.services.dashboard_service import DashboardService
-from app.web.services.settings_service import SettingsService
+from app.web.services import dashboard_service, settings_service
 
 
 class TestDashboardService:
@@ -27,7 +26,7 @@ class TestDashboardService:
                 f.write("# Test Plan\n\nThis is a test.")
 
             with patch.dict(os.environ, {"WORKSPACE": tmpdir}):
-                result = DashboardService.get_plan_content()
+                result = dashboard_service.get_plan_content()
 
             assert "# Test Plan" in result
             assert "This is a test." in result
@@ -36,7 +35,7 @@ class TestDashboardService:
         """Should return default message when plan.md doesn't exist."""
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch.dict(os.environ, {"WORKSPACE": tmpdir}):
-                result = DashboardService.get_plan_content()
+                result = dashboard_service.get_plan_content()
 
             assert "No plan.md found" in result
 
@@ -48,7 +47,7 @@ class TestDashboardService:
                 f.write("# My Plan")
 
             with patch.dict(os.environ, {"WORKSPACE": tmpdir}):
-                result = DashboardService.get_template_context()
+                result = dashboard_service.get_template_context()
 
             assert "plan_content" in result
             assert "# My Plan" in result["plan_content"]
@@ -70,14 +69,14 @@ class TestSettingsService:
             db.session.commit()
             existing_id = existing.id
 
-            result = SettingsService.get_or_create_settings()
+            result = settings_service.get_or_create_settings()
 
             assert result.id == existing_id
 
     def test_get_or_create_settings_creates_new(self, app):
         """Should create new config with defaults if none exists."""
         with app.app_context():
-            result = SettingsService.get_or_create_settings()
+            result = settings_service.get_or_create_settings()
 
             assert result is not None
             assert result.task_system_type == "TRELLO"
@@ -94,7 +93,7 @@ class TestSettingsService:
                 llm_config=LLMConfigSchema(provider="openai"),
             )
 
-            result = SettingsService.save_settings(schema, settings)
+            result = settings_service.save_settings(schema, settings)
 
             assert result.id is not None
             assert result.agent_skill_level == "senior"
@@ -121,7 +120,7 @@ class TestSettingsService:
                 llm_config=LLMConfigSchema(provider="mistral"),
             )
 
-            result = SettingsService.save_settings(schema, existing)
+            result = settings_service.save_settings(schema, existing)
 
             assert result.id == existing_id
             assert result.agent_skill_level == "senior"
@@ -134,7 +133,7 @@ class TestSettingsService:
                 llm_provider="mistral",
             )
 
-            result = SettingsService.get_template_context(settings)
+            result = settings_service.get_template_context(settings)
 
             assert "settings" in result
             assert "form_data" in result
@@ -144,19 +143,19 @@ class TestSettingsService:
 
     def test_check_missing_provider_env_returns_none_for_ollama(self, app):
         """Ollama should not require env var."""
-        result = SettingsService._check_missing_provider_env("ollama")
+        result = settings_service._check_missing_provider_env("ollama")
         assert result is None
 
     def test_check_missing_provider_env_returns_env_name_when_missing(self, app):
         """Should return env var name when missing."""
         with patch.dict(os.environ, {}, clear=True):
-            result = SettingsService._check_missing_provider_env("openai")
+            result = settings_service._check_missing_provider_env("openai")
             assert result == "OPENAI_API_KEY"
 
     def test_check_missing_provider_env_returns_none_when_present(self, app):
         """Should return None when env var is present."""
         with patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"}):
-            result = SettingsService._check_missing_provider_env("openai")
+            result = settings_service._check_missing_provider_env("openai")
             assert result is None
 
     def test_validate_and_save_success(self, app):
@@ -173,7 +172,7 @@ class TestSettingsService:
                     "llm_provider": "mistral",
                 },
             ):
-                success, error_msg = SettingsService.validate_and_save(settings)
+                success, error_msg = settings_service.validate_and_save(settings)
 
             assert success is True
             assert error_msg is None

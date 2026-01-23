@@ -53,7 +53,6 @@ def workflow_mocks(monkeypatch):
         return _node
 
     factories = [
-        "create_agent_skill_level_node",
         "create_analyst_node",
         "create_bugfixer_node",
         "create_checkout_node",
@@ -95,7 +94,6 @@ def test_create_workflow_registers_all_nodes(workflow_mocks):
         "task_fetch",
         "checkout",
         "router",
-        "agent_skill_level",
         "coder",
         "bugfixer",
         "analyst",
@@ -119,7 +117,8 @@ def test_create_workflow_registers_all_nodes(workflow_mocks):
         )  # type: ignore[stop-iteration]
     )
     assert router_mapping == {
-        "coder": "agent_skill_level",
+        "reject": "task_update",
+        "coder": "coder",
         "bugfixer": "bugfixer",
         "analyst": "analyst",
     }

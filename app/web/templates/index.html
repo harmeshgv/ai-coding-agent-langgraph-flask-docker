@@ -10,11 +10,13 @@
                     <div class="card-body">
                         <p>
                             <strong>Agent State:</strong>
-                            <span id="agent-state">--</span>
+                            <span id="agent-state"
+                                >{{ agent_state["current_node"] }}</span
+                            >
                         </p>
                         <p>
                             <strong>Last Update:</strong>
-                            <span id="last-update">--</span>
+                            <span id="last-update">{{ agent_state["last_update"] }}</span>
                         </p>
                     </div>
                 </div>
@@ -22,7 +24,23 @@
                 <div class="card flex-grow-1 d-flex flex-column">
                     <div class="card-header">Task</div>
                     <div class="card-body flex-grow-1" style="overflow-y: auto">
-                        <p id="task-description">No active task.</p>
+                        <p>
+                            <strong>Task Title:</strong>
+                            <span id="agent-state"
+                                >{{ agent_state["task_name"] }}</span
+                            >
+                        </p>
+                        <p>
+                            <strong>Task Skill Level:</strong>
+                            <span id="agent-state"
+                                >{{ agent_state["task_skill_level"] }}</span
+                            >
+                        </p>
+                        <p>
+                            <strong>Task Description:</strong>
+                        <h5><pre style="white-space: pre-wrap">
+{{ agent_state["task_description"] }}</pre></h5>
+                        </p>
                     </div>
                 </div>
             </div>
