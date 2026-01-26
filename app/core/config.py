@@ -12,9 +12,9 @@ Attributes:
     SCHEDULER_API_ENABLED (bool): Enables the built-in scheduler API.
 """
 
+import logging
 import os
 from pathlib import Path
-import logging
 
 logger = logging.getLogger(__name__)
 

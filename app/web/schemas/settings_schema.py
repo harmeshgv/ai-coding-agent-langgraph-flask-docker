@@ -21,14 +21,12 @@ class TrelloConfigSchema(BaseModel):
     backlog_list: Optional[str] = Field(
         default=None, description="List ID for backlog tasks"
     )
-    readfrom_list: Optional[str] = Field(
-        default=None, description="List ID to read tasks from"
-    )
-    progress_list: Optional[str] = Field(
+    todo_list: Optional[str] = Field(default=None, description="List ID for todo tasks")
+    in_progress_list: Optional[str] = Field(
         default=None, description="List ID for in-progress tasks"
     )
-    moveto_list: Optional[str] = Field(
-        default=None, description="List ID to move completed tasks to"
+    in_review_list: Optional[str] = Field(
+        default=None, description="List ID for in-review tasks"
     )
 
     @field_validator("api_key", "api_token", "board_id", mode="before")
@@ -62,14 +60,14 @@ class GitHubConfigSchema(BaseModel):
     backlog_list: Optional[str] = Field(
         default=None, description="Column name for backlog tasks"
     )
-    readfrom_list: Optional[str] = Field(
-        default=None, description="Column name to read tasks from"
+    todo_list: Optional[str] = Field(
+        default=None, description="Column name for todo tasks"
     )
-    progress_list: Optional[str] = Field(
+    in_progress_list: Optional[str] = Field(
         default=None, description="Column name for in-progress tasks"
     )
-    moveto_list: Optional[str] = Field(
-        default=None, description="Column name to move completed tasks to"
+    in_review_list: Optional[str] = Field(
+        default=None, description="Column name for in-review tasks"
     )
 
     @field_validator("project_owner", "board_id", "api_token", mode="before")

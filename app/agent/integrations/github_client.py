@@ -319,7 +319,7 @@ async def get_items_from_column(
 async def get_project_item(
     item_id: str,
     agent_settings: AgentSettings,
-) -> dict[str, Any]:
+) -> dict[str, Any] | None:
     """Fetch a single project item with its status metadata."""
     query = """
     query($itemId: ID!) {
@@ -356,7 +356,7 @@ async def get_project_item(
 
     node = data.get("data", {}).get("node")
     if not node:
-        raise RuntimeError(f"GitHub project item {item_id} not found")
+        return None
 
     status_field = node.get("fieldValueByName") or {}
     content = node.get("content") or {}

@@ -3,16 +3,18 @@
 import logging
 import re
 import subprocess
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from flask import current_app
 from git import Repo
 
+from app.agent.integrations.board_provider import BoardTask
 from app.agent.services.git_workspace import checkout_branch
+from app.agent.services.tasks_services import save_task_in_db
 from app.agent.state import AgentState
 from app.agent.utils import get_codespace
 from app.core.models import AgentSettings
-from app.core.task_repository import get_branch_for_task, upsert_task
+from app.core.task_repository import get_branch_for_task
 
 logger = logging.getLogger(__name__)
 
@@ -26,13 +28,12 @@ def create_checkout_node(agent_settings: AgentSettings):
     """Create a checkout node"""
 
     async def checkout_node(state: AgentState) -> Dict[str, Any]:  # pylint: disable=unused-argument
-        task_id = state["task_id"]
-        task_name = state["task_name"]
+        task: Optional[BoardTask] = state["task"] if state["task"] else None
 
-        if task_id and task_name:
+        if task:
             await checkout_task_branch(
-                task_id,
-                task_name,
+                task.id,
+                task.name,
                 "coder",
                 agent_settings,
             )
@@ -183,14 +184,7 @@ async def checkout_branch_for_task(
     repo.git.reset("--hard")
     repo.git.checkout("-b", branch_name)
 
-    try:
-        with current_app.app_context():
-            upsert_task(task_id, task_name, branch_name, github_repo_url)
-            logger.info(
-                "Persisted branch '%s' for task %s in database", branch_name, task_id
-            )
-    except Exception as exc:  # pylint: disable=broad-exception-caught
-        logger.warning("Failed to persist branch mapping for task %s: %s", task_id, exc)
+    save_task_in_db(task_id, task_name, branch_name, github_repo_url)
 
     real_git_branch = subprocess.check_output(
         ["git", "rev-parse", "--abbrev-ref", "HEAD"],

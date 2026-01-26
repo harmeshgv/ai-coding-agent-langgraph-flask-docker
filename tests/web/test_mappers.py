@@ -76,10 +76,10 @@ class TestConfigMapperSchemaToModel:
 
         trello_ts = result.get_task_system("trello")
         assert trello_ts is not None
-        assert trello_ts.backlog_state == "list-1"
-        assert trello_ts.readfrom_state == "list-2"
-        assert trello_ts.in_progress_state == "list-3"
-        assert trello_ts.moveto_state == "list-4"
+        assert trello_ts.state_backlog == "list-1"
+        assert trello_ts.state_todo == "list-2"
+        assert trello_ts.state_in_progress == "list-3"
+        assert trello_ts.state_in_review == "list-4"
         assert trello_ts.api_key == "test-key"
         assert trello_ts.token == "test-token"
         assert trello_ts.board_id == "board-123"
@@ -272,10 +272,10 @@ class TestConfigMapperGitHub:
 
         github_ts = result.get_task_system("github")
         assert github_ts is not None
-        assert github_ts.backlog_state == "Backlog"
-        assert github_ts.readfrom_state == "Todo"
-        assert github_ts.in_progress_state == "In Progress"
-        assert github_ts.moveto_state == "Done"
+        assert github_ts.state_backlog == "Backlog"
+        assert github_ts.state_todo == "Todo"
+        assert github_ts.state_in_progress == "In Progress"
+        assert github_ts.state_in_review == "Done"
         assert github_ts.board_provider == "github"
         assert github_ts.token == "ghp_test_token"
         assert github_ts.project_owner == "octocat"
