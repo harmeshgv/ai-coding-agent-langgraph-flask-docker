@@ -14,6 +14,8 @@ from typing import Annotated, Optional, TypedDict
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
 
+from app.agent.integrations.board_provider import BoardTask
+
 
 class PlanState(StrEnum):
     """Defines the states of the plan."""
@@ -33,6 +35,14 @@ class TaskType(StrEnum):
     ANALYZING = "analyzing"
 
 
+class TaskStateType(StrEnum):
+    """Defines the states of tasks."""
+
+    TODO = "todo"
+    IN_PROGRESS = "in progress"
+    IN_REVIEW = "in review"
+
+
 class AgentState(TypedDict):
     """
     Represents the state of the agent graph.
@@ -44,11 +54,7 @@ class AgentState(TypedDict):
 
     messages: Annotated[list[BaseMessage], add_messages]
     next_step: str
-    task_type: Optional[TaskType]
-    task_id: Optional[str]
-    task_name: Optional[str]
-    task_description: Optional[str]
-    task_state_id: Optional[str]
+    task: Optional[BoardTask]
     task_skill_level: Optional[str]
     agent_stack: str  # Backend or Frontend
     retry_count: int  # Attempts: how often switched between coder and tester

@@ -10,7 +10,9 @@ from app.core.models import AgentSettings
 logger = logging.getLogger(__name__)
 
 
-def create_task_tool(agent_settings: AgentSettings, target_state: str) -> StructuredTool:
+def create_task_tool(
+    agent_settings: AgentSettings, target_state: str | None
+) -> StructuredTool:
     """Factory that creates a tool for creating tasks on the configured board."""
 
     async def create_task(

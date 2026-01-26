@@ -8,27 +8,9 @@ import json
 import logging
 import os
 
+from app.core.plan_services import get_plan
+
 logger = logging.getLogger(__name__)
-
-
-def get_plan_content() -> str:
-    """Read and return the plan.md content from workspace.
-
-    Returns:
-        Content of plan.md or a default message if not found.
-    """
-    workspace_path = os.environ.get("WORKSPACE", ".")
-    plan_path = os.path.join(workspace_path, "plan.md")
-
-    if not os.path.exists(plan_path):
-        return "No plan.md found in workspace."
-
-    try:
-        with open(plan_path, "r", encoding="utf-8") as f:
-            return f.read()
-    except (IOError, OSError) as e:
-        logger.error("Error reading plan.md: %s", e)
-        return f"Error reading plan.md: {e}"
 
 
 def get_template_context() -> dict:
@@ -38,7 +20,7 @@ def get_template_context() -> dict:
         Dictionary with all template variables.
     """
     return {
-        "plan_content": get_plan_content(),
+        "plan_content": get_plan(),
         "agent_state": get_agent_state(),
     }
 

@@ -25,3 +25,6 @@ GITHUB_TOKEN=your_github_token_here
 #OLLAMA_API_KEY=your_ollama_api_key_here
 # Ollama base URL (only if you want to use Ollama not in a docker container)
 #OLLAMA_BASE_URL=your_ollama_base_url_here
+
+# enable or disable the mcp servers
+ENABLE_MCP_SERVERS=True

@@ -6,6 +6,7 @@ import json
 import os
 import shutil
 import subprocess
+from dataclasses import asdict
 from datetime import datetime
 from typing import Final, Optional
 
@@ -64,6 +65,8 @@ def save_state_to_workspace(state: dict, filename: str = "agent_state.json") -> 
             {"type": msg.type, "content": str(msg.content)}
             for msg in serializable_state["messages"]
         ]
+
+    serializable_state["task"] = asdict(serializable_state["task"])
     serializable_state["last_update"] = datetime.now().astimezone().isoformat()
     temp_path = file_path + ".tmp"
 

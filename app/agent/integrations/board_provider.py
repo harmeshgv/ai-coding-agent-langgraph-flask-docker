@@ -9,13 +9,14 @@ board system implementation.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Optional
 
 
 @dataclass
 class BoardTask:
     """
     Domain model for a task, independent of the board system.
-    
+
     Attributes:
         id: Unique identifier for the task
         name: Title/name of the task
@@ -24,6 +25,7 @@ class BoardTask:
         state_name: Name of the state/column containing this task
         url: URL to view the task in the board system
     """
+
     id: str
     name: str
     description: str
@@ -36,13 +38,14 @@ class BoardTask:
 class BoardComment:
     """
     Domain model for a comment on a task.
-    
+
     Attributes:
         id: Unique identifier for the comment
         text: Content of the comment
         author: Name of the comment author
         date: Timestamp when the comment was created
     """
+
     id: str
     text: str
     author: str
@@ -53,13 +56,14 @@ class BoardComment:
 class BoardStateMove:
     """
     Domain model for tracking when a task moves between states.
-    
+
     Attributes:
         id: Unique identifier for the move action
         date: Timestamp when the move occurred
         state_before: Name of the state before the move
         state_after: Name of the state after the move
     """
+
     id: str
     date: datetime
     state_before: str | None
@@ -69,7 +73,7 @@ class BoardStateMove:
 class BoardProvider(ABC):
     """
     Abstract interface for board system operations.
-    
+
     All board providers (Trello, GitHub Projects, Jira, etc.) must implement
     this interface to ensure consistent behavior across different systems.
     """
@@ -78,22 +82,22 @@ class BoardProvider(ABC):
     async def get_states(self) -> list[dict]:
         """
         Fetch all states/columns from the board.
-        
+
         Returns:
             List of dictionaries with 'id' and 'name' keys
         """
 
     @abstractmethod
-    async def get_task(self, task_id: str) -> BoardTask:
+    async def get_task(self, task_id: str) -> Optional[BoardTask]:
         """
         Fetch a specific task from the board.
-        
+
         Args:
             task_id: The ID of the task to fetch
-            
+
         Returns:
             The BoardTask object
-            
+
         Raises:
             RuntimeError: If task fetching fails
         """
@@ -102,10 +106,10 @@ class BoardProvider(ABC):
     async def get_tasks_from_state(self, state_id: str) -> list[BoardTask]:
         """
         Fetch all tasks from a specific state.
-        
+
         Args:
             state_id: The ID of the state to fetch tasks from
-            
+
         Returns:
             List of BoardTask objects
         """
@@ -114,11 +118,11 @@ class BoardProvider(ABC):
     async def move_task_to_state(self, task_id: str, state_id: str) -> None:
         """
         Move a task to a different state.
-        
+
         Args:
             task_id: The ID of the task to move
             state_id: The ID of the target state
-            
+
         Raises:
             RuntimeError: If the operation fails
         """
@@ -127,14 +131,14 @@ class BoardProvider(ABC):
     async def move_task_to_named_state(self, task_id: str, state_name: str) -> str:
         """
         Move a task to a state identified by name.
-        
+
         Args:
             task_id: The ID of the task to move
             state_name: The name of the target state
-            
+
         Returns:
             The ID of the target state
-            
+
         Raises:
             ValueError: If the state name is not found
             RuntimeError: If the move operation fails
@@ -144,11 +148,11 @@ class BoardProvider(ABC):
     async def add_comment(self, task_id: str, comment: str) -> None:
         """
         Add a comment to a task.
-        
+
         Args:
             task_id: The ID of the task
             comment: The comment text to add
-            
+
         Raises:
             RuntimeError: If adding the comment fails
         """
@@ -157,13 +161,13 @@ class BoardProvider(ABC):
     async def get_comments(self, task_id: str) -> list[BoardComment]:
         """
         Fetch all comments for a task.
-        
+
         Args:
             task_id: The ID of the task
-            
+
         Returns:
             List of BoardComment objects
-            
+
         Raises:
             RuntimeError: If fetching comments fails
         """
@@ -172,13 +176,13 @@ class BoardProvider(ABC):
     async def get_state_moves(self, task_id: str) -> list[BoardStateMove]:
         """
         Fetch the history of state moves for a task.
-        
+
         Args:
             task_id: The ID of the task
-            
+
         Returns:
             List of BoardStateMove objects
-            
+
         Raises:
             RuntimeError: If fetching move history fails
         """
@@ -189,15 +193,15 @@ class BoardProvider(ABC):
     ) -> BoardTask:
         """
         Create a new task in the specified state.
-        
+
         Args:
             name: The title/name of the task
             description: The description/body of the task
             state_name: The name of the state to create the task in
-            
+
         Returns:
             The created BoardTask object
-            
+
         Raises:
             ValueError: If the state name is not found
             RuntimeError: If task creation fails

@@ -210,7 +210,10 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# own rules
 .env-local
 .local/keys.env
 workflow_graph.mmd
 workflow_graph.png
+.zed

@@ -8,6 +8,7 @@ board operations across different systems.
 
 import logging
 from datetime import datetime, timezone
+from typing import Optional
 
 from app.agent.integrations.board_provider import (
     BoardComment,
@@ -19,10 +20,10 @@ from app.agent.integrations.github_client import (
     add_comment_to_issue,
     create_draft_issue,
     get_issue_comments,
-    get_items_from_column,
-    get_project_item,
     get_item_status_history,
+    get_items_from_column,
     get_project_columns,
+    get_project_item,
     move_item_to_column,
     move_item_to_named_column,
 )
@@ -52,9 +53,13 @@ class GitHubProvider(BoardProvider):
         """Fetch all states (columns) from the GitHub Project."""
         return await get_project_columns(self.agent_settings)
 
-    async def get_task(self, task_id: str) -> BoardTask:
+    async def get_task(self, task_id: str) -> Optional[BoardTask]:
         """Fetch a specific task (project item) by ID."""
         item = await get_project_item(task_id, self.agent_settings)
+
+        if not item:
+            logger.warning("GitHub Issue %s not found", task_id)
+            return None
 
         return BoardTask(
             id=item["id"],
@@ -73,9 +78,7 @@ class GitHubProvider(BoardProvider):
         first, then fetch items. The state_id here is the column option ID.
         """
         columns = await get_project_columns(self.agent_settings)
-        target_column = next(
-            (col for col in columns if col["id"] == state_id), None
-        )
+        target_column = next((col for col in columns if col["id"] == state_id), None)
 
         if not target_column:
             logger.warning("Column with ID %s not found", state_id)
