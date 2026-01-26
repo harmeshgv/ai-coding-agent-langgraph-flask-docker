@@ -8,12 +8,13 @@ with other board systems.
 
 import logging
 from datetime import datetime, timezone
+from typing import Optional
 
 from app.agent.integrations.board_provider import (
-    BoardTask,
     BoardComment,
-    BoardStateMove,
     BoardProvider,
+    BoardStateMove,
+    BoardTask,
 )
 from app.agent.integrations.trello_client import (
     add_comment_to_trello_card,
@@ -34,7 +35,7 @@ logger = logging.getLogger(__name__)
 class TrelloProvider(BoardProvider):
     """
     Trello implementation of the BoardProvider interface.
-    
+
     This class wraps the existing Trello client functions and provides
     a consistent interface for board operations.
     """
@@ -42,7 +43,7 @@ class TrelloProvider(BoardProvider):
     def __init__(self, agent_settings: AgentSettings):
         """
         Initialize the Trello provider.
-        
+
         Args:
             agent_settings: Agent settings containing Trello credentials and settings
         """
@@ -52,12 +53,13 @@ class TrelloProvider(BoardProvider):
         """Fetch all states (Trello lists) from the board."""
         return await get_all_trello_lists(self.agent_settings)
 
-    async def get_task(self, task_id: str) -> BoardTask:
+    async def get_task(self, task_id: str) -> Optional[BoardTask]:
         """Fetch a specific Trello card."""
         card = await get_trello_card(task_id, self.agent_settings)
 
         if not card:
-            raise RuntimeError(f"Trello card {task_id} not found")
+            logger.warning("Trello card %s not found", task_id)
+            return None
 
         return BoardTask(
             id=card["id"],
@@ -157,10 +159,10 @@ class TrelloProvider(BoardProvider):
     def _parse_timestamp(self, value: str | None) -> datetime:
         """
         Parse a Trello timestamp string into a datetime object.
-        
+
         Args:
             value: ISO format timestamp string
-            
+
         Returns:
             Parsed datetime object with timezone info
         """

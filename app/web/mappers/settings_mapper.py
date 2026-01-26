@@ -35,9 +35,9 @@ def form_to_schema() -> SettingsFormSchema:
         base_url=request.form.get("trello_base_url", "https://api.trello.com/1"),
         board_id=request.form.get("trello_board_id"),
         backlog_list=request.form.get("trello_backlog_list"),
-        readfrom_list=request.form.get("trello_readfrom_list"),
-        progress_list=request.form.get("trello_progress_list"),
-        moveto_list=request.form.get("trello_moveto_list"),
+        todo_list=request.form.get("trello_todo_list"),
+        in_progress_list=request.form.get("trello_in_progress_list"),
+        in_review_list=request.form.get("trello_in_review_list"),
     )
     github_config = GitHubConfigSchema(
         base_url=request.form.get("github_base_url", "https://api.github.com"),
@@ -46,9 +46,9 @@ def form_to_schema() -> SettingsFormSchema:
         project_number=request.form.get("github_project_number"),
         board_id=request.form.get("github_board_id"),
         backlog_list=request.form.get("github_backlog_list"),
-        readfrom_list=request.form.get("github_readfrom_list"),
-        progress_list=request.form.get("github_progress_list"),
-        moveto_list=request.form.get("github_moveto_list"),
+        todo_list=request.form.get("github_todo_list"),
+        in_progress_list=request.form.get("github_in_progress_list"),
+        in_review_list=request.form.get("github_in_review_list"),
     )
     jira_config = JiraConfigSchema(
         username=request.form.get("jira_username"),
@@ -127,10 +127,10 @@ def _apply_trello_config(
     task_system.api_key = trello_schema.api_key
     task_system.token = trello_schema.api_token
     task_system.base_url = trello_schema.base_url
-    task_system.backlog_state = trello_schema.backlog_list
-    task_system.readfrom_state = trello_schema.readfrom_list
-    task_system.in_progress_state = trello_schema.progress_list
-    task_system.moveto_state = trello_schema.moveto_list
+    task_system.state_backlog = trello_schema.backlog_list
+    task_system.state_todo = trello_schema.todo_list
+    task_system.state_in_progress = trello_schema.in_progress_list
+    task_system.state_in_review = trello_schema.in_review_list
 
 
 def _apply_github_config(
@@ -144,10 +144,10 @@ def _apply_github_config(
     task_system.project_number = github_schema.project_number
     task_system.board_id = github_schema.board_id
     task_system.base_url = github_schema.base_url
-    task_system.backlog_state = github_schema.backlog_list
-    task_system.readfrom_state = github_schema.readfrom_list
-    task_system.in_progress_state = github_schema.progress_list
-    task_system.moveto_state = github_schema.moveto_list
+    task_system.state_backlog = github_schema.backlog_list
+    task_system.state_todo = github_schema.todo_list
+    task_system.state_in_progress = github_schema.in_progress_list
+    task_system.state_in_review = github_schema.in_review_list
 
 
 def _get_or_create_task_system(settings: AgentSettings, provider: str) -> TaskSystem:
@@ -195,19 +195,19 @@ def _add_trello_form_data(settings: AgentSettings, form_data: Dict[str, Any]) ->
         form_data["trello_api_token"] = task_system.token
         form_data["trello_board_id"] = task_system.board_id
         form_data["trello_base_url"] = task_system.base_url
-        form_data["trello_backlog_list"] = task_system.backlog_state
-        form_data["trello_readfrom_list"] = task_system.readfrom_state
-        form_data["trello_progress_list"] = task_system.in_progress_state
-        form_data["trello_moveto_list"] = task_system.moveto_state
+        form_data["trello_backlog_list"] = task_system.state_backlog
+        form_data["trello_todo_list"] = task_system.state_todo
+        form_data["trello_in_progress_list"] = task_system.state_in_progress
+        form_data["trello_in_review_list"] = task_system.state_in_review
     else:
         form_data["trello_api_key"] = None
         form_data["trello_api_token"] = None
         form_data["trello_board_id"] = None
         form_data["trello_base_url"] = None
         form_data["trello_backlog_list"] = None
-        form_data["trello_readfrom_list"] = None
-        form_data["trello_progress_list"] = None
-        form_data["trello_moveto_list"] = None
+        form_data["trello_todo_list"] = None
+        form_data["trello_in_progress_list"] = None
+        form_data["trello_in_review_list"] = None
 
 
 def _add_github_form_data(settings: AgentSettings, form_data: Dict[str, Any]) -> None:
@@ -220,10 +220,10 @@ def _add_github_form_data(settings: AgentSettings, form_data: Dict[str, Any]) ->
         form_data["github_project_number"] = task_system.project_number
         form_data["github_board_id"] = task_system.board_id
         form_data["github_base_url"] = task_system.base_url
-        form_data["github_backlog_list"] = task_system.backlog_state
-        form_data["github_readfrom_list"] = task_system.readfrom_state
-        form_data["github_progress_list"] = task_system.in_progress_state
-        form_data["github_moveto_list"] = task_system.moveto_state
+        form_data["github_backlog_list"] = task_system.state_backlog
+        form_data["github_todo_list"] = task_system.state_todo
+        form_data["github_in_progress_list"] = task_system.state_in_progress
+        form_data["github_in_review_list"] = task_system.state_in_review
     else:
         form_data["github_api_token"] = env_token
         form_data["github_project_owner"] = None
@@ -231,9 +231,9 @@ def _add_github_form_data(settings: AgentSettings, form_data: Dict[str, Any]) ->
         form_data["github_board_id"] = None
         form_data["github_base_url"] = None
         form_data["github_backlog_list"] = None
-        form_data["github_readfrom_list"] = None
-        form_data["github_progress_list"] = None
-        form_data["github_moveto_list"] = None
+        form_data["github_todo_list"] = None
+        form_data["github_in_progress_list"] = None
+        form_data["github_in_review_list"] = None
 
 
 def _add_jira_form_data(form_data: Dict[str, Any]) -> None:

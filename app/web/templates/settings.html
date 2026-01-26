@@ -113,20 +113,20 @@
                                             <hr>
                                             <h6 class="mb-3">Column Mapping</h6>
                                             <div class="mb-3">
-                                                <label for="trello_backlog_list" class="form-label">Backlog state</label>
-                                                <input type="text" class="form-control" id="trello_backlog_list" name="trello_backlog_list" value="{{ form_data.trello_backlog_list or '' }}" placeholder="Enter Trello backlog state (e.g. Backlog)">
+                                                <label for="trello_backlog_list" class="form-label">Backlog List</label>
+                                                <input type="text" class="form-control" id="trello_backlog_list" name="trello_backlog_list" value="{{ form_data.trello_backlog_list or '' }}" placeholder="e.g. Backlog">
                                             </div>
                                             <div class="mb-3">
-                                                <label for="trello_readfrom_list" class="form-label">Read first card from state</label>
-                                                <input type="text" class="form-control" id="trello_readfrom_list" name="trello_readfrom_list" value="{{ form_data.trello_readfrom_list or '' }}" placeholder="e.g. Todo">
+                                                <label for="trello_todo_list" class="form-label">Todo List</label>
+                                                <input type="text" class="form-control" id="trello_todo_list" name="trello_todo_list" value="{{ form_data.trello_todo_list or '' }}" placeholder="e.g. Todo">
                                             </div>
                                             <div class="mb-3">
-                                                <label for="trello_progress_list" class="form-label">Move card to in progress state</label>
-                                                <input type="text" class="form-control" id="trello_progress_list" name="trello_progress_list" value="{{ form_data.trello_progress_list or '' }}" placeholder="e.g. In Progress">
+                                                <label for="trello_in_progress_list" class="form-label">In Progress List</label>
+                                                <input type="text" class="form-control" id="trello_in_progress_list" name="trello_in_progress_list" value="{{ form_data.trello_in_progress_list or '' }}" placeholder="e.g. In Progress">
                                             </div>
                                             <div class="mb-3">
-                                                <label for="trello_moveto_list" class="form-label">Move updated card to state</label>
-                                                <input type="text" class="form-control" id="trello_moveto_list" name="trello_moveto_list" value="{{ form_data.trello_moveto_list or '' }}" placeholder="e.g. Done">
+                                                <label for="trello_in_review_list" class="form-label">In Review List</label>
+                                                <input type="text" class="form-control" id="trello_in_review_list" name="trello_in_review_list" value="{{ form_data.trello_in_review_list or '' }}" placeholder="e.g. In Review">
                                             </div>
                                             <div class="mb-3">
                                                 <label for="trello_base_url" class="form-label">Trello Base URL</label>
@@ -164,16 +164,16 @@
                                                 <input type="text" class="form-control" id="github_backlog_list" name="github_backlog_list" value="{{ form_data.github_backlog_list or '' }}" placeholder="e.g. Backlog">
                                             </div>
                                             <div class="mb-3">
-                                                <label for="github_readfrom_list" class="form-label">Read Tasks From Column</label>
-                                                <input type="text" class="form-control" id="github_readfrom_list" name="github_readfrom_list" value="{{ form_data.github_readfrom_list or '' }}" placeholder="e.g. Todo">
+                                                <label for="github_todo_list" class="form-label">Todo Column</label>
+                                                <input type="text" class="form-control" id="github_readfrom_list" name="github_todo_list" value="{{ form_data.github_todo_list or '' }}" placeholder="e.g. Todo">
                                             </div>
                                             <div class="mb-3">
-                                                <label for="github_progress_list" class="form-label">In Progress Column</label>
-                                                <input type="text" class="form-control" id="github_progress_list" name="github_progress_list" value="{{ form_data.github_progress_list or '' }}" placeholder="e.g. In Progress">
+                                                <label for="github_in_progress_list" class="form-label">In Progress Column</label>
+                                                <input type="text" class="form-control" id="github_in_progress_list" name="github_in_progress_list" value="{{ form_data.github_in_progress_list or '' }}" placeholder="e.g. In Progress">
                                             </div>
                                             <div class="mb-3">
-                                                <label for="github_moveto_list" class="form-label">Move Completed To Column</label>
-                                                <input type="text" class="form-control" id="github_moveto_list" name="github_moveto_list" value="{{ form_data.github_moveto_list or '' }}" placeholder="e.g. Done">
+                                                <label for="github_in_review_list" class="form-label">In Review Column</label>
+                                                <input type="text" class="form-control" id="github_in_progress_list" name="github_in_progress_list" value="{{ form_data.github_in_progress_list or '' }}" placeholder="e.g. In Review">
                                             </div>
                                             <div class="mb-3">
                                                 <label for="github_base_url" class="form-label">GitHub API Base URL</label>

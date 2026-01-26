@@ -7,7 +7,6 @@ the edges (the transitions between nodes), and the conditional logic that
 routes the flow of execution based on the current state.
 """
 
-from langchain.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage
 from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolNode
@@ -22,6 +21,7 @@ from app.agent.nodes.router import create_router_node
 from app.agent.nodes.task_fetch_node import create_task_fetch_node
 from app.agent.nodes.task_update_node import create_task_update_node
 from app.agent.nodes.tester import create_tester_node
+from app.agent.runtime import AgentRuntimeContext
 from app.agent.services.summaries import has_finish_task_call
 from app.agent.state import AgentState
 from app.agent.tools.create_task import create_task_tool
@@ -33,7 +33,6 @@ from app.agent.tools.file_tools import (
 from app.agent.tools.finish_task import finish_task
 from app.agent.tools.run_command import run_command
 from app.agent.tools.thinking import thinking
-from app.core.models import AgentSettings
 
 
 def route_after_tools_tester(state: AgentState):
@@ -121,24 +120,19 @@ def route_after_tools_analyst(state: AgentState) -> str:
     return "analyst"
 
 
-def create_workflow(
-    llm_large: BaseChatModel,
-    llm_small: BaseChatModel,
-    agent_settings: AgentSettings,
-    agent_stack: str,
-) -> StateGraph:
+def create_workflow(runtime: AgentRuntimeContext) -> StateGraph:
     """Creates and configures the main LangGraph workflow."""
     # --- Tool Sets ---
-    active_task_system = agent_settings.get_active_task_system()
+    active_task_system = runtime.agent_settings.get_active_task_system()
     impl_task_target_state = (
-        active_task_system.backlog_state if active_task_system else None
+        active_task_system.state_backlog if active_task_system else None
     )
     analyst_tools = [
         list_files,
         read_file,
         write_to_file,
         thinking,
-        create_task_tool(agent_settings, impl_task_target_state),
+        create_task_tool(runtime.agent_settings, impl_task_target_state),
         finish_task,
     ]
     coder_tools = [
@@ -156,20 +150,27 @@ def create_workflow(
     # --- Graph Nodes ---
     workflow = StateGraph(AgentState)
 
-    workflow.add_node("task_fetch", create_task_fetch_node(agent_settings))
-    workflow.add_node("checkout", create_checkout_node(agent_settings))
-    workflow.add_node("router", create_router_node(llm_small))
-
-    workflow.add_node("coder", create_coder_node(llm_large, coder_tools, agent_stack))
     workflow.add_node(
-        "bugfixer", create_bugfixer_node(llm_large, coder_tools, agent_stack)
+        "task_fetch", create_task_fetch_node(runtime.agent_settings, runtime.db_task)
     )
-    workflow.add_node(
-        "analyst", create_analyst_node(llm_large, analyst_tools, agent_stack)
-    )
+    workflow.add_node("checkout", create_checkout_node(runtime.agent_settings))
+    workflow.add_node("router", create_router_node(runtime.llm_small))
 
     workflow.add_node(
-        "tester", create_tester_node(llm_large, tester_tools, agent_stack)
+        "coder", create_coder_node(runtime.llm_large, coder_tools, runtime.agent_stack)
+    )
+    workflow.add_node(
+        "bugfixer",
+        create_bugfixer_node(runtime.llm_large, coder_tools, runtime.agent_stack),
+    )
+    workflow.add_node(
+        "analyst",
+        create_analyst_node(runtime.llm_large, analyst_tools, runtime.agent_stack),
+    )
+
+    workflow.add_node(
+        "tester",
+        create_tester_node(runtime.llm_large, tester_tools, runtime.agent_stack),
     )
 
     # Tool Nodes
@@ -179,7 +180,7 @@ def create_workflow(
 
     workflow.add_node("correction", create_correction_node())
     workflow.add_node("pull_request", create_pull_request_node())
-    workflow.add_node("task_update", create_task_update_node(agent_settings))
+    workflow.add_node("task_update", create_task_update_node(runtime.agent_settings))
 
     workflow.set_entry_point("task_fetch")
 
@@ -188,7 +189,7 @@ def create_workflow(
     # 1. Start -> Router
     workflow.add_conditional_edges(
         "task_fetch",
-        lambda state: "checkout" if state.get("task_id") else END,
+        lambda state: "checkout" if state.get("task") else END,
         {END: END, "checkout": "checkout"},
     )
 

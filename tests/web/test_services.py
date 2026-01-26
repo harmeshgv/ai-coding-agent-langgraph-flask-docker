@@ -26,7 +26,7 @@ class TestDashboardService:
                 f.write("# Test Plan\n\nThis is a test.")
 
             with patch.dict(os.environ, {"WORKSPACE": tmpdir}):
-                result = dashboard_service.get_plan_content()
+                result = dashboard_service.get_plan()
 
             assert "# Test Plan" in result
             assert "This is a test." in result
@@ -35,7 +35,7 @@ class TestDashboardService:
         """Should return default message when plan.md doesn't exist."""
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch.dict(os.environ, {"WORKSPACE": tmpdir}):
-                result = dashboard_service.get_plan_content()
+                result = dashboard_service.get_plan()
 
             assert "No plan.md found" in result
 

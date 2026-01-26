@@ -8,10 +8,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from langchain_core.messages import SystemMessage
 
-from app.agent.integrations.board_provider import BoardTask, BoardComment
+from app.agent.integrations.board_provider import BoardComment, BoardTask
 from app.agent.nodes.task_fetch_node import (
     create_task_fetch_node,
     fetch_task_from_state,
+)
+from app.agent.services.tasks_services import (
     filter_comments_between_timestamps,
     get_latest_move_to_in_progress,
 )
@@ -25,10 +27,10 @@ def agent_settings():
     task_system = TaskSystem(
         task_system_type="TRELLO",
         board_provider="trello",
-        backlog_state="Backlog",
-        readfrom_state="To Do",
-        in_progress_state="In Progress",
-        moveto_state="In Review",
+        state_backlog="Backlog",
+        state_todo="To Do",
+        state_in_progress="In Progress",
+        state_in_review="In Review",
     )
     settings.task_systems.append(task_system)
     return settings
@@ -59,6 +61,7 @@ def mock_board_provider():
     provider.get_comments = AsyncMock(return_value=[])
     provider.get_state_moves = AsyncMock(return_value=[])
     provider.move_task_to_named_state = AsyncMock(return_value="list2")
+
     return provider
 
 
@@ -75,12 +78,12 @@ async def test_task_fetch_node_success(agent_settings, mock_board_provider):
         "app.agent.nodes.task_fetch_node.get_branch_for_task",
         return_value=None,
     ):
-        task_fetch = create_task_fetch_node(agent_settings)
+        task_fetch = create_task_fetch_node(agent_settings, None)
         result = await task_fetch({})
-        
-        assert result["task_id"] == "card1"
-        assert result["task_name"] == "Test Task"
-        assert result["task_state_id"] == "list2"  # Moved to in-progress state
+
+        assert result["task"].id == "card1"
+        assert result["task"].name == "Test Task"
+        assert result["task"].state_id == "list2"  # Moved to in-progress state
         assert len(result["messages"]) == 1
         assert isinstance(result["messages"][0], SystemMessage)
         assert "Test Task" in result["messages"][0].content
@@ -100,7 +103,7 @@ async def test_task_fetch_node_no_review_list(agent_settings, mock_board_provide
         moveto_state=None,
     )
     temp_settings.task_systems.append(task_system)
-    
+
     with patch(
         "app.agent.nodes.task_fetch_node.create_board_provider",
         return_value=mock_board_provider,
@@ -113,7 +116,7 @@ async def test_task_fetch_node_no_review_list(agent_settings, mock_board_provide
     ):
         task_fetch = create_task_fetch_node(temp_settings)
         result = await task_fetch({})
-        
+
         assert result["task_id"] is None
 
 
@@ -121,7 +124,7 @@ async def test_task_fetch_node_no_review_list(agent_settings, mock_board_provide
 async def test_task_fetch_node_no_cards(agent_settings, mock_board_provider):
     """Test task fetch when no tasks are available."""
     mock_board_provider.get_tasks_from_state = AsyncMock(return_value=[])
-    
+
     with patch(
         "app.agent.nodes.task_fetch_node.create_board_provider",
         return_value=mock_board_provider,
@@ -134,7 +137,7 @@ async def test_task_fetch_node_no_cards(agent_settings, mock_board_provider):
     ):
         task_fetch = create_task_fetch_node(agent_settings)
         result = await task_fetch({})
-        
+
         assert result["task_id"] is None
 
 
@@ -142,7 +145,7 @@ async def test_task_fetch_node_no_cards(agent_settings, mock_board_provider):
 async def test_task_fetch_node_with_comments(agent_settings, mock_board_provider):
     """Test task fetch with comments when task is already in In Progress (returned from review)."""
     from app.agent.integrations.board_provider import BoardStateMove
-    
+
     # Task is already in "In Progress" state (returned from review)
     mock_board_provider.get_tasks_from_state = AsyncMock(
         return_value=[
@@ -155,7 +158,7 @@ async def test_task_fetch_node_with_comments(agent_settings, mock_board_provider
             )
         ]
     )
-    
+
     # Set up state moves: task was moved to "In Review" (review), then back to "In Progress"
     mock_moves = [
         BoardStateMove(
@@ -172,7 +175,7 @@ async def test_task_fetch_node_with_comments(agent_settings, mock_board_provider
         ),
     ]
     mock_board_provider.get_state_moves = AsyncMock(return_value=mock_moves)
-    
+
     # Comment within the review period
     mock_comments = [
         BoardComment(
@@ -183,7 +186,7 @@ async def test_task_fetch_node_with_comments(agent_settings, mock_board_provider
         )
     ]
     mock_board_provider.get_comments = AsyncMock(return_value=mock_comments)
-    
+
     with patch(
         "app.agent.nodes.task_fetch_node.create_board_provider",
         return_value=mock_board_provider,
@@ -196,7 +199,7 @@ async def test_task_fetch_node_with_comments(agent_settings, mock_board_provider
     ):
         task_fetch = create_task_fetch_node(agent_settings)
         result = await task_fetch({})
-        
+
         # Comments should be included since task was already in In Progress (returned from review)
         assert result["task_comments"] is not None
         assert len(result["task_comments"]) == 1
@@ -204,10 +207,12 @@ async def test_task_fetch_node_with_comments(agent_settings, mock_board_provider
 
 
 @pytest.mark.asyncio
-async def test_task_fetch_node_no_comments_from_todo(agent_settings, mock_board_provider):
+async def test_task_fetch_node_no_comments_from_todo(
+    agent_settings, mock_board_provider
+):
     """Test that comments are NOT included when task is picked from To Do (not from review)."""
     from app.agent.integrations.board_provider import BoardStateMove
-    
+
     # Task is in "To Do" state (not returned from review)
     mock_board_provider.get_tasks_from_state = AsyncMock(
         return_value=[
@@ -220,7 +225,7 @@ async def test_task_fetch_node_no_comments_from_todo(agent_settings, mock_board_
             )
         ]
     )
-    
+
     # Even if there are state moves and comments, they should not be included
     mock_moves = [
         BoardStateMove(
@@ -231,7 +236,7 @@ async def test_task_fetch_node_no_comments_from_todo(agent_settings, mock_board_
         ),
     ]
     mock_board_provider.get_state_moves = AsyncMock(return_value=mock_moves)
-    
+
     mock_comments = [
         BoardComment(
             id="comment1",
@@ -241,7 +246,7 @@ async def test_task_fetch_node_no_comments_from_todo(agent_settings, mock_board_
         )
     ]
     mock_board_provider.get_comments = AsyncMock(return_value=mock_comments)
-    
+
     with patch(
         "app.agent.nodes.task_fetch_node.create_board_provider",
         return_value=mock_board_provider,
@@ -254,7 +259,7 @@ async def test_task_fetch_node_no_comments_from_todo(agent_settings, mock_board_
     ):
         task_fetch = create_task_fetch_node(agent_settings)
         result = await task_fetch({})
-        
+
         # Comments should NOT be included since task was picked from To Do
         assert result["task_comments"] is not None
         assert len(result["task_comments"]) == 0
@@ -267,7 +272,7 @@ async def test_fetch_task_from_state_success(mock_board_provider):
         mock_board_provider,
         "To Do",
     )
-    
+
     assert result is not None
     assert result["task"].id == "card1"
     assert result["state_id"] == "list1"
@@ -281,7 +286,7 @@ async def test_fetch_task_from_state_not_found(mock_board_provider):
         mock_board_provider,
         "Non-existent",
     )
-    
+
     assert result is None
 
 
@@ -289,7 +294,7 @@ async def test_fetch_task_from_state_not_found(mock_board_provider):
 async def test_get_latest_move_to_in_progress(mock_board_provider):
     """Test getting latest move from review to in-progress."""
     from app.agent.integrations.board_provider import BoardStateMove
-    
+
     mock_moves = [
         BoardStateMove(
             id="move1",
@@ -305,11 +310,11 @@ async def test_get_latest_move_to_in_progress(mock_board_provider):
         ),
     ]
     mock_board_provider.get_state_moves = AsyncMock(return_value=mock_moves)
-    
+
     result = await get_latest_move_to_in_progress(
         mock_board_provider, "card1", "In Review", "In Progress"
     )
-    
+
     assert result is not None
     assert "review_timestamp" in result
     assert "return_timestamp" in result
@@ -341,8 +346,8 @@ def test_filter_comments_between_timestamps():
             date=datetime(2024, 1, 1, 15, 0, 0, tzinfo=timezone.utc),
         ),
     ]
-    
+
     filtered = filter_comments_between_timestamps(comments, start, end)
-    
+
     assert len(filtered) == 1
     assert filtered[0].text == "Within range"

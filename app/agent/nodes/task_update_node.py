@@ -8,10 +8,12 @@ based on the agent's configuration.
 
 import logging
 from time import sleep
+from typing import Optional
 
 from langchain_core.messages import AIMessage, ToolMessage
 
 from app.agent.integrations.board_factory import create_board_provider
+from app.agent.integrations.board_provider import BoardTask
 from app.agent.services.summaries import get_agent_summary_entries
 from app.agent.state import AgentState
 from app.core.models import AgentSettings
@@ -37,19 +39,19 @@ def create_task_update_node(agent_settings: AgentSettings):
         """
         Updates the task with a comment and moves it to the specified list.
         """
-        task_id = state.get("task_id")
-        if not task_id:
-            logger.warning("No task ID found in state")
+        task: Optional[BoardTask] = state["task"] if state["task"] else None
+        if not task:
+            logger.warning("No task found in state")
             return {}
 
-        logger.info("Updating task %s", task_id)
+        logger.info("Updating task %s", task)
 
         board_provider = create_board_provider(agent_settings)
 
         try:
             final_comments = _build_agent_comments(state)
             for comment in final_comments:
-                await board_provider.add_comment(task_id, comment)
+                await board_provider.add_comment(task.id, comment)
                 sleep(0.1)
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Failed to add comment to task: %s", e)
@@ -60,9 +62,9 @@ def create_task_update_node(agent_settings: AgentSettings):
                 logger.warning("No active task system configured")
                 return {"task_id": None}
 
-            task_moveto_state = active_task_system.moveto_state
+            task_moveto_state = active_task_system.state_in_review
             task_moveto_state_id = await board_provider.move_task_to_named_state(
-                task_id, task_moveto_state
+                task.id, task_moveto_state
             )
 
             return {
