@@ -19,10 +19,9 @@ from app.agent.services.tasks_services import (
     move_task_to_state,
 )
 
-from app.core.task_repository import get_pr_info_for_task
 
+from app.core.task_repository import get_pr_info_for_task
 from app.agent.services.pull_request import (
-    check_pr_exists_for_branch,
     format_pr_review_message,
     get_latest_open_pr_for_branch,
     get_latest_pr_review_status,
@@ -56,17 +55,20 @@ def create_task_fetch_node(agent_settings: AgentSettings, db_task: Optional[Task
                 logger.warning("No review state configured in task system")
                 return {"task": None}
 
-            task: Optional[BoardTask] = None
-            logger.info("db_task: %s", db_task)
-            if db_task and db_task.task_id:
-                task = await board_provider.get_task(db_task.task_id)
+            task: BoardTask | None = await fetch_task_from_state(
+                board_provider, active_task_system.state_in_progress
+            )
 
             comments = []
             pr_review_message = ""
             is_todo_task: bool = True
             if task:
+                logger.info("found task id: %s, state: %s", task.id, task.state_name)
                 if task.state_name == active_task_system.state_in_review:
-                    logger.info("task is in review, wait for user action")
+                    logger.info(
+                        "task is in review: %s, wait for user action",
+                        task.state_name,
+                    )
                     return {"task": None}
 
                 if task.state_name == active_task_system.state_in_progress:
@@ -117,6 +119,7 @@ def create_task_fetch_node(agent_settings: AgentSettings, db_task: Optional[Task
 
     return task_fetch
 
+
 def _fetch_pr_review_info(task_id: str) -> tuple[bool, str]:
     """
     Fetch PR review info if a PR exists for the task.
@@ -159,7 +162,10 @@ def _fetch_pr_review_info(task_id: str) -> tuple[bool, str]:
         len(code_comments),
     )
 
-    return False, format_pr_review_message(pr_url or "", rejection_reviews, code_comments)
+    return False, format_pr_review_message(
+        pr_url or "", rejection_reviews, code_comments
+    )
+
 
 def _build_system_message_content(
     task_name: str,
@@ -198,6 +204,6 @@ def _build_system_message_content(
 
     if pr_review_message:
         system_content += pr_review_message
-        logger.info("PR review message appended")
+        logger.info("PR review message appended: %s", pr_review_message)
 
     return system_content
