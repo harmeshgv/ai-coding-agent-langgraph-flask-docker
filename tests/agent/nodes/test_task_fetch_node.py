@@ -3,7 +3,6 @@ Tests for the task fetch node.
 """
 
 from datetime import datetime, timezone
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
