@@ -55,50 +55,18 @@ def create_task_fetch_node(agent_settings: AgentSettings, db_task: Optional[Task
                 logger.warning("No review state configured in task system")
                 return {"task": None}
 
-            task: BoardTask | None = await fetch_task_from_state(
-                board_provider, active_task_system.state_in_progress
+            task, comments, pr_review_message = await _resolve_task(
+                board_provider,
+                active_task_system.state_in_progress,
+                active_task_system.state_todo,
+                active_task_system.state_in_review,
             )
-
-            comments = []
-            pr_review_message = ""
-            is_todo_task: bool = True
-            if task:
-                logger.info("found task id: %s, state: %s", task.id, task.state_name)
-                if task.state_name == active_task_system.state_in_review:
-                    logger.info(
-                        "task is in review: %s, wait for user action",
-                        task.state_name,
-                    )
-                    return {"task": None}
-
-                if task.state_name == active_task_system.state_in_progress:
-                    logger.info("task is in progress and add comments")
-                    comments = await fetch_review_comments(
-                        board_provider,
-                        task.id,
-                        active_task_system.state_in_progress,
-                        active_task_system.state_in_review,
-                    )
-                    _, pr_review_message = _fetch_pr_review_info(task.id)
-                    is_todo_task = False
-
-            if is_todo_task:
-                logger.info("fetch new task from todo")
-                task = await fetch_task_from_state(
-                    board_provider, active_task_system.state_todo
-                )
 
             if not task:
                 logger.info("There is no current task to work on.")
                 return {"task": None}
 
             logger.info("Processing task ID: %s - %s", task.id, task.name)
-            if is_todo_task:
-                task = await move_task_to_state(
-                    board_provider, task, active_task_system.state_in_progress
-                )
-                logger.info("Moved task to %s", task.state_name)
-                delete_plan()
 
             system_content = _build_system_message_content(
                 task.name,
@@ -118,6 +86,46 @@ def create_task_fetch_node(agent_settings: AgentSettings, db_task: Optional[Task
             return {"task_id": None}
 
     return task_fetch
+
+
+async def _resolve_task(
+    board_provider,
+    in_progress_state: str,
+    todo_state: str,
+    review_state: str,
+) -> tuple[BoardTask | None, list, str]:
+    """
+    Resolve which task to work on: either continue in-progress task or fetch new from todo.
+
+    Returns:
+        Tuple of (task, comments, pr_review_message)
+    """
+    task_in_progress = await fetch_task_from_state(board_provider, in_progress_state)
+
+    if task_in_progress:
+        logger.info(
+            "found task id: %s, state: %s",
+            task_in_progress.id,
+            task_in_progress.state_name,
+        )
+        logger.info("task is in progress and add comments")
+        comments = await fetch_review_comments(
+            board_provider,
+            task_in_progress.id,
+            in_progress_state,
+            review_state,
+        )
+        _, pr_review_message = _fetch_pr_review_info(task_in_progress.id)
+        return task_in_progress, comments, pr_review_message
+
+    logger.info("fetch new task from todo")
+    task = await fetch_task_from_state(board_provider, todo_state)
+    if task:
+        task = await move_task_to_state(board_provider, task, in_progress_state)
+        logger.info("Moved task to %s", task.state_name)
+        delete_plan()
+
+    return task, [], ""
 
 
 def _fetch_pr_review_info(task_id: str) -> tuple[bool, str]:

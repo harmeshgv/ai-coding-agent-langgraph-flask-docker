@@ -77,7 +77,7 @@ def mock_board_provider():
 
 @pytest.mark.asyncio
 async def test_task_fetch_node_success(agent_settings, mock_board_provider):
-    """Test successful task fetch."""
+    """Test successful task fetch from todo state."""
     with patch(
         "app.agent.nodes.task_fetch_node.create_board_provider",
         return_value=mock_board_provider,
@@ -90,13 +90,16 @@ async def test_task_fetch_node_success(agent_settings, mock_board_provider):
     ), patch(
         "app.agent.nodes.task_fetch_node.fetch_task_from_state",
         new=AsyncMock(
-            return_value=BoardTask(
-                id="card1",
-                name="Test Task",
-                description="Test Description",
-                state_id="list1",
-                state_name="Todo",
-            )
+            side_effect=[
+                None,  # First call: no in-progress task
+                BoardTask(
+                    id="card1",
+                    name="Test Task",
+                    description="Test Description",
+                    state_id="list1",
+                    state_name="To Do",
+                ),  # Second call: todo task
+            ]
         ),
     ), patch(
         "app.agent.nodes.task_fetch_node.move_task_to_state",
@@ -109,11 +112,11 @@ async def test_task_fetch_node_success(agent_settings, mock_board_provider):
                 state_name="In Progress",
             )
         ),
+    ), patch(
+        "app.agent.nodes.task_fetch_node.delete_plan"
     ):
         task_fetch = create_task_fetch_node(agent_settings, None)
         result = await task_fetch({})
-
-        print("result:", result)
 
         assert result["task"].id == "card1"
         assert result["task"].name == "Test Task"
