@@ -45,7 +45,8 @@ def save_settings(schema: SettingsFormSchema, settings: AgentSettings) -> AgentS
     """
     settings_mapper.schema_to_model(schema, settings)
 
-    if schema.github_config:
+    is_github_task_system = schema.task_system_type == "GITHUB"
+    if is_github_task_system and schema.github_config:
         _fetch_github_project_id(schema, settings)
 
     if not settings.id:

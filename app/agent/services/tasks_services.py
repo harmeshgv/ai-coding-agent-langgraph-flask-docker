@@ -54,34 +54,36 @@ async def fetch_task_from_state(
     return tasks[0]
 
 
-async def move_task_to_in_progress(
+async def move_task_to_state(
     board_provider: BoardProvider,
-    task_id: str,
-    task_in_progress_state_name: str,
+    task: BoardTask,
+    task_state_name: str,
 ):
     """
     Moves the task to the in-progress state before task processing begins.
     """
-    if not task_in_progress_state_name:
+    modified_task: BoardTask = task
+    if not task_state_name:
         logger.warning(
             "task_in_progress_state not configured, skipping move to in-progress state"
         )
     else:
         logger.info(
             "Moving task %s to in-progress state: %s",
-            task_id,
-            task_in_progress_state_name,
+            task.id,
+            task_state_name,
         )
 
         try:
             await board_provider.move_task_to_named_state(
-                task_id, task_in_progress_state_name
+                task.id, task_state_name
             )
+            modified_task = await board_provider.get_task(task.id)
         except ValueError as e:
             logger.warning("Failed to move task to in-progress state: %s", e)
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Failed to move task to in-progress state: %s", e)
-    return
+    return modified_task
 
 
 async def fetch_review_comments(

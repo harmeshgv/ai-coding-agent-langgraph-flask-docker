@@ -32,9 +32,9 @@ class TestTrelloConfigSchema:
             api_token="test-token",
             board_id="board-123",
             backlog_list="list-1",
-            readfrom_list="list-2",
-            progress_list="list-3",
-            moveto_list="list-4",
+            todo_list="list-2",
+            in_progress_list="list-3",
+            in_review_list="list-4",
         )
         assert schema.api_key == "test-key"
         assert schema.api_token == "test-token"
@@ -189,18 +189,18 @@ class TestGitHubConfigSchema:
             board_id="PVT_kwDOxxxxxx",
             api_token="ghp_test_token",
             backlog_list="Backlog",
-            readfrom_list="Todo",
-            progress_list="In Progress",
-            moveto_list="Done",
+            todo_list="Todo",
+            in_progress_list="In Progress",
+            in_review_list="Done",
         )
         assert schema.project_owner == "octocat"
         assert schema.project_number == "1"
         assert schema.board_id == "PVT_kwDOxxxxxx"
         assert schema.api_token == "ghp_test_token"
         assert schema.backlog_list == "Backlog"
-        assert schema.readfrom_list == "Todo"
-        assert schema.progress_list == "In Progress"
-        assert schema.moveto_list == "Done"
+        assert schema.todo_list == "Todo"
+        assert schema.in_progress_list == "In Progress"
+        assert schema.in_review_list == "Done"
 
     def test_default_base_url(self):
         """Base URL should default to GitHub API."""

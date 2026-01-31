@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
+from app.agent.integrations.board_provider import BoardTask
 from app.agent.nodes.task_update_node import (
     AGENT_DEFAULT_COMMENT,
     _build_agent_comments,
@@ -24,7 +25,7 @@ def agent_settings():
     task_system = TaskSystem(
         task_system_type="TRELLO",
         board_provider="trello",
-        moveto_state="Done",
+        state_in_review="Done",
     )
     settings.task_systems.append(task_system)
     return settings
@@ -43,7 +44,13 @@ def mock_board_provider():
 async def test_task_update_node_success(agent_settings, mock_board_provider):
     """Test successful task update."""
     state = {
-        "task_id": "card1",
+        "task": BoardTask(
+            id="card1",
+            name="Task Name",
+            description="Desc",
+            state_id="list1",
+            state_name="In Progress",
+        ),
         "messages": [],
         "agent_summary": ["Task completed successfully"],
     }
@@ -65,7 +72,7 @@ async def test_task_update_node_success(agent_settings, mock_board_provider):
 @pytest.mark.asyncio
 async def test_task_update_node_no_task_id(agent_settings, mock_board_provider):
     """Test task update with no task ID."""
-    state = {"task_id": None, "messages": []}
+    state = {"task": None, "messages": []}
     
     with patch(
         "app.agent.nodes.task_update_node.create_board_provider",
@@ -81,7 +88,17 @@ async def test_task_update_node_no_task_id(agent_settings, mock_board_provider):
 @pytest.mark.asyncio
 async def test_task_update_node_move_fails(agent_settings, mock_board_provider):
     """Test task update when move operation fails."""
-    state = {"task_id": "card1", "messages": [], "agent_summary": []}
+    state = {
+        "task": BoardTask(
+            id="card1",
+            name="Task Name",
+            description="Desc",
+            state_id="list1",
+            state_name="In Progress",
+        ),
+        "messages": [],
+        "agent_summary": [],
+    }
     mock_board_provider.move_task_to_named_state = AsyncMock(
         side_effect=ValueError("State not found")
     )

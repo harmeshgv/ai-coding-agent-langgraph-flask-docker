@@ -137,6 +137,8 @@ class Task(db.Model):
     task_name = db.Column(db.String(500), nullable=False)
     branch_name = db.Column(db.String(200), nullable=False)
     repo_url = db.Column(db.String(200), nullable=True)
+    pr_number = db.Column(db.Integer, nullable=True)
+    pr_url = db.Column(db.String(500), nullable=True)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(
         db.DateTime, server_default=db.func.now(), onupdate=db.func.now()

@@ -62,9 +62,9 @@ class TestConfigMapperSchemaToModel:
             base_url="https://api.trello.com/1",
             board_id="board-123",
             backlog_list="list-1",
-            readfrom_list="list-2",
-            progress_list="list-3",
-            moveto_list="list-4",
+            todo_list="list-2",
+            in_progress_list="list-3",
+            in_review_list="list-4",
         )
         schema = SettingsFormSchema(
             task_system_type="TRELLO",
@@ -160,10 +160,10 @@ class TestConfigMapperModelToFormData:
             token="api-token",
             board_id="board-id",
             base_url="https://api.trello.com/1",
-            backlog_state="backlog",
-            readfrom_state="todo",
-            in_progress_state="doing",
-            moveto_state="done",
+            state_backlog="backlog",
+            state_todo="todo",
+            state_in_progress="doing",
+            state_in_review="done",
         )
         config.task_systems.append(trello_ts)
 
@@ -173,9 +173,9 @@ class TestConfigMapperModelToFormData:
         assert result["trello_api_token"] == "api-token"
         assert result["trello_board_id"] == "board-id"
         assert result["trello_backlog_list"] == "backlog"
-        assert result["trello_readfrom_list"] == "todo"
-        assert result["trello_progress_list"] == "doing"
-        assert result["trello_moveto_list"] == "done"
+        assert result["trello_todo_list"] == "todo"
+        assert result["trello_in_progress_list"] == "doing"
+        assert result["trello_in_review_list"] == "done"
 
     def test_handles_missing_task_system(self, app):
         """Missing task_systems should result in None values."""
@@ -203,9 +203,9 @@ class TestConfigMapperFormToSchema:
                 "trello_board_id": "board",
                 "trello_base_url": "https://api.trello.com/1",
                 "trello_backlog_list": "backlog",
-                "trello_readfrom_list": "todo",
-                "trello_progress_list": "doing",
-                "trello_moveto_list": "done",
+                "trello_todo_list": "todo",
+                "trello_in_progress_list": "doing",
+                "trello_in_review_list": "done",
                 "llm_provider": "openai",
                 "polling_interval_seconds": "90",
                 "repo_type": "GITHUB",
@@ -258,9 +258,9 @@ class TestConfigMapperGitHub:
             project_number="1",
             board_id="PVT_kwDOxxxxxx",
             backlog_list="Backlog",
-            readfrom_list="Todo",
-            progress_list="In Progress",
-            moveto_list="Done",
+            todo_list="Todo",
+            in_progress_list="In Progress",
+            in_review_list="Done",
         )
         schema = SettingsFormSchema(
             task_system_type="GITHUB",
@@ -309,10 +309,10 @@ class TestConfigMapperGitHub:
             project_number=1,
             board_id="PVT_kwDOxxxxxx",
             base_url="https://api.github.com",
-            backlog_state="Backlog",
-            readfrom_state="Todo",
-            in_progress_state="In Progress",
-            moveto_state="Done",
+            state_backlog="Backlog",
+            state_todo="Todo",
+            state_in_progress="In Progress",
+            state_in_review="Done",
         )
         settings.task_systems.append(github_ts)
 
@@ -324,9 +324,9 @@ class TestConfigMapperGitHub:
         assert result["github_board_id"] == "PVT_kwDOxxxxxx"
         assert result["github_base_url"] == "https://api.github.com"
         assert result["github_backlog_list"] == "Backlog"
-        assert result["github_readfrom_list"] == "Todo"
-        assert result["github_progress_list"] == "In Progress"
-        assert result["github_moveto_list"] == "Done"
+        assert result["github_todo_list"] == "Todo"
+        assert result["github_in_progress_list"] == "In Progress"
+        assert result["github_in_review_list"] == "Done"
 
     def test_parses_github_form_data(self, app):
         """GitHub form data should be parsed into schema."""
@@ -341,9 +341,9 @@ class TestConfigMapperGitHub:
                 "github_board_id": "PVT_kwDOxxxxxx",
                 "github_base_url": "https://api.github.com",
                 "github_backlog_list": "Backlog",
-                "github_readfrom_list": "Todo",
-                "github_progress_list": "In Progress",
-                "github_moveto_list": "Done",
+                "github_todo_list": "Todo",
+                "github_in_progress_list": "In Progress",
+                "github_in_review_list": "Done",
                 "llm_provider": "openai",
                 "polling_interval_seconds": "90",
                 "repo_type": "GITHUB",

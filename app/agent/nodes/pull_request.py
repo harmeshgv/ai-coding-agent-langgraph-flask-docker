@@ -12,6 +12,7 @@ from app.agent.services.summaries import (
 from app.agent.services.pull_request import create_or_update_pr
 from app.agent.state import AgentState
 from app.agent.utils import get_codespace, get_current_git_branch
+from app.core.task_repository import update_task_pr_info
 
 logger = logging.getLogger(__name__)
 
@@ -22,35 +23,50 @@ def create_pull_request_node():
     async def pull_request_node(state: AgentState) -> Dict[str, Any]:
         success, summary_entries = _create_or_update_pr(state)
         if success:
-            logger.info("Pull request created successfully")
+            logger.info("Pull request created/updated successfully")
         else:
-            logger.error("Pull request creation failed")
+            logger.error("Pull request creation/update failed")
 
         return {"agent_summary": summary_entries, "current_node": "pull_request"}
 
     return pull_request_node
 
 
+def _append_summary(
+    summary_entries: list[str], state: AgentState, title: str, message: str
+) -> list[str]:
+    summary_entries = append_agent_summary(summary_entries, title, message)
+    state["agent_summary"] = summary_entries
+    return summary_entries
+
+
 def _create_or_update_pr(state: AgentState):
     summary_entries = list(state.get("agent_summary") or [])
     has_changes, _ = _execute_git_status()
     failure_detected = False
+    failure_reason = "Pull request skipped"
     if not has_changes:
         logger.info("No changes detected, skipping Git workflow")
         failure_detected = True
+        failure_reason = "Pull request skipped: no changes detected"
     elif not _execute_git_add():
         logger.error("Git add failed, skipping remaining Git operations")
         failure_detected = True
+        failure_reason = "Pull request failed: git add failed"
     elif not _execute_git_commit("fix: automated test-driven changes"):
         logger.error("Git commit failed, skipping remaining Git operations")
         failure_detected = True
+        failure_reason = "Pull request failed: git commit failed"
 
     if failure_detected:
+        summary_entries = _append_summary(summary_entries, state, "PR", failure_reason)
         return False, summary_entries
 
     push_success, push_msg = _execute_git_push()
     if not push_success:
         logger.error("Git push failed: %s", push_msg)
+        failure_reason = f"Pull request failed: git push failed ({push_msg})"
+        summary_entries = _append_summary(summary_entries, state, "PR", failure_reason)
         return False, summary_entries
 
     pr_title, pr_body = _build_pr_inputs(state)
@@ -59,21 +75,59 @@ def _create_or_update_pr(state: AgentState):
         body=pr_body,
     )
     if not pr_success:
-        logger.error("PR creation failed: %s", pr_msg)
+        logger.error("PR creation/update failed: %s", pr_msg)
+        summary_entries = _append_summary(
+            summary_entries,
+            state,
+            "PR",
+            f"Pull request creation/update failed: {pr_msg}",
+        )
         return False, summary_entries
 
     logger.info("Git workflow completed successfully: %s", pr_msg)
     if not pr_url:
         logger.warning("PR creation succeeded but no URL was returned")
+        summary_entries = _append_summary(
+            summary_entries,
+            state,
+            "PR",
+            "Pull request missing URL despite success",
+        )
         return False, summary_entries
 
-    summary_entries = append_agent_summary(
+    task_id = state.get("task_id")
+    if task_id and pr_url:
+        pr_number = _extract_pr_number_from_url(pr_url)
+        if pr_number:
+            update_task_pr_info(task_id, pr_number, pr_url)
+            logger.info("Stored PR #%d for task %s", pr_number, task_id)
+
+    summary_entries = _append_summary(
         summary_entries,
+        state,
         "PR",
         f"Pull request available at\n\n {pr_url}",
     )
-    state["agent_summary"] = summary_entries
     return True, summary_entries
+
+
+def _extract_pr_number_from_url(pr_url: str) -> int | None:
+    """
+    Extract the PR number from a GitHub PR URL.
+
+    Args:
+        pr_url: GitHub PR URL (e.g., https://github.com/owner/repo/pull/123)
+
+    Returns:
+        The PR number, or None if extraction fails
+    """
+    try:
+        parts = pr_url.rstrip("/").split("/")
+        if len(parts) >= 2 and parts[-2] == "pull":
+            return int(parts[-1])
+    except (ValueError, IndexError):
+        pass
+    return None
 
 
 def _build_pr_inputs(state: AgentState) -> tuple[str, str]:

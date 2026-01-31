@@ -6,14 +6,24 @@ HTTP request/response handling.
 """
 
 import logging
+from dataclasses import asdict
 
 from flask import (
     Blueprint,
     flash,
+    jsonify,
     render_template,
     request,
+    Response,
 )
 
+from app.agent.services.pull_request import (
+    fetch_pr_details,
+    fetch_pr_reviews,
+    fetch_pr_review_comments,
+    format_pr_review_message,
+    get_latest_pr_review_status,
+)
 from app.web.services import dashboard_service, settings_service
 
 logger = logging.getLogger(__name__)
@@ -46,3 +56,81 @@ def settings():
 
     context = settings_service.get_template_context(agent_settings)
     return render_template("settings.html", **context)
+
+
+@web_bp.route("/api/pr/<owner>/<repo>/<int:pr_number>", methods=["GET"])
+def get_pr_json(owner: str, repo: str, pr_number: int):
+    """
+    Fetch a GitHub PR with its reviews and review comments as JSON.
+
+    Args:
+        owner: Repository owner
+        repo: Repository name
+        pr_number: Pull request number
+
+    Returns:
+        JSON response with PR details, reviews, and comments
+    """
+    pr = fetch_pr_details(owner, repo, pr_number)
+    if not pr:
+        return jsonify({"error": f"PR #{pr_number} not found"}), 404
+
+    reviews = fetch_pr_reviews(pr_number, owner, repo)
+    comments = fetch_pr_review_comments(pr_number, owner, repo)
+
+    is_approved, rejection_reviews, _ = get_latest_pr_review_status(
+        pr_number, owner, repo
+    )
+
+    response = {
+        "pull_request": asdict(pr),
+        "is_approved": is_approved,
+        "reviews": [asdict(r) for r in reviews],
+        "review_comments": [asdict(c) for c in comments],
+        "rejection_reviews": [asdict(r) for r in rejection_reviews],
+    }
+
+    return jsonify(response)
+
+
+@web_bp.route("/api/pr/<owner>/<repo>/<int:pr_number>/formatted", methods=["GET"])
+def get_pr_formatted(owner: str, repo: str, pr_number: int):
+    """
+    Fetch a GitHub PR with its reviews and comments as formatted text.
+
+    Args:
+        owner: Repository owner
+        repo: Repository name
+        pr_number: Pull request number
+
+    Returns:
+        Plain text response with formatted PR review feedback
+    """
+    pr = fetch_pr_details(owner, repo, pr_number)
+    if not pr:
+        return Response(f"PR #{pr_number} not found", status=404, mimetype="text/plain")
+
+    is_approved, rejection_reviews, code_comments = get_latest_pr_review_status(
+        pr_number, owner, repo
+    )
+
+    lines = [
+        f"Pull Request #{pr_number}: {pr.title}",
+        f"URL: {pr.html_url}",
+        f"State: {pr.state}",
+        f"Branch: {pr.head_branch} -> {pr.base_branch}",
+        f"Created: {pr.created_at}",
+        f"Updated: {pr.updated_at}",
+        "",
+        "Description:",
+        pr.body or "(No description)",
+        "",
+        f"Review Status: {'APPROVED' if is_approved else 'CHANGES REQUESTED'}",
+    ]
+
+    formatted_review = format_pr_review_message(
+        pr.html_url, rejection_reviews, code_comments
+    )
+    lines.append(formatted_review)
+
+    return Response("\n".join(lines), mimetype="text/plain")
