@@ -121,7 +121,12 @@ async def get_project_id(
     }
     """
 
-    variables = {"owner": owner, "number": project_number}
+    try:
+        project_number_int = int(project_number)
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError("Project number must be an integer") from exc
+
+    variables = {"owner": owner, "number": project_number_int}
 
     try:
         data = await _execute_graphql(query, variables, agent_settings)
@@ -724,7 +729,12 @@ def get_project_id_sync(
     }
     """
 
-    variables = {"owner": owner, "number": project_number}
+    try:
+        project_number_int = int(project_number)
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError("Project number must be an integer") from exc
+
+    variables = {"owner": owner, "number": project_number_int}
 
     with httpx.Client() as client:
         response = client.post(

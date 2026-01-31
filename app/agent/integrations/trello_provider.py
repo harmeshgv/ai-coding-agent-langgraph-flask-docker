@@ -73,6 +73,7 @@ class TrelloProvider(BoardProvider):
     async def get_tasks_from_state(self, state_id: str) -> list[BoardTask]:
         """Fetch all tasks from a specific state (Trello list)."""
         # state_id corresponds to Trello list_id
+        state_name = await self._resolve_state_name_from_id(state_id)
         cards = await get_all_trello_cards(state_id, self.agent_settings)
 
         return [
@@ -81,11 +82,28 @@ class TrelloProvider(BoardProvider):
                 name=card["name"],
                 description=card["desc"],
                 state_id=state_id,
-                state_name="",
+                state_name=state_name,
                 url=card.get("url", ""),
             )
             for card in cards
         ]
+
+    async def _resolve_state_name_from_id(self, state_id: str) -> str:
+        """Resolve the human-readable Trello list name for a given list ID."""
+        try:
+            trello_lists = await get_all_trello_lists(self.agent_settings)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.warning(
+                "Failed to resolve Trello state name for %s: %s", state_id, exc
+            )
+            return ""
+
+        for trello_list in trello_lists:
+            if trello_list["id"] == state_id:
+                return trello_list.get("name", "")
+
+        logger.warning("Trello list %s not found when resolving state name", state_id)
+        return ""
 
     async def move_task_to_state(self, task_id: str, state_id: str) -> None:
         """Move a task to a different state (Trello list)."""

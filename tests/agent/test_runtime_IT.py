@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from flask import Flask
 
-from app.agent import runtime as runtime_module
 from app.agent.runtime import AgentRuntimeContext, prepare_runtime
 from app.core.extensions import db
 from app.core.models import AgentSettings
@@ -42,6 +41,10 @@ def test_prepare_runtime_returns_context(tmp_path, monkeypatch):
             github_repo_url="https://example.com/foo/bar.git",
             is_active=True,
             task_readfrom_state="todo",
+            llm_provider="ollama",
+            llm_model_large="llama3",
+            llm_model_small="llama3",
+            llm_temperature="0.0",
         )
         db.session.add(settings)
         db.session.commit()
@@ -76,6 +79,10 @@ def test_prepare_runtime_returns_none_for_unknown_system(tmp_path, monkeypatch):
             task_system_type="UNKNOWN",
             github_repo_url="https://example.com/foo/bar.git",
             is_active=True,
+            llm_provider="ollama",
+            llm_model_large="llama3",
+            llm_model_small="llama3",
+            llm_temperature="0.0",
         )
         db.session.add(settings)
         db.session.commit()
