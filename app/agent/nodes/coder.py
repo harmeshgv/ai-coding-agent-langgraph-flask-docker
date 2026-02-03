@@ -72,8 +72,6 @@ def create_coder_node(llm, tools, agent_stack):
                     "Attempt %d: No tool calls. Escalating strategy...", attempt + 1
                 )
                 current_tool_choice = "any"
-                # Add the invalid response so AI sees its mistake
-                current_messages.append(response)
                 current_messages.append(
                     HumanMessage(
                         content="ERROR: Invalid response. You MUST call a tool. "

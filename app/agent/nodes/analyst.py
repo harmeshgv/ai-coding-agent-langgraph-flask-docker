@@ -4,7 +4,7 @@ Defines the Analyst agent node for the agent graph.
 The Analyst is a specialist agent responsible for analyzing code, answering
 questions about the codebase, and providing explanations without making
 any modifications.
-"""
+"""  # pylint: disable=duplicate-code
 
 import logging
 from typing import Any
@@ -72,8 +72,6 @@ def create_analyst_node(llm: BaseChatModel, tools, agent_stack):
                     "Attempt %d: No tool calls. Escalating strategy...", attempt + 1
                 )
                 current_tool_choice = "any"
-                # Add the invalid response so AI sees its mistake
-                current_messages.append(response)
                 current_messages.append(
                     HumanMessage(
                         content="ERROR: Invalid response. You MUST call a tool. "

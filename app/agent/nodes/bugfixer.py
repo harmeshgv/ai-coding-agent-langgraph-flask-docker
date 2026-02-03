@@ -70,8 +70,6 @@ def create_bugfixer_node(llm, tools, agent_stack):
 
                 logger.warning("Attempt %d: No tool calls. Escalating...", attempt + 1)
                 current_tool_choice = "any"
-                # Add the invalid response so AI sees its mistake
-                current_messages.append(response)
                 current_messages.append(
                     HumanMessage(content="ERROR: Invalid response. You MUST call a tool!")
                 )

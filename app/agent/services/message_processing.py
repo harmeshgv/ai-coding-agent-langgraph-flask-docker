@@ -51,7 +51,7 @@ def _trim_trailing_invalid_ai(messages: list[BaseMessage]) -> list[BaseMessage]:
 
 def filter_messages_for_llm(
     messages: list[BaseMessage], max_messages: int = 10
-) -> list[BaseMessage]:
+) -> list[BaseMessage]: # pylint: disable=too-many-locals
     """Filter messages to keep task context and recent history while maintaining valid stack.
 
     This function performs filtering that preserves message stack validity:
@@ -86,7 +86,7 @@ def filter_messages_for_llm(
         if isinstance(msg, HumanMessage):
             first_human_idx = i
             break
-    
+
     # If no HumanMessage found, log warning and return entire stack
     if first_human_idx == -1:
         logger.warning(
@@ -95,14 +95,14 @@ def filter_messages_for_llm(
         return messages
 
     first_human = non_system_messages[first_human_idx]
-    
+
     # Messages after first human (that we can potentially filter)
     messages_after_human = non_system_messages[first_human_idx + 1:]
-    
+
     if not messages_after_human:
         # Only first human exists
         filtered_messages = system_messages + [first_human]
-        
+
         # Log and return
         filtered_count = len(filtered_messages)
         filtered_tokens = _estimate_tokens(filtered_messages)
@@ -125,7 +125,7 @@ def filter_messages_for_llm(
     remaining_slots = max_messages - 1
     window_start = max(0, len(messages_after_human) - remaining_slots)
     window_messages = messages_after_human[window_start:]
-    
+
     # Check if window starts mid-tool-sequence and extend backwards if needed
     # If first message in window is a ToolMessage, we may have cut the AIMessage
     extended_start = window_start
@@ -140,14 +140,14 @@ def filter_messages_for_llm(
                     # Found the AIMessage, extend window to include it
                     extended_start = i
                     break
-    
+
     # Rebuild window with extension
     if extended_start < window_start:
         window_messages = messages_after_human[extended_start:]
-    
+
     # Combine: system + first human + window
     filtered_messages = system_messages + [first_human] + window_messages
-    
+
     # Remove trailing empty AIMessages
     filtered_messages = _trim_trailing_invalid_ai(filtered_messages)
 

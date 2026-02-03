@@ -3,7 +3,7 @@ Defines the Tester agent node for the agent graph.
 
 The Tester is a specialist agent responsible for verifying code changes,
 running tests, and reporting the results.
-"""
+"""  # pylint: disable=duplicate-code
 
 import logging
 from typing import Any, Dict, Literal, Optional
@@ -62,7 +62,9 @@ def create_tester_node(llm, tools, agent_stack):
 
         for attempt in range(3):
             try:
-                chain = llm.bind_tools(tools + [report_test_result], tool_choice=current_tool_choice)
+                chain = llm.bind_tools(
+                    tools + [report_test_result], tool_choice=current_tool_choice
+                )
                 response = await chain.ainvoke(current_messages)
 
                 has_tool_calls = bool(getattr(response, "tool_calls", []))
@@ -111,7 +113,10 @@ def create_tester_node(llm, tools, agent_stack):
             tool_calls=[
                 {
                     "name": "report_test_result",
-                    "args": {"result": "fail", "summary": "Testing could not complete due to invalid responses."},
+                    "args": {
+                        "result": "fail",
+                        "summary": "Testing could not complete due to invalid responses.",
+                    },
                     "id": "call_emergency",
                     "type": "tool_call",
                 }

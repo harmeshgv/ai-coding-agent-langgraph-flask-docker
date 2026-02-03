@@ -120,7 +120,7 @@ async def _resolve_task(
 
         try:
             task = await board_provider.get_task(task_id)
-        except Exception:
+        except Exception: # pylint: disable=broad-exception-caught
             task = None
 
         if task:
