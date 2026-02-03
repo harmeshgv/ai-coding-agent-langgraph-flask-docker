@@ -18,7 +18,10 @@ def get_branch_for_task(task_id: str) -> Optional[str]:
 
 
 def upsert_task(
-    task_id: str, task_name: str, branch_name: str, repo_url: str | None = None
+    task_id: str,
+    task_name: str,
+    branch_name: str | None = None,
+    repo_url: str | None = None,
 ) -> Task:
     """
     Creates or updates a Task record for a task.

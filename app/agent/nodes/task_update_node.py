@@ -117,7 +117,10 @@ def _check_for_task_creation(state: AgentState) -> tuple[bool, str | None]:
                 continue
 
             tool_response = messages[i + 1].content
-            if "Successfully created implementation task" in tool_response:
+            if (
+                isinstance(tool_response, str)
+                and "Successfully created implementation task" in tool_response
+            ):
                 return True, tool_response
 
     return False, None

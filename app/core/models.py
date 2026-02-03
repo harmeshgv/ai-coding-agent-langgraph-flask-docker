@@ -58,9 +58,10 @@ class AgentSettings(db.Model):
 
     def get_task_system(self, provider: str) -> "TaskSystem | None":
         """Get TaskSystem by provider name."""
-        for ts in self.task_systems:
-            if ts.board_provider == provider:
-                return ts
+        if self.task_systems and isinstance(self.task_systems, list):
+            for ts in self.task_systems:
+                if ts.board_provider == provider:
+                    return ts
         return None
 
     def get_active_task_system(self) -> "TaskSystem | None":

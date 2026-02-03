@@ -2,6 +2,7 @@
 
 import logging
 from datetime import datetime
+from typing import Optional
 
 from flask import current_app
 
@@ -16,7 +17,10 @@ logger = logging.getLogger(__name__)
 
 
 def save_task_in_db(
-    task_id: str, task_name: str, branch_name: str, repo_url: str | None = None
+    task_id: str,
+    task_name: str,
+    branch_name: str | None = None,
+    repo_url: str | None = None,
 ):
     """save task into sqlalchemy database"""
     try:
@@ -58,11 +62,11 @@ async def move_task_to_state(
     board_provider: BoardProvider,
     task: BoardTask,
     task_state_name: str,
-):
+) -> BoardTask:
     """
     Moves the task to the in-progress state before task processing begins.
     """
-    modified_task: BoardTask = task
+    modified_task: Optional[BoardTask] = task
     if not task_state_name:
         logger.warning(
             "task_in_progress_state not configured, skipping move to in-progress state"
@@ -75,15 +79,16 @@ async def move_task_to_state(
         )
 
         try:
-            await board_provider.move_task_to_named_state(
-                task.id, task_state_name
-            )
+            await board_provider.move_task_to_named_state(task.id, task_state_name)
             modified_task = await board_provider.get_task(task.id)
-        except ValueError as e:
-            logger.warning("Failed to move task to in-progress state: %s", e)
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Failed to move task to in-progress state: %s", e)
-    return modified_task
+
+    match modified_task:
+        case BoardTask():
+            return modified_task
+        case None:
+            raise RuntimeError("modified_task is none")
 
 
 async def fetch_review_comments(

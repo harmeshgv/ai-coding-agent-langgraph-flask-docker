@@ -35,15 +35,18 @@ The task remains active beyond the workflow cycle. Therefore, it is important th
 ```mermaid
 flowchart TD
     A@{ shape: lean-r, label: "task-id from db" }
-    A --> B{exist task?}
+    A --> M{task-id None?}
+    M --> |yes|C
+    M --> |no|K[get task with task-id from task system]
+    K --> B{exist task?}
     B --> |yes| E{in review?}
-    B --> |no| C[get new task from todo]
+    B --> |no| C[get new task with state 'todo' from task system]
     C --> G{exist task?}
     G --> |yes| D[save task in db]
     G --> |no| Z
     D --> H[delete plan.md]
-    H --> Y[return task-id]
-    E -->|yes| Z[return none]
+    H --> Y@{shape: lean-r, label: "{'task': task}"}
+    E -->|yes| Z@{shape: lean-r, label: "{'task': None}"}
     E -->|no| F{in progress?}
     F -->|yes| Y
     F -->|no| C

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import List
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
@@ -35,7 +34,9 @@ def _find_first_human_message(messages: list[BaseMessage]) -> int | None:
     return None
 
 
-def _find_safe_start_boundary(messages: list[BaseMessage], recent_start_idx: int) -> int:
+def _find_safe_start_boundary(
+    messages: list[BaseMessage], recent_start_idx: int
+) -> int:
     """Find a safe starting point by scanning forward from the cutoff."""
     adjusted_start_idx = recent_start_idx
 
@@ -48,7 +49,9 @@ def _find_safe_start_boundary(messages: list[BaseMessage], recent_start_idx: int
     return adjusted_start_idx
 
 
-def _trim_trailing_invalid_ai_messages(messages: list[BaseMessage]) -> list[BaseMessage]:
+def _trim_trailing_invalid_ai_messages(
+    messages: list[BaseMessage],
+) -> list[BaseMessage]:
     """Remove trailing AIMessages without tool_calls."""
     trimmed = list(messages)
     while trimmed and isinstance(trimmed[-1], AIMessage):
@@ -96,14 +99,18 @@ def filter_messages_for_llm(
     # Extract and preserve all system messages
     # System messages contain critical instructions and must always be included
     system_messages = [msg for msg in messages if isinstance(msg, SystemMessage)]
-    non_system_messages = [msg for msg in messages if not isinstance(msg, SystemMessage)]
+    non_system_messages = [
+        msg for msg in messages if not isinstance(msg, SystemMessage)
+    ]
 
     # Find the first human message (original task) to preserve context
     first_human_idx = _find_first_human_message(non_system_messages)
     # Calculate starting index for recent messages window
     recent_start_idx = max(0, len(non_system_messages) - max_messages)
     # Adjust start boundary to ensure we begin at a valid message type
-    adjusted_start_idx = _find_safe_start_boundary(non_system_messages, recent_start_idx)
+    adjusted_start_idx = _find_safe_start_boundary(
+        non_system_messages, recent_start_idx
+    )
 
     # Extract recent messages from the adjusted starting point
     recent_messages = non_system_messages[adjusted_start_idx:]
@@ -111,6 +118,7 @@ def filter_messages_for_llm(
     recent_messages = _trim_trailing_invalid_ai_messages(recent_messages)
 
     # Fallback: if no recent messages remain, find the last human message or use the last message
+    filtered_messages: list[BaseMessage] = []
     if not recent_messages and non_system_messages:
         for msg in reversed(non_system_messages):
             if isinstance(msg, HumanMessage):
@@ -142,15 +150,14 @@ def sanitize_response(response: AIMessage) -> AIMessage:
     if not isinstance(response, AIMessage) or not response.tool_calls:
         return response
 
-    valid_tools: List[dict] = []
+    response.tool_calls = []
     name_pattern = re.compile(r"^[a-zA-Z0-9_-]+$")
 
     for tool_call in response.tool_calls:
         name = tool_call.get("name", "")
         if name_pattern.match(name) and len(name) < 64:
-            valid_tools.append(tool_call)
+            response.tool_calls.append(tool_call)
         else:
             logger.warning("SANITIZER: Removed invalid tool call with name: '%s'", name)
 
-    response.tool_calls = valid_tools
     return response
