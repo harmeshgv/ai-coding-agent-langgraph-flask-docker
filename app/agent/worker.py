@@ -18,7 +18,7 @@ from langgraph.graph import StateGraph
 
 from app.agent.graph import create_workflow
 from app.agent.integrations.mcp.adapter import McpServerClient
-from app.agent.runtime import AgentRuntimeContext, prepare_runtime
+from app.agent.runtime import RuntimeSetting, prepare_runtime
 from app.agent.services.graph_assets import save_graph_as_mermaid, save_graph_as_png
 from app.agent.utils import get_codespace, save_state_to_workspace
 
@@ -28,14 +28,14 @@ logger = logging.getLogger(__name__)
 async def run_agent_cycle_async(app: Flask) -> None:
     """Runs one complete asynchronous cycle of the agent."""
     with app.app_context():
-        runtime: Optional[AgentRuntimeContext] = prepare_runtime()
+        runtime: Optional[RuntimeSetting] = prepare_runtime()
         if not runtime:
             return
 
         await _execute_agent_cycle(runtime)
 
 
-async def _execute_agent_cycle(runtime: AgentRuntimeContext) -> None:
+async def _execute_agent_cycle(runtime: RuntimeSetting) -> None:
     """Internal helper that orchestrates one graph execution."""
     async with AsyncExitStack() as stack:
         enable_mcp = os.environ.get("ENABLE_MCP_SERVERS", "true").lower() not in {

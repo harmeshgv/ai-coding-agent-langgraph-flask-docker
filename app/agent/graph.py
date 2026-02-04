@@ -21,7 +21,7 @@ from app.agent.nodes.router import create_router_node
 from app.agent.nodes.task_fetch_node import create_task_fetch_node
 from app.agent.nodes.task_update_node import create_task_update_node
 from app.agent.nodes.tester import create_tester_node
-from app.agent.runtime import AgentRuntimeContext
+from app.agent.runtime import RuntimeSetting
 from app.agent.services.summaries import has_finish_task_call
 from app.agent.state import AgentState
 from app.agent.tools.create_task import create_task_tool
@@ -127,7 +127,7 @@ def route_after_tools_analyst(state: AgentState) -> str:
     return "analyst"
 
 
-def create_workflow(runtime: AgentRuntimeContext) -> StateGraph:
+def create_workflow(runtime: RuntimeSetting) -> StateGraph:
     """Creates and configures the main LangGraph workflow."""
     # --- Tool Sets ---
     active_task_system = runtime.agent_settings.get_active_task_system()
@@ -158,7 +158,7 @@ def create_workflow(runtime: AgentRuntimeContext) -> StateGraph:
     workflow = StateGraph(AgentState)
 
     workflow.add_node(
-        "task_fetch", create_task_fetch_node(runtime.agent_settings, runtime.db_task)
+        "task_fetch", create_task_fetch_node(runtime.agent_settings)
     )
     workflow.add_node("checkout", create_checkout_node(runtime.agent_settings))
     workflow.add_node("router", create_router_node(runtime.llm_small))

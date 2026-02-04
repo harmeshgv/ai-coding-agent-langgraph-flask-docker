@@ -109,11 +109,10 @@ async def test_task_fetch_node_success(agent_settings, mock_board_provider):
             )
         ),
     ), patch(
-        "app.agent.nodes.task_fetch_node.delete_plan"
-    ), patch(
-        "app.agent.nodes.task_fetch_node.remove_task_from_db"
+        "app.agent.nodes.task_fetch_node._get_db_task",
+        return_value=None,
     ):
-        task_fetch = create_task_fetch_node(agent_settings, None)
+        task_fetch = create_task_fetch_node(agent_settings)
         result = await task_fetch({})
 
         assert result["task"].id == "card1"
@@ -171,11 +170,10 @@ async def test_task_fetch_node_no_review_list(agent_settings, mock_board_provide
             )
         ),
     ), patch(
-        "app.agent.nodes.task_fetch_node.delete_plan"
-    ), patch(
-        "app.agent.nodes.task_fetch_node.remove_task_from_db"
+        "app.agent.nodes.task_fetch_node._get_db_task",
+        return_value=None,
     ):
-        task_fetch = create_task_fetch_node(temp_settings, None)
+        task_fetch = create_task_fetch_node(temp_settings)
         result = await task_fetch({})
 
         # Should still fetch task from To Do even without review list
@@ -193,18 +191,13 @@ async def test_task_fetch_node_no_cards(agent_settings, mock_board_provider):
         "app.agent.nodes.task_fetch_node.create_board_provider",
         return_value=mock_board_provider,
     ), patch(
-        "app.agent.nodes.task_fetch_node.get_pr_info_for_task",
-        return_value=(None, None),
-    ), patch(
-        "app.agent.nodes.task_fetch_node.get_branch_for_task",
+        "app.agent.nodes.task_fetch_node._get_db_task",
         return_value=None,
-    ), patch(
-        "app.agent.nodes.task_fetch_node.remove_task_from_db"
     ), patch(
         "app.agent.nodes.task_fetch_node.fetch_task_from_state",
         new=AsyncMock(return_value=None),
     ):
-        task_fetch = create_task_fetch_node(agent_settings, None)
+        task_fetch = create_task_fetch_node(agent_settings)
         result = await task_fetch({})
 
         assert result["task"] is None
@@ -253,15 +246,13 @@ async def test_task_fetch_node_with_comments(agent_settings, mock_board_provider
         "app.agent.nodes.task_fetch_node.get_branch_for_task",
         return_value=None,
     ), patch(
-        "app.agent.nodes.task_fetch_node.remove_task_from_db"
+        "app.agent.nodes.task_fetch_node._get_db_task",
+        return_value=mock_db_task,
     ), patch(
         "app.agent.nodes.task_fetch_node.fetch_review_comments",
         new=AsyncMock(return_value=mock_comments),
     ):
-        task_fetch = create_task_fetch_node(
-            agent_settings,
-            mock_db_task
-        )
+        task_fetch = create_task_fetch_node(agent_settings)
         result = await task_fetch({})
 
         # Comments should be included since task was already in In Progress (returned from review)
@@ -321,8 +312,6 @@ async def test_task_fetch_node_no_comments_from_todo(
         "app.agent.nodes.task_fetch_node.get_branch_for_task",
         return_value=None,
     ), patch(
-        "app.agent.nodes.task_fetch_node.remove_task_from_db"
-    ), patch(
         "app.agent.nodes.task_fetch_node.fetch_task_from_state",
         new=AsyncMock(
             return_value=BoardTask(
@@ -334,20 +323,12 @@ async def test_task_fetch_node_no_comments_from_todo(
             )
         ),
     ), patch(
-        "app.agent.nodes.task_fetch_node.move_task_to_state",
-        new=AsyncMock(
-            return_value=BoardTask(
-                id="card1",
-                name="Test Task",
-                description="Test Description",
-                state_id="list2",
-                state_name="In Progress",
-            )
-        ),
+        "app.agent.nodes.task_fetch_node._get_db_task",
+        return_value=None,
     ), patch(
         "app.agent.nodes.task_fetch_node.delete_plan"
     ):
-        task_fetch = create_task_fetch_node(agent_settings, None)
+        task_fetch = create_task_fetch_node(agent_settings)
         result = await task_fetch({})
 
         # Comments should NOT be included since task was picked from To Do

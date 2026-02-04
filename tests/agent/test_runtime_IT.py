@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from flask import Flask
 
-from app.agent.runtime import AgentRuntimeContext, prepare_runtime
+from app.agent.runtime import RuntimeSetting, prepare_runtime
 from app.core.extensions import db
 from app.core.models import AgentSettings
 
@@ -51,7 +51,7 @@ def test_prepare_runtime_returns_context(tmp_path, monkeypatch):
 
         context = prepare_runtime()
 
-    assert isinstance(context, AgentRuntimeContext)
+    assert isinstance(context, RuntimeSetting)
     assert context.agent_stack == "backend"
     assert context.agent_settings.task_readfrom_state == "todo"
     assert "command" in context.mcp_system_def

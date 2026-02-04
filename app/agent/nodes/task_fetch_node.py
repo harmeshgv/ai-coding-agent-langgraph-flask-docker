@@ -32,9 +32,10 @@ from app.core.task_repository import get_pr_info_for_task, remove_task_from_db
 logger = logging.getLogger(__name__)
 
 
-def create_task_fetch_node(agent_settings: AgentSettings, db_task: Task):
+def create_task_fetch_node(agent_settings: AgentSettings):
     """Creates a task fetch node for the agent graph."""
     board_provider = create_board_provider(agent_settings)
+    db_task: Task | None = _get_db_task()
 
     async def task_fetch(state: AgentState) -> dict:  # pylint: disable=unused-argument
         """
@@ -231,3 +232,13 @@ def _build_system_message_content(
         logger.info("PR review message appended: %s", pr_review_message)
 
     return system_content
+
+
+def _get_db_task() -> Optional[Task]:
+    """Load the saved task from the database."""
+    task = Task.query.first()
+    if not task:
+        logger.info("Agent has no current task.")
+        return None
+    logger.info("Current task found: %s-%s", task.task_id, task.task_name)
+    return task

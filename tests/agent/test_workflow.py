@@ -7,7 +7,7 @@ from collections import OrderedDict
 import pytest
 
 import app.agent.graph as graph_module
-from app.agent.runtime import AgentRuntimeContext
+from app.agent.runtime import RuntimeSetting
 from app.core.models import AgentSettings
 
 
@@ -84,11 +84,10 @@ def test_create_workflow_registers_all_nodes(workflow_mocks):
         task_readfrom_state="todo",
     )
 
-    runtime = AgentRuntimeContext(
+    runtime = RuntimeSetting(
         agent_settings=agent_settings,
         agent_stack="backend",
         mcp_system_def={},
-        db_task=None,
         llm_large=llm_large,
         llm_small=llm_small,
     )
