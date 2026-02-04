@@ -119,10 +119,9 @@ async def test_task_fetch_node_success(agent_settings, mock_board_provider):
         assert result["task"].id == "card1"
         assert result["task"].name == "Test Task"
         assert result["task"].state_id == "list2"  # Moved to in-progress state
-        assert len(result["messages"]) == 1
-        assert isinstance(result["messages"][0], HumanMessage)
-        assert "Test Task" in result["messages"][0].content
-        assert "Test Description" in result["messages"][0].content
+        assert result["current_node"] == "task_fetch"
+        assert result["task_comments"] == []
+        assert result["pr_review_message"] == ""
 
 
 @pytest.mark.asyncio

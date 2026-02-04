@@ -30,8 +30,8 @@ def _tool(tool_call_id: str, content: str = "result") -> ToolMessage:
     return ToolMessage(content=content, tool_call_id=tool_call_id)
 
 
-def test_filter_messages_keeps_first_human_and_recent():
-    """Should keep first HumanMessage (task) plus recent messages."""
+def test_filter_messages_keeps_recent_window():
+    """Should keep the most recent non-system messages up to the limit."""
     messages = [HumanMessage(content="Original Task")]
     for i in range(5):
         messages.append(_ai(f"assistant-{i}", tool_calls=[_tool_call("tool")]))
@@ -39,14 +39,16 @@ def test_filter_messages_keeps_first_human_and_recent():
 
     filtered = filter_messages_for_llm(messages, max_messages=4)
 
-    # Should have: first human + last 3 non-system = 4 total
-    assert filtered[0].content == "Original Task"
-    assert len(filtered) == 4
-    assert filtered[-1].content == "user-4"
+    assert [msg.content for msg in filtered] == [
+        "assistant-3",
+        "user-3",
+        "assistant-4",
+        "user-4",
+    ]
 
 
-def test_filter_messages_preserves_system_and_first_human():
-    """System messages at start, then first human, then recent."""
+def test_filter_messages_preserves_system_prefix():
+    """System message stays pinned even though recent window shifts."""
     messages = [SystemMessage(content="System prompt")]
     messages.append(HumanMessage(content="Original Task"))
     for i in range(5):
@@ -57,9 +59,33 @@ def test_filter_messages_preserves_system_and_first_human():
 
     assert isinstance(filtered[0], SystemMessage)
     assert filtered[0].content == "System prompt"
-    assert filtered[1].content == "Original Task"
-    # System + first human + 3 recent = 5 total
+    assert [msg.content for msg in filtered[1:]] == [
+        "assistant-3",
+        "user-3",
+        "assistant-4",
+        "user-4",
+    ]
+
+
+def test_filter_messages_keeps_additional_system_messages_in_window():
+    """SystemMessages beyond the first remain when within the window."""
+    messages = [
+        SystemMessage(content="Primary system"),
+        HumanMessage(content="Task"),
+        SystemMessage(content="Secondary system"),
+        HumanMessage(content="Follow up"),
+        HumanMessage(content="Another"),
+    ]
+
+    filtered = filter_messages_for_llm(messages, max_messages=5)
+
     assert len(filtered) == 5
+    assert isinstance(filtered[0], SystemMessage)
+    assert filtered[0].content == "Primary system"
+    assert any(
+        isinstance(msg, SystemMessage) and msg.content == "Secondary system"
+        for msg in filtered[1:]
+    ), "Additional SystemMessages within the window should be preserved"
 
 
 def test_filter_messages_empty_input():
@@ -69,16 +95,20 @@ def test_filter_messages_empty_input():
 
 
 def test_filter_messages_respects_max_messages():
-    """Should not exceed max_messages for non-system + first human."""
+    """Should keep only the latest messages within the cap."""
     messages = [HumanMessage(content="Task")]
     for i in range(20):
         messages.append(HumanMessage(content=f"message-{i}"))
 
     filtered = filter_messages_for_llm(messages, max_messages=5)
-    # First human + 4 recent = 5 non-system
     assert len(filtered) == 5
-    assert filtered[0].content == "Task"
-    assert filtered[-1].content == "message-19"
+    assert [msg.content for msg in filtered] == [
+        "message-15",
+        "message-16",
+        "message-17",
+        "message-18",
+        "message-19",
+    ]
 
 
 def test_filter_messages_does_not_modify_messages():
