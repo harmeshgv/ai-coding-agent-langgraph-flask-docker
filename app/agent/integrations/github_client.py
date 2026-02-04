@@ -8,11 +8,11 @@ It uses `httpx` for async HTTP requests.
 """
 
 import logging
-import os
 from typing import Any, Optional
 
 import httpx
 
+from app.core.config import get_env_settings
 from app.core.models import AgentSettings
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ def _get_github_token(agent_settings: Optional[AgentSettings] = None) -> str:
         if task_system and task_system.token:
             return task_system.token
 
-    token = os.environ.get("GITHUB_TOKEN")
+    token = get_env_settings().github_token
     if not token:
         raise ValueError(
             "GitHub token not configured. Set GITHUB_TOKEN environment variable "

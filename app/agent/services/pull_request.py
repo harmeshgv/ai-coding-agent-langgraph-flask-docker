@@ -1,9 +1,8 @@
 """Service for GitHub Pull Request operations."""
 
 import logging
-import os
-import re
 import subprocess
+import re
 import json
 from dataclasses import dataclass
 from typing import Dict, List, Optional
@@ -11,6 +10,7 @@ from typing import Dict, List, Optional
 import requests
 
 from app.agent.utils import get_codespace, get_current_git_branch
+from app.core.config import get_env_settings
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ def get_latest_open_pr_for_branch(branch_name: str) -> Optional[PullRequest]:
     Returns:
         PullRequest object if an open PR exists, None otherwise
     """
-    token = os.environ.get("GITHUB_TOKEN")
+    token = get_env_settings().github_token
     if not token:
         logger.warning("GITHUB_TOKEN not set, cannot fetch PR")
         return None
@@ -157,7 +157,7 @@ def create_or_update_pr(title: str, body: str) -> tuple[bool, str, Optional[str]
     Returns:
         Tuple of (success, message, pr_url)
     """
-    token = os.environ.get("GITHUB_TOKEN")
+    token = get_env_settings().github_token
     if not token:
         logger.error("GITHUB_TOKEN missing for PR creation")
         return False, "ERROR: GITHUB_TOKEN missing", None
@@ -358,7 +358,7 @@ def fetch_pr_reviews(
     Returns:
         List of PRReview objects
     """
-    token = token or os.environ.get("GITHUB_TOKEN")
+    token = token or get_env_settings().github_token
     if not token:
         logger.warning("GITHUB_TOKEN not set, cannot fetch PR reviews")
         return []
@@ -423,7 +423,7 @@ def fetch_pr_review_comments(
     Returns:
         List of PRReviewComment objects
     """
-    token = token or os.environ.get("GITHUB_TOKEN")
+    token = token or get_env_settings().github_token
     if not token:
         logger.warning("GITHUB_TOKEN not set, cannot fetch PR review comments")
         return []
@@ -552,7 +552,7 @@ def fetch_pr_details(
     Returns:
         PullRequest object or None if not found
     """
-    token = token or os.environ.get("GITHUB_TOKEN")
+    token = token or get_env_settings().github_token
     if not token:
         logger.warning("GITHUB_TOKEN not set, cannot fetch PR details")
         return None

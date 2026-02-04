@@ -23,7 +23,10 @@ from app.agent.services.pull_request import (
 @pytest.fixture
 def mock_env_token(monkeypatch):
     """Set GITHUB_TOKEN in environment."""
+    from app.core.config import set_env_settings
+    
     monkeypatch.setenv("GITHUB_TOKEN", "test_token_123")
+    set_env_settings(None)  # Reset to reload from new environment
 
 
 @pytest.fixture

@@ -3,15 +3,13 @@ Factory module for creating LangChain LLM instances.
 
 This module provides a centralized way to instantiate different chat models
 (LLMs) from various providers like OpenAI, Google, Mistral, etc.
-It uses a configuration dictionary to determine which provider and model
-to use, and handles API key retrieval from environment variables.
+It uses EnvironmentSettings for API key retrieval.
 
 The main function is `get_llm`, which takes a configuration and returns
 an appropriate `BaseChatModel` instance.
 """
 
 import logging
-import os
 from typing import Callable, Dict
 
 from langchain_anthropic import ChatAnthropic
@@ -22,32 +20,26 @@ from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from pydantic import SecretStr
 
+from app.core.config import get_env_settings
 from app.core.models import AgentSettings
 
 logger = logging.getLogger(__name__)
 
 
-def _get_api_key(env_var_name: str) -> str:
-    api_key = os.environ.get(env_var_name)
-    if not api_key:
-        raise ValueError(f"{env_var_name} environment variable not set")
-    return api_key
-
-
 def _create_openai_llm(model: str, temperature: float) -> BaseChatModel:
-    api_key = _get_api_key("OPENAI_API_KEY")
+    api_key = get_env_settings().require_llm_api_key("openai")
     return ChatOpenAI(model=model, temperature=temperature, api_key=SecretStr(api_key))
 
 
 def _create_mistral_llm(model: str, temperature: float) -> BaseChatModel:
-    api_key = _get_api_key("MISTRAL_API_KEY")
+    api_key = get_env_settings().require_llm_api_key("mistral")
     return ChatMistralAI(
         model_name=model, temperature=temperature, api_key=SecretStr(api_key)
     )
 
 
 def _create_google_llm(model: str, temperature: float) -> BaseChatModel:
-    api_key = _get_api_key("GOOGLE_API_KEY")
+    api_key = get_env_settings().require_llm_api_key("google")
     return ChatGoogleGenerativeAI(
         model=model,
         temperature=temperature,
@@ -57,7 +49,7 @@ def _create_google_llm(model: str, temperature: float) -> BaseChatModel:
 
 
 def _create_openrouter_llm(model: str, temperature: float) -> BaseChatModel:
-    api_key = _get_api_key("OPENROUTER_API_KEY")
+    api_key = get_env_settings().require_llm_api_key("openrouter")
     return ChatOpenAI(
         model=model,
         temperature=temperature,
@@ -67,7 +59,7 @@ def _create_openrouter_llm(model: str, temperature: float) -> BaseChatModel:
 
 
 def _create_anthropic_llm(model: str, temperature: float) -> BaseChatModel:
-    api_key = _get_api_key("ANTHROPIC_API_KEY")
+    api_key = get_env_settings().require_llm_api_key("anthropic")
     return ChatAnthropic(
         model=model,
         temperature=temperature,
@@ -76,8 +68,8 @@ def _create_anthropic_llm(model: str, temperature: float) -> BaseChatModel:
 
 
 def _create_ollama_llm(model: str, temperature: float) -> BaseChatModel:
-    base_url = os.environ.get("OLLAMA_BASE_URL", "http://host.docker.internal:11434")
-    api_key = os.environ.get("OLLAMA_API_KEY")
+    base_url = get_env_settings().ollama_base_url
+    api_key = get_env_settings().ollama_api_key
     logger.info("Using Ollama base URL: %s", base_url)
     return ChatOllama(
         model=model,

@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 
+from app.core.config import get_env_settings
 from app.core.extensions import db
 from app.core.utils import log_and_validate_env, setup_logging
 
@@ -14,7 +15,7 @@ if __name__ == "__main__":
     logger.info("Starting Web Server...")
 
     # 2. Env Validierung
-    encryption_key = log_and_validate_env(logger)
+    encryption_key = log_and_validate_env(logger, get_env_settings())
 
     # 3. App erstellen
     app = create_app(encryption_key)

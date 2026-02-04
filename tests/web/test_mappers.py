@@ -375,7 +375,11 @@ class TestConfigMapperGitHub:
 
     def test_github_token_prefills_from_env(self, app, monkeypatch):
         """GitHub token should fall back to GITHUB_TOKEN env when not stored."""
+        from app.core.config import set_env_settings
+        
         monkeypatch.setenv("GITHUB_TOKEN", "env_token")
+        set_env_settings(None)  # Reset to reload from new environment
+        
         settings = AgentSettings(task_system_type="TRELLO")
 
         result = settings_mapper.model_to_form_data(settings)

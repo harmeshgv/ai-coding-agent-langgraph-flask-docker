@@ -17,7 +17,6 @@ MCP standard, seamlessly usable within a Python-based LangChain agent.
 """
 
 import json
-import os
 from contextlib import AsyncExitStack
 
 # LangChain / Pydantic Imports
@@ -36,14 +35,14 @@ class McpServerClient:
     and provides its tools for LangChain.
     """
 
-    def __init__(self, command: str, args: list[str], env: dict):
+    def __init__(self, command: str, args: list[str], env: dict | None = None):
         """
         :param command: The command to start (e.g., "uv", "npx", sys.executable)
         :param args: Arguments for the command (e.g., ["mcp-server-git", ...])
-        :param env: Environment variables (optional)
+        :param env: Environment variables (optional, defaults to os.environ.copy())
         """
         self.server_params = StdioServerParameters(
-            command=command, args=args, env=env if env else os.environ.copy()
+            command=command, args=args, env=env
         )
         self.exit_stack = AsyncExitStack()
         self.session = None

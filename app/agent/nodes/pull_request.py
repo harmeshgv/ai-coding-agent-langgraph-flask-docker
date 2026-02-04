@@ -1,7 +1,6 @@
 """Create a pull request node"""
 
 import logging
-import os
 import subprocess
 from typing import Any, Dict
 
@@ -12,6 +11,7 @@ from app.agent.services.summaries import (
 from app.agent.services.pull_request import create_or_update_pr
 from app.agent.state import AgentState
 from app.agent.utils import get_codespace, get_current_git_branch
+from app.core.config import get_env_settings
 from app.core.task_repository import update_task_pr_info
 
 logger = logging.getLogger(__name__)
@@ -228,7 +228,7 @@ def _execute_git_push() -> tuple[bool, str]:
     Pushes the current branch to origin.
     Returns (success, message).
     """
-    token = os.environ.get("GITHUB_TOKEN")
+    token = get_env_settings().github_token
     if not token:
         logger.error("GITHUB_TOKEN missing for git push")
         return False, "ERROR: GITHUB_TOKEN missing"

@@ -10,6 +10,8 @@ from dataclasses import asdict
 from datetime import datetime
 from typing import Final, Optional
 
+from app.core.config import get_env_settings
+
 __all__ = [
     "get_workbench",
     "get_workspace",
@@ -23,13 +25,13 @@ DEFAULT_WORKSPACE: Final[str] = "/coding-agent-workspace"
 
 
 def get_workspace() -> str:
-    """Return the configured workspace path or a sensible default."""
-    return os.environ.get("WORKSPACE", DEFAULT_WORKSPACE)
+    """Return the workspace directory path."""
+    return get_env_settings().workspace
 
 
 def get_workbench() -> str:
-    """Return the active workbench identifier (e.g., 'workbench-backend')."""
-    return os.environ.get("WORKBENCH", "")
+    """Return the workbench container name."""
+    return get_env_settings().workbench
 
 
 def get_codespace() -> str:

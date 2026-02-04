@@ -8,6 +8,7 @@ import json
 import logging
 import os
 
+from app.core.config import get_env_settings
 from app.core.plan_services import get_plan
 
 logger = logging.getLogger(__name__)
@@ -31,7 +32,7 @@ def get_agent_state() -> dict:
     Returns:
         A dictionary with the agent's state or default values if not found.
     """
-    workspace_path = os.environ.get("WORKSPACE", ".")
+    workspace_path = get_env_settings().workspace
     state_file_path = os.path.join(workspace_path, "agent_state.json")
 
     default_state = {

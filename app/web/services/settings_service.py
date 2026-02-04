@@ -5,10 +5,10 @@ separating concerns from the route handlers and database operations.
 """
 
 import logging
-import os
 from typing import Any, Dict, Optional, Tuple
 
 from app.agent.integrations.github_client import get_project_id_sync
+from app.core.config import get_env_settings
 from app.core.constants import LLM_PROVIDER_API_ENV
 from app.core.extensions import db
 from app.core.models import AgentSettings
@@ -135,12 +135,10 @@ def get_template_context(settings: AgentSettings) -> Dict[str, Any]:
     selected_provider = form_data.get("llm_provider", "mistral")
 
     missing_env = _check_missing_provider_env(selected_provider)
-    show_ollama_warning = selected_provider == "ollama" and not os.environ.get(
-        "OLLAMA_API_KEY"
-    )
+    show_ollama_warning = selected_provider == "ollama" and not get_env_settings().ollama_api_key
 
     if not settings.github_repo_url:
-        settings.github_repo_url = os.environ.get("GITHUB_REPO_URL", "")
+        settings.github_repo_url = get_env_settings().github_repo_url
 
     return {
         "settings": settings,
@@ -167,7 +165,7 @@ def _check_missing_provider_env(provider: str) -> Optional[str]:
     if not env_name:
         return None
 
-    if os.environ.get(env_name):
+    if get_env_settings().get_api_key(env_name):
         return None
 
     return env_name

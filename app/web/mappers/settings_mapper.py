@@ -5,11 +5,11 @@ This module provides bidirectional mapping between:
 - Database layer models (SQLAlchemy ORM models)
 """
 
-import os
 from typing import Any, Dict
 
 from flask import request
 
+from app.core.config import get_env_settings
 from app.core.models import AgentSettings, TaskSystem
 from app.web.schemas.settings_schema import (
     GitHubConfigSchema,
@@ -213,7 +213,7 @@ def _add_trello_form_data(settings: AgentSettings, form_data: Dict[str, Any]) ->
 def _add_github_form_data(settings: AgentSettings, form_data: Dict[str, Any]) -> None:
     """Add GitHub Projects-specific fields to form data."""
     task_system = settings.get_task_system("github")
-    env_token = os.environ.get("GITHUB_TOKEN")
+    env_token = get_env_settings().github_token
     if task_system:
         form_data["github_api_token"] = task_system.token or env_token
         form_data["github_project_owner"] = task_system.project_owner

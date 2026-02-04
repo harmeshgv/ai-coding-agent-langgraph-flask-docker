@@ -1,10 +1,10 @@
 """Helper class to handle the security aspects, i.e. encryption."""
 
-import os
-
 from cryptography.fernet import Fernet
 from flask import current_app
 from sqlalchemy import LargeBinary, TypeDecorator
+
+from app.core.config import get_env_settings
 
 
 # pylint: disable=too-many-ancestors
@@ -14,29 +14,26 @@ class EncryptedString(TypeDecorator):
     impl = LargeBinary
     cache_ok = True
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._encryption_key = None
-
     @property
     def encryption_key(self):
-        """Lazy load the encryption key."""
-        if self._encryption_key:
-            return self._encryption_key
-
+        """Get the encryption key without caching.
+        
+        Note: We don't cache the key to ensure tests can change settings
+        and have the new key take effect immediately. The performance impact
+        is negligible since Fernet key creation is fast.
+        """
         key = None
         if current_app:
             key = current_app.config.get("ENCRYPTION_KEY")
 
         if not key:
-            # Fallback to environment variable for non-app contexts (e.g., shell)
-            key = os.environ.get("ENCRYPTION_KEY")
+            # Fallback to environment settings for non-app contexts (e.g., shell)
+            key = get_env_settings().encryption_key
 
         if not key:
             raise ValueError("ENCRYPTION_KEY is not set in app config or environment.")
 
-        self._encryption_key = Fernet(key.encode())
-        return self._encryption_key
+        return Fernet(key.encode())
 
     @property
     def python_type(self):

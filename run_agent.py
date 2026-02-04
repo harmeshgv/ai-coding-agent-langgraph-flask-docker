@@ -3,6 +3,7 @@ import time
 from dotenv import load_dotenv
 
 from app.agent.worker import run_agent_cycle
+from app.core.config import get_env_settings
 from app.core.extensions import db
 from app.core.models import AgentSettings
 from app.core.utils import log_and_validate_env, setup_logging
@@ -16,7 +17,7 @@ if __name__ == "__main__":
     logger.info("Starting Agent ...")
 
     # 2. Env Validierung
-    encryption_key = log_and_validate_env(logger)
+    encryption_key = log_and_validate_env(logger, get_env_settings())
 
     # 3. App Context erstellen (Nötig für DB Zugriff)
     # Wir starten KEINEN Server, wir nutzen app nur als Hülle für die DB

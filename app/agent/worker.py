@@ -7,7 +7,6 @@ from fetching tasks to running the graph.
 
 import asyncio
 import logging
-import os
 import sys
 from contextlib import AsyncExitStack
 from typing import Optional
@@ -21,6 +20,7 @@ from app.agent.integrations.mcp.adapter import McpServerClient
 from app.agent.runtime import RuntimeSetting, prepare_runtime
 from app.agent.services.graph_assets import save_graph_as_mermaid, save_graph_as_png
 from app.agent.utils import get_codespace, save_state_to_workspace
+from app.core.config import get_env_settings
 
 logger = logging.getLogger(__name__)
 
@@ -38,17 +38,13 @@ async def run_agent_cycle_async(app: Flask) -> None:
 async def _execute_agent_cycle(runtime: RuntimeSetting) -> None:
     """Internal helper that orchestrates one graph execution."""
     async with AsyncExitStack() as stack:
-        enable_mcp = os.environ.get("ENABLE_MCP_SERVERS", "true").lower() not in {
-            "false",
-            "0",
-            "no",
-        }
+        enable_mcp = get_env_settings().enable_mcp_servers
 
         if enable_mcp:
             git_mcp = McpServerClient(
                 command=sys.executable,
                 args=["-m", "mcp_server_git", "--repository", get_codespace()],
-                env=os.environ.copy(),
+                env=None,  # Uses default os.environ.copy() in adapter
             )
             await stack.enter_async_context(git_mcp)
 
