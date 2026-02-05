@@ -17,7 +17,7 @@ from app.agent.services.message_processing import (
     filter_messages_for_llm,
     sanitize_response,
 )
-from app.agent.services.prompts import load_system_prompt
+from app.agent.services.prompts import load_prompt
 from app.agent.services.summaries import record_finish_task_summary
 from app.agent.state import AgentState
 
@@ -37,14 +37,16 @@ def create_analyst_node(llm: BaseChatModel, tools, agent_stack):
     Returns:
         A function that represents the analyst node.
     """
-    sys_msg = load_system_prompt(agent_stack, "analyst")
 
     async def analyst_node(state: AgentState):
         # Filter messages to keep only recent relevant context (original task + last 20 messages)
         # Analyst may need more context for code analysis
+        system_message = load_prompt(f"systemprompt_{agent_stack}_analyst.md", state)
+        human_message = load_prompt("prompt_analyst.md", state)
         filtered_messages = filter_messages_for_llm(state["messages"], max_messages=20)
-        current_messages: list[BaseMessage | SystemMessage] = [
-            SystemMessage(content=sys_msg)
+        current_messages: list[BaseMessage | SystemMessage | HumanMessage] = [
+            SystemMessage(content=system_message),
+            HumanMessage(content=human_message),
         ]
         current_messages += filtered_messages
 
@@ -60,17 +62,18 @@ def create_analyst_node(llm: BaseChatModel, tools, agent_stack):
 
                 if has_tool_calls:
                     log_agent_response("analyst", response, attempt=attempt + 1)
-                    recorded, agent_summary = record_finish_task_summary(
-                        state, "analyst", response
-                    )
-                    result: dict[str, Any] = {"messages": [response], "current_node": "analyst"}
+                    recorded, agent_summary = record_finish_task_summary(state, "analyst", response)
+                    result = {
+                        "messages": [response],
+                        "current_node": "analyst",
+                        "prompt": human_message,
+                        "system_prompt": system_message,
+                    }
                     if recorded:
                         result["agent_summary"] = agent_summary
                     return result
 
-                logger.warning(
-                    "Attempt %d: No tool calls. Escalating strategy...", attempt + 1
-                )
+                logger.warning("Attempt %d: No tool calls. Escalating strategy...", attempt + 1)
                 current_tool_choice = "any"
                 current_messages.append(
                     HumanMessage(
@@ -96,9 +99,7 @@ def create_analyst_node(llm: BaseChatModel, tools, agent_stack):
                 }
             ],
         )
-        recorded, agent_summary = record_finish_task_summary(
-            state, "analyst", fallback_message
-        )
+        recorded, agent_summary = record_finish_task_summary(state, "analyst", fallback_message)
         result = {"messages": [fallback_message], "current_node": "analyst"}
         if recorded:
             result["agent_summary"] = agent_summary

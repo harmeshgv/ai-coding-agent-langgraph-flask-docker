@@ -34,7 +34,7 @@ it to the correct developer profile.
 ## 1. Junior Developer Level
 Assign 'junior' if the task meets these criteria:
 - **Scope:** Isolated to a single file or method.
-- **Type:** Simple bug fixes (NPE, typos), text changes, CSS adjustments, adding a simple unit test, or basic CRUD operations.
+- **Type:** Simple bug fixes (NPE, typos), text changes, change README.md, CSS adjustments, adding a simple unit test, or basic CRUD operations.
 - **Ambiguity:** The instructions are explicit and step-by-step.
 - **Risk:** Low risk of breaking the overall system architecture.
 - **Dependencies:** No new libraries or complex dependency management required.
@@ -96,9 +96,7 @@ class RouterDecision(BaseModel):
     type: Literal["coding", "bugfixing", "analyzing"] = Field(
         description="The specific type of the task."
     )
-    skill_level: Literal["junior", "senior"] = Field(
-        description="Must be 'junior' or 'senior'"
-    )
+    skill_level: Literal["junior", "senior"] = Field(description="Must be 'junior' or 'senior'")
     reasoning: str = Field(description="Why this classification was chosen")
 
 
@@ -121,8 +119,10 @@ def create_router_node(llm):
         current_messages = list(base_messages)
 
         response = await structured_llm.ainvoke(current_messages)
+        response.skill_level = "junior"  # hack!!!
         logger.info("Task type: %s", response.type)
         logger.info("Task skill level: %s", response.skill_level)
+        logger.info("Task reasoning: %s", response.reasoning)
 
         task_type = TaskType.UNKNOWN
         if response.type in [t.value for t in TaskType]:
@@ -143,6 +143,7 @@ def create_router_node(llm):
 
         return {
             "next_step": next_step,
+            "task_type": response.type,
             "task_skill_level": response.skill_level,
             "current_node": "router",
         }

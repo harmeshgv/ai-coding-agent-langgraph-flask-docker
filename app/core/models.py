@@ -66,11 +66,7 @@ class AgentSettings(db.Model):
 
     def get_active_task_system(self) -> "TaskSystem | None":
         """Get the currently active TaskSystem based on task_system_type."""
-        provider = (
-            "trello"
-            if self.task_system_type == "TRELLO"
-            else self.task_system_type.lower()
-        )
+        provider = "trello" if self.task_system_type == "TRELLO" else self.task_system_type.lower()
         return self.get_task_system(provider)
 
     def __repr__(self):
@@ -135,14 +131,12 @@ class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     task_id = db.Column(db.String(64), nullable=False, unique=True, index=True)
     task_name = db.Column(db.String(500), nullable=False)
-    branch_name = db.Column(db.String(200), nullable=False)
+    branch_name = db.Column(db.String(200), nullable=True)
     repo_url = db.Column(db.String(200), nullable=True)
     pr_number = db.Column(db.Integer, nullable=True)
     pr_url = db.Column(db.String(500), nullable=True)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
-    updated_at = db.Column(
-        db.DateTime, server_default=db.func.now(), onupdate=db.func.now()
-    )
+    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
 
     def __repr__(self):
         return f"<Task id={self.task_id} branch={self.branch_name}>"

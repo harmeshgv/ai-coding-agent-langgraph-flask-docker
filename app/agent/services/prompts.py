@@ -26,7 +26,11 @@ def load_system_prompt(stack: str, role: str) -> str:
 
 def load_prompt(template: str, data: dict) -> str:
     # 1. configure Jinja
-    ninja_env = Environment(loader=FileSystemLoader("./prompts"))
+    ninja_env = Environment(
+        loader=FileSystemLoader("./prompts"),
+        trim_blocks=True,
+        lstrip_blocks=True,
+    )
 
     # 2. load template
     template = ninja_env.get_template(template)

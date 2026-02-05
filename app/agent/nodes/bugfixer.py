@@ -12,7 +12,7 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, System
 
 from app.agent.services.logging import log_agent_response
 from app.agent.services.message_processing import filter_messages_for_llm
-from app.agent.services.prompts import load_system_prompt
+from app.agent.services.prompts import load_prompt
 from app.agent.services.summaries import record_finish_task_summary
 from app.agent.state import AgentState
 
@@ -32,14 +32,16 @@ def create_bugfixer_node(llm, tools, agent_stack):
     Returns:
         A function that represents the bugfixer node.
     """
-    sys_msg = load_system_prompt(agent_stack, "bugfixer")
 
     async def bugfixer_node(state: AgentState):
         # Filter messages to keep only recent relevant context (original task + last 15 messages)
         # pylint: disable=duplicate-code
+        system_message = load_prompt("systemprompt_bugfixer.md", state)
+        human_message = load_prompt("prompt_coding.md", state)
         filtered_messages = filter_messages_for_llm(state["messages"], max_messages=15)
-        current_messages: list[BaseMessage | SystemMessage] = [
-            SystemMessage(content=sys_msg)
+        current_messages: list[BaseMessage | SystemMessage | HumanMessage] = [
+            SystemMessage(content=system_message),
+            HumanMessage(content=human_message),
         ]
         current_messages += filtered_messages
 
@@ -63,7 +65,12 @@ def create_bugfixer_node(llm, tools, agent_stack):
                         "bugfixer",
                         response,
                     )
-                    result = {"messages": [response]}
+                    result = {
+                        "messages": [response],
+                        "current_node": "bugfixer",
+                        "prompt": human_message,
+                        "system_prompt": system_message,
+                    }
                     if recorded:
                         result["agent_summary"] = agent_summary
                     return result

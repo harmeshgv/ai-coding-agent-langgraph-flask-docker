@@ -69,3 +69,6 @@ class AgentState(TypedDict):
     plan_state: PlanState | None
     current_node: str | None
     last_update: datetime | None
+    prompt: str | None
+    system_prompt: str | None
+    tech_stack: str | None

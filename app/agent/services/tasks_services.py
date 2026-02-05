@@ -26,16 +26,12 @@ def save_task_in_db(
     try:
         with current_app.app_context():
             upsert_task(task_id, task_name, branch_name, repo_url)
-            logger.info(
-                "Persisted branch '%s' for task %s in database", branch_name, task_id
-            )
+            logger.info("Persisted branch '%s' for task %s in database", branch_name, task_id)
     except Exception as exc:  # pylint: disable=broad-exception-caught
         logger.warning("Failed to persist branch mapping for task %s: %s", task_id, exc)
 
 
-async def fetch_task_from_state(
-    board_provider: BoardProvider, state_name: str
-) -> BoardTask | None:
+async def fetch_task_from_state(board_provider: BoardProvider, state_name: str) -> BoardTask | None:
     """Fetch a task from a board state."""
     board_states = await board_provider.get_states()
     target_state = next(
@@ -68,9 +64,7 @@ async def move_task_to_state(
     """
     modified_task: Optional[BoardTask] = task
     if not task_state_name:
-        logger.warning(
-            "task_in_progress_state not configured, skipping move to in-progress state"
-        )
+        logger.warning("task_in_progress_state not configured, skipping move to in-progress state")
     else:
         logger.info(
             "Moving task %s to in-progress state: %s",
@@ -138,6 +132,8 @@ async def fetch_review_comments(
 
     if comments:
         logger.info("Found comments to append")
+        for comment in comments:
+            logger.info("comment: %s", comment.text)
     else:
         logger.info("No comments to append")
 
@@ -176,10 +172,7 @@ async def get_latest_move_to_in_progress(
     # Each move has state_before and state_after
     review_to_progress_moves = []
     for idx, move in enumerate(sorted_moves):
-        if (
-            move.state_before == review_state_name
-            and move.state_after == in_progress_state_name
-        ):
+        if move.state_before == review_state_name and move.state_after == in_progress_state_name:
             # Find when the task entered the review state
             # Look backwards for the previous move that resulted in the review state
             review_timestamp = None
@@ -219,9 +212,7 @@ async def get_latest_move_to_in_progress(
     return latest_move
 
 
-def filter_comments_between_timestamps(
-    comments: list, start: datetime, end: datetime
-) -> list:
+def filter_comments_between_timestamps(comments: list, start: datetime, end: datetime) -> list:
     """Filters comments between two timestamps (inclusive)."""
     filtered_comments = []
     for comment in comments:

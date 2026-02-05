@@ -16,6 +16,7 @@ from flask import Flask
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph
 
+from app.core.constants import TECH_STACKS
 from app.agent.graph import create_workflow
 from app.agent.integrations.mcp.adapter import McpServerClient
 from app.agent.runtime import AgentRuntimeContext, prepare_runtime
@@ -87,6 +88,9 @@ async def _execute_agent_cycle(runtime: AgentRuntimeContext) -> None:
             "agent_skill_level": runtime.agent_settings.agent_skill_level,
             "plan_state": None,
             "current_node": None,
+            "prompt": None,
+            "system_prompt": None,
+            "tech_stack": TECH_STACKS[runtime.agent_stack],
         }
         # Config for threa level persistence
         thread_config: RunnableConfig = {

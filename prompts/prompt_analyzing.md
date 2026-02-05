@@ -1,18 +1,18 @@
-Implement the following task:
+# TASK
+Analyze the following task:
 Task: {{task.name}}
 Description: {{task.description}}
-{% if comments %}
+{% if task_comments %}
+# REVIEW COMMENTS
 The Pull Request was rejected with the following review comments: 
 NOTE: The task description shows the current implementation. 
 The comments below indicate ADDITIONAL work that needs to be done.
-{% for comment in comments %}
-  - {{ comment }}
+{% for comment in task_comments %}
+  - {{ comment.text }}
 {% endfor %}
+{% endif %}
 {% if pr_review_message %}
+# PULL REQUEST MESSAGE
 {{ pr_review_message }}
 {% endif %}
-{% endif %}
 {% if plan %}
-Complete the task according to the following plan:
-{{plan}}
-{% endif %}

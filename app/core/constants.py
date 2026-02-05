@@ -16,3 +16,30 @@ LLM_PROVIDER_API_ENV = {
     "ollama": "OLLAMA_API_KEY",
     "anthropic": "ANTHROPIC_API_KEY",
 }
+
+TECH_STACKS = {
+    "backend": {
+        "language": "Java 21",
+        "framework": "Spring Boot 3.2 (Web, JPA)",
+        "build_tool": "Maven",
+        "database": "PostgreSQL",
+        "other": ["Lombok"],
+        "scripts": {
+            "test": "mvn clean test -f <path/to/pom.xml>",
+            "build": "mvn clean package -f <path/to/pom.xml>",
+            "run": "mvn spring-boot:run",
+        },
+    },
+    "frontend": {
+        "language": "JavaScript (ES6+) / TypeScript",
+        "framework": "React (Functional Components, Hooks)",
+        "build_tool": "Vite",
+        "structure": "HTML5 (Semantic)",
+        "other": ["Bootstrap 5 CSS"],
+        "scripts": {
+            "test": "npm test",
+            "build": "npm run build",
+            "run": "npm run dev",
+        },
+    },
+}
