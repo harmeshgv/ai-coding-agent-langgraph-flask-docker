@@ -16,3 +16,7 @@ The comments below indicate ADDITIONAL work that needs to be done.
 {{ pr_review_message }}
 {% endif %}
 {% if plan %}
+# IMPLEMENTATION PLAN
+The following plan needs to be revised:
+{{plan}}
+{% endif %}
