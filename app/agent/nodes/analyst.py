@@ -18,7 +18,10 @@ from app.agent.services.message_processing import (
 )
 from app.agent.services.prompts import load_prompt
 from app.agent.services.summaries import record_finish_task_summary
-from app.agent.state import AgentState
+from app.agent.state import AgentState, PlanState
+from app.core.models import Task
+from app.core.plan_services import exist_plan, get_plan
+from app.core.task_repository import update_db_task, read_db_task
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +52,7 @@ def create_analyst_node(llm: BaseChatModel, tools):
 
         current_tool_choice = "auto"
 
+        exist_plan_before_llm_call = exist_plan()
         for attempt in range(3):
             try:
                 chain = llm.bind_tools(tools, tool_choice=current_tool_choice)
@@ -60,7 +64,12 @@ def create_analyst_node(llm: BaseChatModel, tools):
                 if has_tool_calls:
                     log_agent_response("analyst", response, attempt=attempt + 1)
                     recorded, agent_summary = record_finish_task_summary(state, "analyst", response)
+
+                    plan, plan_state = _get_plan_info_in_db_task(exist_plan_before_llm_call)
+                    _save_plan_state(plan_state)
                     result = {
+                        "plan": plan,
+                        "plan_state": plan_state,
                         "messages": [response],
                         "current_node": "analyst",
                         "prompt": human_message,
@@ -103,3 +112,22 @@ def create_analyst_node(llm: BaseChatModel, tools):
         return result
 
     return analyst_node
+
+
+def _get_plan_info_in_db_task(exist_plan_before_llm_call: bool) -> tuple[str, PlanState]:
+    """Get plan info after LLM call."""
+    exist_plan_after_llm_call = exist_plan()
+    plan = get_plan() if exist_plan_after_llm_call else None
+    plan_state = None
+    if exist_plan_after_llm_call:
+        plan_state = PlanState.CREATED
+        if exist_plan_before_llm_call:
+            plan_state = PlanState.UPDATED
+
+    return plan, plan_state
+
+
+def _save_plan_state(plan_state: PlanState):
+    db_task: Task | None = read_db_task()
+    if db_task:
+        update_db_task(db_task.task_id, plan_state=plan_state)

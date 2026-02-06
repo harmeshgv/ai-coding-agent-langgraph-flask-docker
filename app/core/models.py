@@ -135,6 +135,7 @@ class Task(db.Model):
     repo_url = db.Column(db.String(200), nullable=True)
     pr_number = db.Column(db.Integer, nullable=True)
     pr_url = db.Column(db.String(500), nullable=True)
+    plan_state = db.Column(db.String(20), nullable=True)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
 
