@@ -10,9 +10,7 @@
                     <div class="card-body">
                         <p>
                             <strong>Agent State:</strong>
-                            <span id="agent-state"
-                                >{{ agent_state["current_node"] }}</span
-                            >
+                            <span id="agent-state">{{ agent_state["current_node"] }}</span>
                         </p>
                         <p>
                             <strong>Last Update:</strong>
@@ -26,20 +24,18 @@
                     <div class="card-body flex-grow-1" style="overflow-y: auto">
                         <p>
                             <strong>Task Title:</strong>
-                            <span id="agent-state"
-                                >{{ agent_state["task_name"] }}</span
-                            >
+                            <span id="agent-state">{{ agent_state["task"]["name"] }}</span>
                         </p>
                         <p>
                             <strong>Task Skill Level:</strong>
-                            <span id="agent-state"
-                                >{{ agent_state["task_skill_level"] }}</span
-                            >
+                            <span id="agent-state">{{ agent_state["task_skill_level"] }}</span>
                         </p>
                         <p>
                             <strong>Task Description:</strong>
-                        <h5><pre style="white-space: pre-wrap">
-{{ agent_state["task_description"] }}</pre></h5>
+                        <h5>
+                            <pre style="white-space: pre-wrap">
+{{ agent_state["task"]["description"] }}</pre>
+                        </h5>
                         </p>
                     </div>
                 </div>
@@ -52,8 +48,7 @@
                 <div class="card-header">Plan</div>
                 <div class="card-body flex-grow-1" style="overflow-y: auto">
                     <pre class="font-monospace" style="white-space: pre-wrap">
-{{ plan_content }}</pre
-                    >
+{{ plan_content }}</pre>
                 </div>
             </div>
         </div>
