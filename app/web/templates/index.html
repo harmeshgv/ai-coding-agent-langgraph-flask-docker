@@ -45,7 +45,13 @@
         <!-- Right Column -->
         <div class="col-md-6 d-flex flex-column">
             <div class="card h-100 d-flex flex-column">
-                <div class="card-header">Plan</div>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Plan</span>
+                    <div>
+                        <button class="btn btn-success btn-sm">Approved</button>
+                        <button class="btn btn-danger btn-sm">Rejected</button>
+                    </div>
+                </div>
                 <div class="card-body flex-grow-1" style="overflow-y: auto">
                     <pre class="font-monospace" style="white-space: pre-wrap">
 {{ plan_content }}</pre>
