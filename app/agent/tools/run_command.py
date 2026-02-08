@@ -6,7 +6,7 @@ import docker
 from docker.errors import APIError, NotFound
 from langchain_core.tools import tool
 
-from app.agent.utils import get_codespace, get_workbench
+from app.agent.utils import get_workbench
 
 logger = logging.getLogger(__name__)
 

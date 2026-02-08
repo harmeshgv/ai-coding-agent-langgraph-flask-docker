@@ -115,13 +115,16 @@ def create_router_node(llm):
     async def router_node(state: AgentState) -> Dict[str, str]:
         # Router only needs the original task to make routing decision
         filtered_messages = filter_messages_for_llm(state["messages"], max_messages=3)
-        
+
         task = state["task"]
         human_message_content = _build_human_message_content(
             task.name, task.description, state["task_comments"], state["pr_review_message"]
         )
-        
-        base_messages = [SystemMessage(content=ROUTER_SYSTEM), HumanMessage(content=human_message_content)] + filtered_messages
+
+        base_messages = [
+            SystemMessage(content=ROUTER_SYSTEM),
+            HumanMessage(content=human_message_content),
+        ] + filtered_messages
         current_messages = list(base_messages)
 
         response = await structured_llm.ainvoke(current_messages)
