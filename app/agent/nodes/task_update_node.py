@@ -39,6 +39,7 @@ def create_task_update_node(agent_settings: AgentSettings):
         """
         Updates the task with a comment and moves it to the specified list.
         """
+        logger.info("--- TASK UPDATE node ---")
         task: Optional[BoardTask] = state["task"] if state["task"] else None
         if not task:
             logger.warning("No task found in state")

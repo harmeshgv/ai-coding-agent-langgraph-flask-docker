@@ -24,6 +24,7 @@ class PlanState(StrEnum):
     CREATED = "created"
     UPDATED = "updated"
     APPROVED = "approved"
+    REJECTED = "rejected"
 
 
 class TaskType(StrEnum):
@@ -66,6 +67,7 @@ class AgentState(TypedDict):
     pr_review_message: str | None
     task_type: TaskType | None
     task_skill_level: str | None
+    task_skill_level_reasoning: str | None
     agent_stack: AgentStack
     retry_count: int  # Attempts: how often switched between coder and tester
     test_result: str | None

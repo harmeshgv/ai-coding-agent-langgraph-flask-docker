@@ -33,7 +33,7 @@ def log_agent_response(
     if attempt is not None:
         header += f" (Attempt {attempt})"
     header += " ==="
-    logger.info(header)
+    # logger.info(header)
 
     tool_calls = getattr(response, "tool_calls", []) or []
     if tool_calls:

@@ -10,11 +10,10 @@ from git import Repo
 
 from app.agent.integrations.board_provider import BoardTask
 from app.agent.services.git_workspace import checkout_branch
-from app.agent.services.tasks_services import save_task_in_db
 from app.agent.state import AgentState
 from app.agent.utils import get_codespace
 from app.core.models import AgentSettings
-from app.core.task_repository import get_branch_for_task
+from app.core.db_task_utils import read_db_task, update_db_task
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +27,7 @@ def create_checkout_node(agent_settings: AgentSettings):
     """Create a checkout node"""
 
     async def checkout_node(state: AgentState) -> Dict[str, Any]:  # pylint: disable=unused-argument
+        logger.info("--- CHECKOUT node ---")
         task: Optional[BoardTask] = state["task"] if state["task"] else None
 
         if task:
@@ -92,8 +92,8 @@ async def get_existing_branch_for_task(task_id: str):
     """
     try:
         with current_app.app_context():
-            branch_name = get_branch_for_task(task_id)
-            return branch_name
+            db_task = read_db_task(task_id=task_id)
+            return db_task.branch_name
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.warning("Failed to retrieve branch for task %s: %s", task_id, e)
         return None
@@ -184,7 +184,7 @@ async def checkout_branch_for_task(
     repo.git.reset("--hard")
     repo.git.checkout("-b", branch_name)
 
-    save_task_in_db(task_id, task_name, branch_name, github_repo_url)
+    update_db_task(task_id, branch_name=branch_name, github_repo_url=github_repo_url)
 
     real_git_branch = subprocess.check_output(
         ["git", "rev-parse", "--abbrev-ref", "HEAD"],

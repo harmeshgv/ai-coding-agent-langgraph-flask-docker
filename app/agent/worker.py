@@ -80,6 +80,7 @@ async def _execute_agent_cycle(runtime: RuntimeSetting) -> None:
             "task": None,
             "task_comments": [],
             "task_skill_level": None,
+            "task_skill_level_reasoning": None,
             "agent_stack": runtime.agent_stack,
             "agent_skill_level": runtime.agent_settings.agent_skill_level,
             "plan_state": None,

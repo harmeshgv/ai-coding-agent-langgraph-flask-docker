@@ -33,6 +33,7 @@ def create_coder_node(llm, tools, agent_stack):
     """
 
     async def coder_node(state: AgentState):
+        logger.info("--- CODER node ---")
         # Filter messages to keep only recent relevant context (original task + last 15 messages)
         # pylint: disable=duplicate-code
         system_message = load_prompt(f"systemprompt_coder_{agent_stack}.md", state)

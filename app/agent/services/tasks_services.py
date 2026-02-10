@@ -4,31 +4,15 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from flask import current_app
 
 from app.agent.integrations.board_provider import (  # pylint: disable=unused-import
     BoardProvider,
     BoardTask,
 )
 from app.agent.services.pull_request import check_pr_exists_for_branch
-from app.core.task_repository import get_branch_for_task, upsert_task
+from app.core.db_task_utils import read_db_task
 
 logger = logging.getLogger(__name__)
-
-
-def save_task_in_db(
-    task_id: str,
-    task_name: str,
-    branch_name: str | None = None,
-    repo_url: str | None = None,
-):
-    """save task into sqlalchemy database"""
-    try:
-        with current_app.app_context():
-            upsert_task(task_id, task_name, branch_name, repo_url)
-            logger.info("Persisted branch '%s' for task %s in database", branch_name, task_id)
-    except Exception as exc:  # pylint: disable=broad-exception-caught
-        logger.warning("Failed to persist branch mapping for task %s: %s", task_id, exc)
 
 
 async def fetch_task_from_state(board_provider: BoardProvider, state_name: str) -> BoardTask | None:
@@ -111,7 +95,8 @@ async def fetch_review_comments(
 
     if board_provider.get_type() == "github":
         # For GitHub, only return last comment if a PR exists for the branch
-        branch_name = get_branch_for_task(task_id)
+        db_task = read_db_task(task_id=task_id)
+        branch_name = db_task.branch_name
         if branch_name and check_pr_exists_for_branch(branch_name):
             return all_comments[-1:] if all_comments else []
         return []

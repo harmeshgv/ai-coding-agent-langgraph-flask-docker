@@ -9,7 +9,7 @@ import logging
 import os
 
 from app.agent.utils import get_workspace
-from app.core.plan_services import get_plan
+from app.core.plan_utils import get_plan
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +36,24 @@ def get_agent_state() -> dict:
     state_file_path = os.path.join(workspace_path, "agent_state.json")
 
     default_state = {
-        "task_id": None,
-        "task_name": None,
+        "task": None,
+        "task_comments": None,
+        "pr_review_message": None,
+        "task_type": None,
         "task_skill_level": None,
+        "task_skill_level_reasoning": None,
+        "agent_stack": None,
+        "retry_count": None,
+        "test_result": None,
+        "error_log": None,
+        "git_branch": None,
+        "agent_summary": None,
         "plan_state": None,
+        "current_node": None,
+        "last_update": None,
+        "prompt": None,
+        "system_prompt": None,
+        "tech_stack": None,
     }
 
     if not os.path.exists(state_file_path):

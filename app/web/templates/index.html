@@ -1,5 +1,6 @@
 {% extends "base.html" %} {% block content %}
-<div class="container-fluid">
+<div id="dashboard-content" class="container-fluid" hx-get="{{ url_for('web.dashboard') }}" hx-trigger="every 1s"
+    hx-select="#dashboard-content" hx-target="#dashboard-content" hx-swap="outerHTML">
     <div class="row" style="min-height: 90dvh">
         <!-- Left Column -->
         <div class="col-md-6 d-flex flex-column">
@@ -10,9 +11,7 @@
                     <div class="card-body">
                         <p>
                             <strong>Agent State:</strong>
-                            <span id="agent-state"
-                                >{{ agent_state["current_node"] }}</span
-                            >
+                            <span id="agent-state">{{ agent_state["current_node"] }}</span>
                         </p>
                         <p>
                             <strong>Last Update:</strong>
@@ -26,20 +25,18 @@
                     <div class="card-body flex-grow-1" style="overflow-y: auto">
                         <p>
                             <strong>Task Title:</strong>
-                            <span id="agent-state"
-                                >{{ agent_state["task_name"] }}</span
-                            >
+                            <span id="agent-state">{{ agent_state["task"]["name"] }}</span>
                         </p>
                         <p>
                             <strong>Task Skill Level:</strong>
-                            <span id="agent-state"
-                                >{{ agent_state["task_skill_level"] }}</span
-                            >
+                            <span id="agent-state">{{ agent_state["task_skill_level"] }}</span>
                         </p>
                         <p>
                             <strong>Task Description:</strong>
-                        <h5><pre style="white-space: pre-wrap">
-{{ agent_state["task_description"] }}</pre></h5>
+                        <h5>
+                            <pre style="white-space: pre-wrap">
+{{ agent_state["task"]["description"] }}</pre>
+                        </h5>
                         </p>
                     </div>
                 </div>
@@ -49,14 +46,54 @@
         <!-- Right Column -->
         <div class="col-md-6 d-flex flex-column">
             <div class="card h-100 d-flex flex-column">
-                <div class="card-header">Plan</div>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Plan</span>
+                    <div>
+                        <button id="btn-approve" class="btn btn-success btn-sm">Approved</button>
+                        <button id="btn-reject" class="btn btn-danger btn-sm">Rejected</button>
+                    </div>
+                </div>
                 <div class="card-body flex-grow-1" style="overflow-y: auto">
                     <pre class="font-monospace" style="white-space: pre-wrap">
-{{ plan_content }}</pre
-                    >
+{{ plan_content }}</pre>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const reviewPlan = (state) => {
+            fetch('/task/review_plan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ plan_state: state }),
+            })
+                .then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        alert('Failed to update plan state.');
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    alert('An error occurred.');
+                });
+        };
+
+        // Use event delegation for buttons that might be replaced by HTMX
+        document.body.addEventListener('click', function (event) {
+            if (event.target && event.target.id === 'btn-approve') {
+                reviewPlan('approved');
+            }
+            if (event.target && event.target.id === 'btn-reject') {
+                reviewPlan('rejected');
+            }
+        });
+    });
+</script>
 {% endblock %}

@@ -18,6 +18,17 @@ def delete_plan():
         print("plan.md is removed")
 
 
+def exist_plan() -> bool:
+    """Check if the plan.md exists in the workspace.
+
+    Returns:
+        True if plan.md exists, False otherwise.
+    """
+    workspace_path = get_workspace()
+    plan_path = os.path.join(workspace_path, "plan.md")
+    return os.path.exists(plan_path)
+
+
 def get_plan() -> str:
     """Read and return the plan.md content from workspace.
 

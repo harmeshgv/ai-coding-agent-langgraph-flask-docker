@@ -45,7 +45,7 @@ async def get_all_trello_lists(agent_settings: AgentSettings) -> list[dict]:
     headers = {"Accept": "application/json"}
     query = {"key": task_system.api_key, "token": task_system.token} if task_system else {}
 
-    logger.info("Trello GET: %s", get_safe_url(url, query))
+    logger.debug("Trello GET: %s", get_safe_url(url, query))
     async with httpx.AsyncClient() as client:
         response = await client.get(url, headers=headers, params=query)
 
@@ -64,7 +64,7 @@ async def get_all_trello_cards(list_id: str, agent_settings: AgentSettings) -> l
     headers = {"Accept": "application/json"}
     query = {"key": task_system.api_key, "token": task_system.token} if task_system else {}
 
-    logger.info("Trello GET: %s", get_safe_url(url, query))
+    logger.debug("Trello GET: %s", get_safe_url(url, query))
     async with httpx.AsyncClient() as client:
         response = await client.get(url, headers=headers, params=query)
 
@@ -72,9 +72,7 @@ async def get_all_trello_cards(list_id: str, agent_settings: AgentSettings) -> l
         raise RuntimeError(f"Failed to fetch cards: {response.text}")
 
     data = response.json()
-    return [
-        {"id": card["id"], "name": card["name"], "desc": card["desc"]} for card in data
-    ]
+    return [{"id": card["id"], "name": card["name"], "desc": card["desc"]} for card in data]
 
 
 async def get_trello_card(card_id: str, agent_settings: AgentSettings) -> dict:
@@ -92,7 +90,7 @@ async def get_trello_card(card_id: str, agent_settings: AgentSettings) -> dict:
         "token": task_system.token,
     }
 
-    logger.info("Trello GET: %s", get_safe_url(url, query))
+    logger.debug("Trello GET: %s", get_safe_url(url, query))
     async with httpx.AsyncClient() as client:
         response = await client.get(url, headers=headers, params=query)
 
@@ -133,14 +131,12 @@ async def move_trello_card_to_list(card_id: str, list_id: str, agent_settings: A
         "token": task_system.token if task_system else None,
     }
 
-    logger.info("Trello PUT: %s", get_safe_url(url, query))
+    logger.debug("Trello PUT: %s", get_safe_url(url, query))
     async with httpx.AsyncClient() as client:
         response = await client.put(url, headers=headers, params=query)
 
     if response.status_code != 200:
-        raise RuntimeError(
-            f"Failed to move card {card_id} to list {list_id}: {response.text}"
-        )
+        raise RuntimeError(f"Failed to move card {card_id} to list {list_id}: {response.text}")
 
 
 async def move_trello_card_to_named_list(
@@ -151,9 +147,7 @@ async def move_trello_card_to_named_list(
     given card to that list. Returns the resolved list ID.
     """
     trello_lists = await get_all_trello_lists(agent_settings)
-    target_list = next(
-        (data for data in trello_lists if data["name"] == list_name), None
-    )
+    target_list = next((data for data in trello_lists if data["name"] == list_name), None)
 
     if not target_list:
         raise ValueError(f"Trello list '{list_name}' not found on configured board")
@@ -176,14 +170,12 @@ async def add_comment_to_trello_card(card_id: str, comment: str, agent_settings:
         "token": task_system.token if task_system else None,
     }
 
-    logger.info("Trello POST: %s", get_safe_url(url, query))
+    logger.debug("Trello POST: %s", get_safe_url(url, query))
     async with httpx.AsyncClient() as client:
         response = await client.post(url, headers=headers, params=query)
 
     if response.status_code != 200:
-        raise RuntimeError(
-            f"Failed to add a comment to card {card_id}: {response.text}"
-        )
+        raise RuntimeError(f"Failed to add a comment to card {card_id}: {response.text}")
 
 
 async def get_trello_card_comments(card_id: str, agent_settings: AgentSettings) -> list[dict]:
@@ -199,14 +191,12 @@ async def get_trello_card_comments(card_id: str, agent_settings: AgentSettings) 
         "token": task_system.token if task_system else None,
     }
 
-    logger.info("Trello GET: %s", get_safe_url(url, query))
+    logger.debug("Trello GET: %s", get_safe_url(url, query))
     async with httpx.AsyncClient() as client:
         response = await client.get(url, headers=headers, params=query)
 
     if response.status_code != 200:
-        raise RuntimeError(
-            f"Failed to fetch comments for card {card_id}: {response.text}"
-        )
+        raise RuntimeError(f"Failed to fetch comments for card {card_id}: {response.text}")
 
     data = response.json()
     return [
@@ -233,14 +223,12 @@ async def get_trello_card_list_moves(card_id: str, agent_settings: AgentSettings
         "token": task_system.token if task_system else None,
     }
 
-    logger.info("Trello GET: %s", get_safe_url(url, query))
+    logger.debug("Trello GET: %s", get_safe_url(url, query))
     async with httpx.AsyncClient() as client:
         response = await client.get(url, headers=headers, params=query)
 
     if response.status_code != 200:
-        raise RuntimeError(
-            f"Failed to fetch list moves for card {card_id}: {response.text}"
-        )
+        raise RuntimeError(f"Failed to fetch list moves for card {card_id}: {response.text}")
 
     data = response.json()
     return [
@@ -274,9 +262,7 @@ async def create_trello_card(
         RuntimeError: If the card creation fails.
     """
     trello_lists = await get_all_trello_lists(agent_settings)
-    target_list = next(
-        (data for data in trello_lists if data["name"] == list_name), None
-    )
+    target_list = next((data for data in trello_lists if data["name"] == list_name), None)
 
     if not target_list:
         raise ValueError(f"Trello list '{list_name}' not found on configured board")

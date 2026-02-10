@@ -24,13 +24,12 @@ from app.agent.services.pull_request import (
     format_pr_review_message,
     get_latest_pr_review_status,
 )
+from app.core.db_task_utils import read_db_task, update_db_task
 from app.web.services import dashboard_service, settings_service
 
 logger = logging.getLogger(__name__)
 
-web_bp = Blueprint(
-    "web", __name__, template_folder="templates", static_folder="../static"
-)
+web_bp = Blueprint("web", __name__, template_folder="templates", static_folder="../static")
 
 
 @web_bp.route("/", methods=["GET"])
@@ -78,9 +77,7 @@ def get_pr_json(owner: str, repo: str, pr_number: int):
     reviews = fetch_pr_reviews(pr_number, owner, repo)
     comments = fetch_pr_review_comments(pr_number, owner, repo)
 
-    is_approved, rejection_reviews, _ = get_latest_pr_review_status(
-        pr_number, owner, repo
-    )
+    is_approved, rejection_reviews, _ = get_latest_pr_review_status(pr_number, owner, repo)
 
     response = {
         "pull_request": asdict(pr),
@@ -128,9 +125,35 @@ def get_pr_formatted(owner: str, repo: str, pr_number: int):
         f"Review Status: {'APPROVED' if is_approved else 'CHANGES REQUESTED'}",
     ]
 
-    formatted_review = format_pr_review_message(
-        pr.html_url, rejection_reviews, code_comments
-    )
+    formatted_review = format_pr_review_message(pr.html_url, rejection_reviews, code_comments)
     lines.append(formatted_review)
 
     return Response("\n".join(lines), mimetype="text/plain")
+
+
+@web_bp.route("/task/review_plan", methods=["POST"])
+def review_plan():
+    """Updates the plan state of the current task."""
+    data = request.json or {}
+    new_state = data.get("plan_state")
+
+    if new_state not in ["approved", "rejected"]:
+        return jsonify({"error": "Invalid state. Must be 'approved' or 'rejected'."}), 400
+
+    # Get current task (uses priority logic: ID, or first)
+    task = read_db_task()
+    if not task:
+        return jsonify({"error": "No active task found in database."}), 404
+
+    updated_task = update_db_task(task.task_id, plan_state=new_state)
+
+    if updated_task:
+        return jsonify(
+            {
+                "message": f"Plan state updated to {new_state}",
+                "task_id": updated_task.task_id,
+                "plan_state": updated_task.plan_state,
+            }
+        )
+
+    return jsonify({"error": "Failed to update task"}), 500

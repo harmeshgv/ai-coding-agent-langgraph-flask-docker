@@ -49,6 +49,7 @@ def create_tester_node(llm, tools):
     """
 
     async def tester_node(state: AgentState):  # pylint: disable=too-many-locals
+        logger.info("--- TESTER node ---")
         system_message = load_prompt("systemprompt_tester.md", state)
         human_message = load_prompt("prompt_testing.md", state)
         # Filter messages to keep only recent relevant context (original task + last 15 messages)

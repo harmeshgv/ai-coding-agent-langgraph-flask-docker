@@ -12,7 +12,7 @@ from app.agent.services.pull_request import create_or_update_pr
 from app.agent.state import AgentState
 from app.agent.utils import get_codespace, get_current_git_branch
 from app.core.config import get_env_settings
-from app.core.task_repository import update_task_pr_info
+from app.core.db_task_utils import update_db_task
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +21,7 @@ def create_pull_request_node():
     """Create a pull request node"""
 
     async def pull_request_node(state: AgentState) -> Dict[str, Any]:
+        logger.info("--- PULL REQUEST node ---")
         success, summary_entries = _create_or_update_pr(state)
         if success:
             logger.info("Pull request created/updated successfully")
@@ -99,7 +100,7 @@ def _create_or_update_pr(state: AgentState):
     if task_id and pr_url:
         pr_number = _extract_pr_number_from_url(pr_url)
         if pr_number:
-            update_task_pr_info(task_id, pr_number, pr_url)
+            update_db_task(task_id=task_id, pr_number=pr_number, pr_url=pr_url)
             logger.info("Stored PR #%d for task %s", pr_number, task_id)
 
     summary_entries = _append_summary(
@@ -164,9 +165,7 @@ def _execute_git_status() -> tuple[bool, str]:
             text=True,
         )
         has_changes = bool(result.stdout.strip())
-        logger.info(
-            "Git status check: %s changes found", "Some" if has_changes else "No"
-        )
+        logger.info("Git status check: %s changes found", "Some" if has_changes else "No")
         return has_changes, result.stdout
     except subprocess.CalledProcessError as e:
         logger.error("Git status failed: %s", e.stderr)
