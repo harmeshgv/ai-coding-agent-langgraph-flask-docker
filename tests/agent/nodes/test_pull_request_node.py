@@ -100,3 +100,61 @@ def test_create_or_update_pr_missing_url(monkeypatch, base_state):
 
     assert success is False
     assert summaries[-1] == "**[Pr]** Pull request missing URL despite success"
+
+
+class TestGenerateCommitMessage:
+    """Unit tests for commit message generation logic."""
+
+    def test_returns_default_when_no_summaries(self):
+        state = {"agent_summary": []}
+
+        result = pr_module._generate_commit_message(state)  # pylint: disable=protected-access
+
+        assert result == "fix: automated test-driven changes"
+
+    def test_multiline_coder_message_preserves_order(self):
+        state = {
+            "agent_summary": [
+                "**[Coder]** Implement persistence layer",
+                "**[Coder]** Document storage contract",
+                "**[Tester]** All tests green",
+            ]
+        }
+
+        result = pr_module._generate_commit_message(state)  # pylint: disable=protected-access
+
+        assert (
+            result
+            == "feat: Implement persistence layer\n\n"
+            "- Implement persistence layer\n- Document storage contract"
+        )
+
+    def test_skips_tester_and_uses_first_non_tester(self):
+        state = {
+            "agent_summary": [
+                "**[Tester]** Initial feedback",
+                "**[Bugfixer]** Resolve race condition",
+                "**[Bugfixer]** Add regression test",
+            ]
+        }
+
+        result = pr_module._generate_commit_message(state)  # pylint: disable=protected-access
+
+        assert (
+            result
+            == "fix: Resolve race condition\n\n"
+            "- Resolve race condition\n- Add regression test"
+        )
+
+    def test_deduplicates_identical_coder_messages(self):
+        state = {
+            "agent_summary": [
+                "**[Coder]** Implement persistence layer",
+                "**[Coder]** Implement persistence layer",
+                "**[Coder]** Implement persistence layer",
+            ]
+        }
+
+        result = pr_module._generate_commit_message(state)  # pylint: disable=protected-access
+
+        assert result == "feat: Implement persistence layer\n\n- Implement persistence layer"
