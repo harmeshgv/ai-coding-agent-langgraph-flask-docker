@@ -59,3 +59,20 @@ def test_get_agent_summary_entries_derives_from_messages_when_cache_empty():
 
     entries = get_agent_summary_entries(state)
     assert entries == ["**[Tester]** Task complete"]
+
+
+def test_get_agent_summary_entries_deduplicates_consecutive_entries():
+    state = {
+        "agent_summary": [
+            "**[Coder]** Implemented divide method",
+            "**[Tester]** All tests passed",
+            "**[Tester]** All tests passed",
+        ]
+    }
+
+    entries = get_agent_summary_entries(state)
+
+    assert entries == [
+        "**[Coder]** Implemented divide method",
+        "**[Tester]** All tests passed",
+    ]

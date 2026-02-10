@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import shutil
+from typing import Optional
 from urllib.parse import urlparse, urlunparse
 
 from git import Repo
@@ -14,8 +16,15 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     "checkout_branch",
+    "commit",
+    "configure_user",
     "ensure_repository_exists",
+    "get_current_branch",
+    "get_remote_url",
+    "has_changes",
     "normalize_git_url",
+    "parse_github_owner_repo",
+    "stage_all",
 ]
 
 
@@ -155,3 +164,115 @@ def checkout_branch(repo_url: str, branch_name: str, work_dir: str) -> None:
     except GitCommandError as exc:
         logger.error("Failed to checkout branch '%s': %s", branch_name, exc)
         raise
+
+
+def get_current_branch(work_dir: str) -> Optional[str]:
+    """Return the name of the currently checked-out branch, or ``None`` on failure."""
+    try:
+        repo = Repo(work_dir)
+        return repo.active_branch.name
+    except Exception:  # pylint: disable=broad-exception-caught
+        return None
+
+
+def has_changes(work_dir: str) -> bool:
+    """Return ``True`` when the working tree contains staged, unstaged, or untracked changes."""
+    try:
+        repo = Repo(work_dir)
+        return repo.is_dirty(untracked_files=True)
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.error("Failed to check git status in %s", work_dir)
+        return False
+
+
+def stage_all(work_dir: str) -> bool:
+    """Stage all changes (tracked and untracked) in *work_dir*. Returns success flag."""
+    try:
+        repo = Repo(work_dir)
+        repo.git.add(A=True)
+        logger.info("Git add successful")
+        return True
+    except GitCommandError as exc:
+        logger.error("Git add failed: %s", exc)
+        return False
+
+
+def configure_user(work_dir: str, name: str = "Coding Agent", email: str = "agent@bot.com") -> None:
+    """Set local ``user.name`` and ``user.email`` on the repository."""
+    try:
+        repo = Repo(work_dir)
+        with repo.config_writer() as cw:
+            cw.set_value("user", "name", name)
+            cw.set_value("user", "email", email)
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        logger.error("Failed to configure git user in %s: %s", work_dir, exc)
+        raise
+
+
+def commit(work_dir: str, message: str) -> bool:
+    """Commit staged changes with *message*. Returns success flag."""
+    try:
+        configure_user(work_dir)
+        repo = Repo(work_dir)
+        repo.index.commit(message)
+        logger.info("Git commit successful: %s", message)
+        return True
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        logger.error("Git commit failed: %s", exc)
+        return False
+
+
+def get_remote_url(work_dir: str) -> Optional[str]:
+    """Return the URL of the *origin* remote, or ``None`` if unavailable."""
+    try:
+        repo = Repo(work_dir)
+        return repo.remotes.origin.url
+    except Exception:  # pylint: disable=broad-exception-caught
+        return None
+
+
+def parse_github_owner_repo(remote_url: str) -> tuple[Optional[str], Optional[str]]:
+    """Extract ``(owner, repo)`` from a GitHub remote URL.
+
+    Supports both HTTPS and SSH URL formats.
+    Returns ``(None, None)`` when the URL does not match.
+    """
+    match = re.search(r"github\.com[:/](.+)/(.+?)(\.git)?$", remote_url)
+    if not match:
+        return None, None
+    return match.group(1), match.group(2)
+
+
+def push(work_dir: str, token: str) -> tuple[bool, str]:
+    """Push the current branch to *origin*, injecting *token* into the remote URL if needed.
+
+    Returns ``(success, message)``.
+    """
+    if not token:
+        logger.error("GITHUB_TOKEN missing for git push")
+        return False, "ERROR: GITHUB_TOKEN missing"
+
+    try:
+        current_branch_name = get_current_branch(work_dir)
+        if not current_branch_name:
+            logger.error("Could not determine current branch")
+            return False, "ERROR: Could not determine current branch"
+
+        if current_branch_name in ("main", "master"):
+            logger.warning("Attempted to push to default branch '%s'", current_branch_name)
+            return False, f"ERROR: Cannot push to default branch '{current_branch_name}'"
+
+        repo = Repo(work_dir)
+        current_url = repo.remotes.origin.url
+
+        if "https://" in current_url and "@" not in current_url:
+            auth_url = current_url.replace("https://", f"https://{token}@")
+            repo.remotes.origin.set_url(auth_url)
+
+        repo.git.push("-u", "origin", "HEAD")
+        logger.info("Git push successful")
+        return True, "Push successful"
+    except GitCommandError as exc:
+        safe_msg = str(exc).replace(token, "***") if token else str(exc)
+        logger.error("Git push failed: %s", safe_msg)
+        return False, f"Push FAILED: {safe_msg}"

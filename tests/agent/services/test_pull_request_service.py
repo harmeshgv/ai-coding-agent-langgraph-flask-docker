@@ -1,6 +1,5 @@
 """Tests for pull_request module."""
 
-import subprocess
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -62,50 +61,50 @@ def mock_pr_data():
 class TestGetGitHubRepoInfo:
     """Tests for get_github_repo_info function."""
 
-    @patch("subprocess.check_output")
-    def test_get_github_repo_info_https(self, mock_subprocess):
+    @patch("app.agent.services.pull_request.get_remote_url")
+    def test_get_github_repo_info_https(self, mock_remote_url):
         """Test parsing HTTPS GitHub URL."""
-        mock_subprocess.return_value = "https://github.com/owner/repo.git\n"
+        mock_remote_url.return_value = "https://github.com/owner/repo.git"
         
         owner, repo = get_github_repo_info()
         
         assert owner == "owner"
         assert repo == "repo"
 
-    @patch("subprocess.check_output")
-    def test_get_github_repo_info_ssh(self, mock_subprocess):
+    @patch("app.agent.services.pull_request.get_remote_url")
+    def test_get_github_repo_info_ssh(self, mock_remote_url):
         """Test parsing SSH GitHub URL."""
-        mock_subprocess.return_value = "git@github.com:owner/repo.git\n"
+        mock_remote_url.return_value = "git@github.com:owner/repo.git"
         
         owner, repo = get_github_repo_info()
         
         assert owner == "owner"
         assert repo == "repo"
 
-    @patch("subprocess.check_output")
-    def test_get_github_repo_info_no_git_suffix(self, mock_subprocess):
+    @patch("app.agent.services.pull_request.get_remote_url")
+    def test_get_github_repo_info_no_git_suffix(self, mock_remote_url):
         """Test parsing GitHub URL without .git suffix."""
-        mock_subprocess.return_value = "https://github.com/owner/repo\n"
+        mock_remote_url.return_value = "https://github.com/owner/repo"
         
         owner, repo = get_github_repo_info()
         
         assert owner == "owner"
         assert repo == "repo"
 
-    @patch("subprocess.check_output")
-    def test_get_github_repo_info_invalid_url(self, mock_subprocess):
+    @patch("app.agent.services.pull_request.get_remote_url")
+    def test_get_github_repo_info_invalid_url(self, mock_remote_url):
         """Test handling invalid URL."""
-        mock_subprocess.return_value = "https://example.com/repo\n"
+        mock_remote_url.return_value = "https://example.com/repo"
         
         owner, repo = get_github_repo_info()
         
         assert owner is None
         assert repo is None
 
-    @patch("subprocess.check_output")
-    def test_get_github_repo_info_subprocess_error(self, mock_subprocess):
-        """Test handling subprocess error."""
-        mock_subprocess.side_effect = subprocess.CalledProcessError(1, "git")
+    @patch("app.agent.services.pull_request.get_remote_url")
+    def test_get_github_repo_info_no_remote(self, mock_remote_url):
+        """Test handling missing remote."""
+        mock_remote_url.return_value = None
         
         owner, repo = get_github_repo_info()
         
@@ -116,13 +115,12 @@ class TestGetGitHubRepoInfo:
 class TestGetGitHubRepoInfoWithBranch:
     """Tests for get_github_repo_info_with_branch function."""
 
-    @patch("subprocess.check_output")
-    def test_get_repo_info_with_branch_success(self, mock_subprocess):
+    @patch("app.agent.services.pull_request.get_current_branch")
+    @patch("app.agent.services.pull_request.get_remote_url")
+    def test_get_repo_info_with_branch_success(self, mock_remote_url, mock_branch):
         """Test successful retrieval of owner, repo, and branch."""
-        mock_subprocess.side_effect = [
-            "https://github.com/owner/repo.git\n",
-            "feature/test\n",
-        ]
+        mock_remote_url.return_value = "https://github.com/owner/repo.git"
+        mock_branch.return_value = "feature/test"
         
         owner, repo, branch = get_github_repo_info_with_branch()
         
@@ -130,10 +128,23 @@ class TestGetGitHubRepoInfoWithBranch:
         assert repo == "repo"
         assert branch == "feature/test"
 
-    @patch("subprocess.check_output")
-    def test_get_repo_info_with_branch_error(self, mock_subprocess):
-        """Test handling subprocess error."""
-        mock_subprocess.side_effect = subprocess.CalledProcessError(1, "git")
+    @patch("app.agent.services.pull_request.get_remote_url")
+    def test_get_repo_info_with_branch_no_remote(self, mock_remote_url):
+        """Test handling missing remote."""
+        mock_remote_url.return_value = None
+        
+        owner, repo, branch = get_github_repo_info_with_branch()
+        
+        assert owner is None
+        assert repo is None
+        assert branch is None
+
+    @patch("app.agent.services.pull_request.get_current_branch")
+    @patch("app.agent.services.pull_request.get_remote_url")
+    def test_get_repo_info_with_branch_no_branch(self, mock_remote_url, mock_branch):
+        """Test handling missing branch."""
+        mock_remote_url.return_value = "https://github.com/owner/repo.git"
+        mock_branch.return_value = None
         
         owner, repo, branch = get_github_repo_info_with_branch()
         

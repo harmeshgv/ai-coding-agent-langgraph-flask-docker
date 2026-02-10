@@ -139,9 +139,22 @@ def get_agent_summary_entries(state: AgentState) -> list[str]:
         entry for entry in (state.get("agent_summary") or []) if isinstance(entry, str)
     ]
     if cached_entries:
-        return cached_entries
+        return _deduplicate_consecutive(cached_entries)
 
-    return _derive_summaries_from_messages(state.get("messages") or [])
+    return _deduplicate_consecutive(
+        _derive_summaries_from_messages(state.get("messages") or [])
+    )
+
+
+def _deduplicate_consecutive(entries: list[str]) -> list[str]:
+    """Remove consecutive duplicate entries while preserving order."""
+    deduplicated: list[str] = []
+    previous: str | None = None
+    for entry in entries:
+        if entry != previous:
+            deduplicated.append(entry)
+        previous = entry
+    return deduplicated
 
 
 def _derive_summaries_from_messages(messages: Sequence[BaseMessage]) -> list[str]:
