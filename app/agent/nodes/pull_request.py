@@ -156,8 +156,13 @@ def _generate_commit_message(state: AgentState) -> str:
             if (entry_role or "").lower() == role
         ]
         if len(role_entries) > 1:
-            additional_lines = role_entries[1:]
-            details = "\n".join(f"- {text}" for text in additional_lines if text)
+            filtered_entries: list[str] = []
+            previous_text: str | None = None
+            for current_text in role_entries:
+                if current_text and current_text != previous_text:
+                    filtered_entries.append(current_text)
+                previous_text = current_text
+            details = "\n".join(f"- {text}" for text in filtered_entries if text)
             if details:
                 return f"{first_line}\n\n{details}"
 
