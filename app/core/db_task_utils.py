@@ -13,7 +13,7 @@ from app.core.models import Task
 logger = logging.getLogger(__name__)
 
 
-def read_db_task(id: int | None = None, task_id: str | None = None) -> Task | None:
+def read_db_task(id: int | None = None, task_id: str | None = None) -> Task | None:  # pylint: disable=redefined-builtin
     """Load the saved task from the database."""
     logger.debug("Reading task from database with id: %s, task_id: %s", id, task_id)
     task = None
@@ -52,7 +52,7 @@ def create_db_task(task_id: str, task_name: str) -> Task:
         db.session.rollback()
         logging.error("Error creating task: %s", e)
         return None
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         db.session.rollback()
         logging.error("Error creating task: %s", e)
         return None
@@ -87,7 +87,7 @@ def update_db_task(task_id: str, **kwargs: Any) -> Task | None:
         )
         db.session.commit()
         return task
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         db.session.rollback()
         logging.error("Error updating task: %s", e)
         return None
