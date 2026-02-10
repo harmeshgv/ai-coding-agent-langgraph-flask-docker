@@ -53,7 +53,7 @@ def log_and_validate_env(logger, env_settings: EnvironmentSettings):
     logger.info("OLLAMA_BASE_URL: %s", env_settings.ollama_base_url)
 
     logger.info("MCP enabled: %s", env_settings.enable_mcp_servers)
-    logger.info("DATABASE_DIR: %s", env_settings.database_dir or "Not set")
+    logger.info("INSTANCE_DIR: %s", env_settings.instance_dir or "Not set")
     logger.info("WORKBENCH: %s", env_settings.workbench or "Not set")
     logger.info("WORKSPACE: %s", env_settings.workspace)
 

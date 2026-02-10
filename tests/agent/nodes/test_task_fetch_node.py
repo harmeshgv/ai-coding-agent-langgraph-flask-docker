@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from langchain_core.messages import HumanMessage
 
 from app.agent.integrations.board_provider import BoardComment, BoardTask
 from app.agent.nodes.task_fetch_node import (

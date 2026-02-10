@@ -37,9 +37,9 @@ class EnvironmentSettings:  # pylint: disable=too-many-instance-attributes
         ollama_base_url: Base URL for Ollama server.
         secret_key: Flask secret key for session management.
         database_url: Database connection URL (optional, uses sqlite default).
-        database_dir: Directory for sqlite database files.
+        instance_dir: Directory for sqlite database files and other instance data.
         workbench: Docker container name for the workbench.
-        servers_path: Path to MCP server implementations.
+        agent_stack: Preferred agent stack (backend/frontend) override.
         github_repo_url: Default GitHub repository URL.
         enable_mcp_servers: Whether to enable MCP servers.
     """
@@ -63,9 +63,9 @@ class EnvironmentSettings:  # pylint: disable=too-many-instance-attributes
     ollama_base_url: str = "http://host.docker.internal:11434"
     secret_key: str = "a-default-secret-key-for-development"
     database_url: str | None = None
-    database_dir: str | None = None
+    instance_dir: str | None = None
     workbench: str = ""
-    servers_path: str = "/coding-agent/servers"
+    agent_stack: str = ""
     github_repo_url: str = ""
     enable_mcp_servers: bool = True
 
@@ -110,9 +110,9 @@ class EnvironmentSettings:  # pylint: disable=too-many-instance-attributes
             ),
             secret_key=os.environ.get("SECRET_KEY", "a-default-secret-key-for-development"),
             database_url=os.environ.get("DATABASE_URL"),
-            database_dir=os.environ.get("DATABASE_DIR"),
-            workbench=os.environ.get("WORKBENCH", ""),
-            servers_path=os.environ.get("SERVERS_PATH", "/coding-agent/servers"),
+            instance_dir=os.environ.get("INSTANCE_DIR"),
+            workbench=os.environ.get("WORKBENCH", "workbench-backend"),
+            agent_stack=os.environ.get("AGENT_STACK", ""),
             github_repo_url=os.environ.get("GITHUB_REPO_URL", ""),
             enable_mcp_servers=enable_mcp_servers,
         )
@@ -129,7 +129,7 @@ class EnvironmentSettings:  # pylint: disable=too-many-instance-attributes
         if self.database_url:
             return self.database_url
 
-        db_dir = Path(self.database_dir) if self.database_dir else base_dir / "instance"
+        db_dir = Path(self.instance_dir) if self.instance_dir else base_dir / "instance"
         db_dir = db_dir.resolve()
         return f"sqlite:///{db_dir / 'agent.db'}"
 

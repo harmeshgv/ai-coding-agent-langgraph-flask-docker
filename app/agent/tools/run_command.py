@@ -6,7 +6,7 @@ import docker
 from docker.errors import APIError, NotFound
 from langchain_core.tools import tool
 
-from app.agent.utils import get_codespace, get_workbench
+from app.agent.utils import get_workbench
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ def run_command(command: str) -> str:
 
         logger.info("Executing in workbench: %s", command)
 
-        exec_result = container.exec_run(command, workdir=get_codespace())
+        exec_result = container.exec_run(command, workdir="/coding-agent-workspace/code")
         output = exec_result.output.decode("utf-8")
         exit_code = exec_result.exit_code
 

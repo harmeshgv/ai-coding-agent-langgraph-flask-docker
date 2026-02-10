@@ -361,8 +361,13 @@ class TestConfigMapperGitHub:
             # trello_config is now always parsed (not None)
             assert result.trello_config is not None
 
-    def test_handles_missing_github_task_system(self, app):
+    def test_handles_missing_github_task_system(self, app, monkeypatch):
         """Missing GitHub task_system should result in default values."""
+        from app.core.config import set_env_settings
+
+        monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+        set_env_settings(None)
+
         settings = AgentSettings(task_system_type="TRELLO")
 
         result = settings_mapper.model_to_form_data(settings)

@@ -3,13 +3,13 @@
 # workspace: shared storage for the local repository
 WORKSPACE=./workspace
 
-# workbench if the agent uses backend environment
+# Docker container name that hosts the runnable workbench (backend or frontend)
 WORKBENCH=workbench-backend
-# workbench if the agent uses fronend environment
+# Alternate workbench example for a frontend stack
 #WORKBENCH=workbench-frontend
 
-# Not implemented yet, determines which system/human prompt to use
-# AGENT_STACK=backend
+# Optional override for the agent stack (fallback derives from WORKBENCH)
+#AGENT_STACK=backend
 
 # database
 ENCRYPTION_KEY=your_encryption_key_here

@@ -217,3 +217,5 @@ __marimo__/
 workflow_graph.mmd
 workflow_graph.png
 .zed
+.vscode
+.docker-home/

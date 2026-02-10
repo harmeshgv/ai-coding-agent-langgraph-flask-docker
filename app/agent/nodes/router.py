@@ -9,7 +9,7 @@ specialist agent (e.g., Coder, Bugfixer, Analyst) should handle it next.
 import logging
 from typing import Dict, Literal
 
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import SystemMessage, HumanMessage
 from pydantic import BaseModel, Field
 
 from app.agent.services.message_processing import filter_messages_for_llm
@@ -50,7 +50,16 @@ def create_router_node(llm):
         system_message = load_prompt("systemprompt_router.md", state)
         # Router only needs the original task to make routing decision
         filtered_messages = filter_messages_for_llm(state["messages"], max_messages=3)
-        base_messages = [SystemMessage(content=system_message)] + filtered_messages
+
+        task = state["task"]
+        human_message_content = _build_human_message_content(
+            task.name, task.description, state["task_comments"], state["pr_review_message"]
+        )
+
+        base_messages = [
+            SystemMessage(content=system_message),
+            HumanMessage(content=human_message_content),
+        ] + filtered_messages
         current_messages = list(base_messages)
 
         response = await structured_llm.ainvoke(current_messages)
@@ -89,3 +98,45 @@ def route_to_coder_or_analyst(state: AgentState, response: RouterDecision) -> st
     if db_task and db_task.plan_state == PlanState.APPROVED:
         return "coder"
     return "analyst"
+
+
+def _build_human_message_content(
+    task_name: str,
+    task_description: str,
+    comments: list,
+    pr_review_message: str = "",
+) -> str:
+    """
+    Build the human message content including task details and optional review comments.
+
+    Args:
+        task_name: Name of the task
+        task_description: Description of the task
+        comments: List of board review comments (may be empty)
+        pr_review_message: Formatted PR review feedback (may be empty)
+
+    Returns:
+        Formatted human message content string
+    """
+    system_content = f"Task: {task_name}\n\nDescription:\n{task_description}"
+
+    if comments:
+        system_content += (
+            "\n\n--- The Pull Request was rejected with "
+            + "the following review comments: ---\n"
+            + "NOTE: The task description shows the current implementation. "
+            + "The comments below indicate ADDITIONAL work that needs to be done.\n"
+        )
+        for comment in reversed(comments):
+            author = comment.author
+            text = comment.text
+            date = comment.date.isoformat()
+            system_content += f"\n[{date}] {author}:\n{text}\n"
+
+        logger.info("Board review message content: %s", system_content)
+
+    if pr_review_message:
+        system_content += pr_review_message
+        logger.info("PR review message appended: %s", pr_review_message)
+
+    return system_content

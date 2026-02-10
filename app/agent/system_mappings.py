@@ -6,8 +6,7 @@ for each supported system.
 
 import logging
 import os
-
-from app.core.config import get_env_settings
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -55,12 +54,13 @@ def parse_trello_response(data):
 # A lambda function to parse the Trello card format into our canonical task format
 trello_response_parser = parse_trello_response
 
-SERVERS_PATH = get_env_settings().servers_path
+
+SERVERS_ROOT = Path("/coding-agent/servers")
 
 
 MCP_SYSTEM_DEFINITIONS = {
     "TRELLO": {
-        "command": ["tsx", os.path.join(SERVERS_PATH, "trello/src/index.ts")],
+        "command": ["tsx", os.path.join(SERVERS_ROOT.as_posix(), "trello/src/index.ts")],
         "polling_tool": "read_board",
         "polling_args": {"boardId": "{trello_todo_list_id}"},
         "response_parser": trello_response_parser,

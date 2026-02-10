@@ -3,14 +3,14 @@
 import logging
 import os
 
-from app.core.config import get_env_settings
+from app.agent.utils import get_workspace
 
 logger = logging.getLogger(__name__)
 
 
 def delete_plan():
     """Remove the plan.md content from the workspace."""
-    workspace_path = get_env_settings().workspace
+    workspace_path = get_workspace()
     plan_path = os.path.join(workspace_path, "plan.md")
 
     if os.path.exists(plan_path):
@@ -35,7 +35,7 @@ def get_plan() -> str:
     Returns:
         Content of plan.md or a default message if not found.
     """
-    workspace_path = get_env_settings().workspace
+    workspace_path = get_workspace()
     plan_path = os.path.join(workspace_path, "plan.md")
 
     if not os.path.exists(plan_path):

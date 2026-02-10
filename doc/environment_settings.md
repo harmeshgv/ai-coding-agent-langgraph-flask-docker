@@ -100,9 +100,9 @@ All other settings are optional and validated when used:
 - `OLLAMA_BASE_URL` - Ollama server URL (default: `http://host.docker.internal:11434`)
 - `SECRET_KEY` - Flask secret key (default: development key)
 - `DATABASE_URL` - Database connection URL (default: sqlite in instance/)
-- `DATABASE_DIR` - Directory for sqlite database (default: instance/)
-- `WORKBENCH` - Docker container name (default: empty)
-- `SERVERS_PATH` - Path to MCP servers (default: `/coding-agent/servers`)
+- `INSTANCE_DIR` - Flast instance Directory used for sqlite database (default: instance/)
+- `WORKBENCH` - Docker container name that hosts the runnable workbench environment (e.g., `workbench-backend` or `workbench-frontend`). Defaults to empty, which requires docker-compose defaults.
+- `AGENT_STACK` - Optional override for the runtime technology stack. Accepts `backend` or `frontend`. When unset or invalid, the stack is derived automatically from the `WORKBENCH` name.
 - `GITHUB_REPO_URL` - Default GitHub repository URL (default: empty)
 - `ENABLE_MCP_SERVERS` - Enable MCP servers (default: `true`)
 
