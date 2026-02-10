@@ -38,13 +38,13 @@ def test_create_or_update_pr_success(monkeypatch, base_state):
     )
 
     update_mock = Mock()
-    monkeypatch.setattr(pr_module, "update_task_pr_info", update_mock)
+    monkeypatch.setattr(pr_module, "update_db_task", update_mock)
 
     success, summaries = pr_module._create_or_update_pr(base_state.copy())  # pylint: disable=protected-access
 
     assert success is True
     assert summaries[-1] == f"**[Pr]** Pull request available at\n\n {pr_url}"
-    update_mock.assert_called_once_with("task-123", 42, pr_url)
+    update_mock.assert_called_once_with(task_id="task-123", pr_number=42, pr_url=pr_url)
 
 
 def test_create_or_update_pr_no_changes(monkeypatch, base_state):
@@ -67,10 +67,7 @@ def test_create_or_update_pr_push_failure(monkeypatch, base_state):
     success, summaries = pr_module._create_or_update_pr(base_state.copy())  # pylint: disable=protected-access
 
     assert success is False
-    assert (
-        summaries[-1]
-        == "**[Pr]** Pull request failed: git push failed (remote rejected)"
-    )
+    assert summaries[-1] == "**[Pr]** Pull request failed: git push failed (remote rejected)"
 
 
 def test_create_or_update_pr_api_failure(monkeypatch, base_state):
@@ -86,10 +83,7 @@ def test_create_or_update_pr_api_failure(monkeypatch, base_state):
     success, summaries = pr_module._create_or_update_pr(base_state.copy())  # pylint: disable=protected-access
 
     assert success is False
-    assert (
-        summaries[-1]
-        == "**[Pr]** Pull request creation/update failed: validation failed"
-    )
+    assert summaries[-1] == "**[Pr]** Pull request creation/update failed: validation failed"
 
 
 def test_create_or_update_pr_missing_url(monkeypatch, base_state):

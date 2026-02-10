@@ -32,7 +32,9 @@ def test_update_db_task_update_existing(app_context, db_session):
     """Test updating an existing task."""
     create_db_task(task_id="task123", task_name="Original Name")
 
-    updated_task = update_db_task(task_id="task123", task_name="Updated Name")
+    updated_task = update_db_task(
+        task_id="task123", task_name="Updated Name", branch_name="feature/updated"
+    )
 
     assert updated_task.task_name == "Updated Name"
     assert updated_task.branch_name == "feature/updated"
@@ -45,7 +47,7 @@ def test_get_task_by_id_exists(app_context, db_session):
     """Test getting a task by ID when it exists."""
     create_db_task(task_id="task123", task_name="Test Task")
 
-    task = read_db_task("task123")
+    task = read_db_task(task_id="task123")
     assert task is not None
     assert task.task_id == "task123"
     assert task.task_name == "Test Task"
@@ -53,7 +55,7 @@ def test_get_task_by_id_exists(app_context, db_session):
 
 def test_get_task_by_id_not_exists(app_context, db_session):
     """Test getting a task by ID when it doesn't exist."""
-    task = read_db_task("nonexistent")
+    task = read_db_task(task_id="nonexistent")
     assert task is None
 
 
