@@ -1,15 +1,18 @@
 """Service for GitHub Pull Request operations."""
 
 import logging
-import subprocess
-import re
 import json
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 import requests
 
-from app.agent.utils import get_codespace, get_current_git_branch
+from app.agent.services.git_workspace import (
+    get_current_branch,
+    get_remote_url,
+    parse_github_owner_repo,
+)
+from app.agent.utils import get_codespace
 from app.core.config import get_env_settings
 
 logger = logging.getLogger(__name__)
@@ -294,21 +297,10 @@ def get_github_repo_info() -> tuple[Optional[str], Optional[str]]:
     Returns:
         Tuple of (owner, repo)
     """
-    try:
-        remote_url = subprocess.check_output(
-            ["git", "remote", "get-url", "origin"],
-            cwd=get_codespace(),
-            text=True,
-        ).strip()
-
-        match = re.search(r"github\.com[:/](.+)/(.+?)(\.git)?$", remote_url)
-        if not match:
-            return None, None
-
-        owner, repo = match.group(1), match.group(2)
-        return owner, repo
-    except subprocess.CalledProcessError:
+    remote_url = get_remote_url(get_codespace())
+    if not remote_url:
         return None, None
+    return parse_github_owner_repo(remote_url)
 
 
 def get_github_repo_info_with_branch() -> tuple[Optional[str], Optional[str], Optional[str]]:
@@ -318,26 +310,19 @@ def get_github_repo_info_with_branch() -> tuple[Optional[str], Optional[str], Op
     Returns:
         Tuple of (owner, repo, branch)
     """
-    try:
-        remote_url = subprocess.check_output(
-            ["git", "remote", "get-url", "origin"],
-            cwd=get_codespace(),
-            text=True,
-        ).strip()
-
-        match = re.search(r"github\.com[:/](.+)/(.+?)(\.git)?$", remote_url)
-        if not match:
-            return None, None, None
-
-        owner, repo = match.group(1), match.group(2)
-        current_branch = get_current_git_branch()
-
-        if not current_branch:
-            return None, None, None
-
-        return owner, repo, current_branch
-    except subprocess.CalledProcessError:
+    remote_url = get_remote_url(get_codespace())
+    if not remote_url:
         return None, None, None
+
+    owner, repo = parse_github_owner_repo(remote_url)
+    if not owner or not repo:
+        return None, None, None
+
+    current_branch = get_current_branch(get_codespace())
+    if not current_branch:
+        return None, None, None
+
+    return owner, repo, current_branch
 
 
 def fetch_pr_reviews(

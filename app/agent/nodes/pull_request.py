@@ -1,16 +1,21 @@
 """Create a pull request node"""
 
 import logging
-import subprocess
 from typing import Any, Dict
 
+from app.agent.services.git_workspace import (
+    commit as git_commit,
+    has_changes as git_has_changes,
+    push as git_push,
+    stage_all as git_stage_all,
+)
 from app.agent.services.summaries import (
     append_agent_summary,
     build_agent_summary_markdown,
 )
 from app.agent.services.pull_request import create_or_update_pr
 from app.agent.state import AgentState
-from app.agent.utils import get_codespace, get_current_git_branch
+from app.agent.utils import get_codespace
 from app.core.config import get_env_settings
 from app.core.db_task_utils import update_db_task
 
@@ -50,7 +55,7 @@ def _append_summary(
 
 def _create_or_update_pr(state: AgentState):
     summary_entries = list(state.get("agent_summary") or [])
-    has_changes, _ = _execute_git_status()
+    has_changes = _check_has_changes()
     failure_detected = False
     failure_reason = "Pull request skipped"
 
@@ -59,11 +64,11 @@ def _create_or_update_pr(state: AgentState):
         logger.info("No changes detected, skipping Git workflow")
         failure_detected = True
         failure_reason = "Pull request skipped: no changes detected"
-    elif not _execute_git_add():
+    elif not _stage_all():
         logger.error("Git add failed, skipping remaining Git operations")
         failure_detected = True
         failure_reason = "Pull request failed: git add failed"
-    elif not _execute_git_commit(commit_message):
+    elif not _commit(commit_message):
         logger.error("Git commit failed, skipping remaining Git operations")
         failure_detected = True
         failure_reason = "Pull request failed: git commit failed"
@@ -72,7 +77,7 @@ def _create_or_update_pr(state: AgentState):
         summary_entries = _append_summary(summary_entries, state, "PR", failure_reason)
         return False, summary_entries
 
-    push_success, push_msg = _execute_git_push()
+    push_success, push_msg = _push()
     if not push_success:
         logger.error("Git push failed: %s", push_msg)
         failure_reason = f"Pull request failed: git push failed ({push_msg})"
@@ -239,121 +244,24 @@ def _build_pr_inputs(state: AgentState) -> tuple[str, str]:
     return pr_title, pr_body
 
 
-def _execute_git_status() -> tuple[bool, str]:
-    """
-    Executes git status and checks if there are changes.
-    Returns (has_changes, output).
-    """
-    try:
-        result = subprocess.run(
-            ["git", "status", "--porcelain"],
-            cwd=get_codespace(),
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        has_changes = bool(result.stdout.strip())
-        logger.info("Git status check: %s changes found", "Some" if has_changes else "No")
-        return has_changes, result.stdout
-    except subprocess.CalledProcessError as e:
-        logger.error("Git status failed: %s", e.stderr)
-        return False, f"Error: {e.stderr}"
+def _check_has_changes() -> bool:
+    """Check if there are uncommitted changes in the codespace."""
+    result = git_has_changes(get_codespace())
+    logger.info("Git status check: %s changes found", "Some" if result else "No")
+    return result
 
 
-def _execute_git_add() -> bool:
-    """
-    Adds all changes to staging area.
-    Returns True if successful.
-    """
-    try:
-        subprocess.run(
-            ["git", "add", "."],
-            cwd=get_codespace(),
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        logger.info("Git add successful")
-        return True
-    except subprocess.CalledProcessError as e:
-        logger.error("Git add failed: %s", e.stderr)
-        return False
+def _stage_all() -> bool:
+    """Stage all changes in the codespace."""
+    return git_stage_all(get_codespace())
 
 
-def _execute_git_commit(message: str) -> bool:
-    """
-    Commits staged changes with the given message.
-    Returns True if successful.
-    """
-    try:
-        subprocess.run(
-            ["git", "config", "user.email", "agent@bot.com"],
-            cwd=get_codespace(),
-            check=True,
-        )
-        subprocess.run(
-            ["git", "config", "user.name", "Coding Agent"],
-            cwd=get_codespace(),
-            check=True,
-        )
-        subprocess.run(
-            ["git", "commit", "-m", message],
-            cwd=get_codespace(),
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        logger.info("Git commit successful: %s", message)
-        return True
-    except subprocess.CalledProcessError as e:
-        logger.error("Git commit failed: %s", e.stderr)
-        return False
+def _commit(message: str) -> bool:
+    """Commit staged changes with the given message."""
+    return git_commit(get_codespace(), message)
 
 
-def _execute_git_push() -> tuple[bool, str]:
-    """
-    Pushes the current branch to origin.
-    Returns (success, message).
-    """
+def _push() -> tuple[bool, str]:
+    """Push the current branch to origin."""
     token = get_env_settings().github_token
-    if not token:
-        logger.error("GITHUB_TOKEN missing for git push")
-        return False, "ERROR: GITHUB_TOKEN missing"
-
-    try:
-        current_branch = get_current_git_branch()
-        if not current_branch:
-            logger.error("Could not determine current branch")
-            return False, "ERROR: Could not determine current branch"
-
-        if current_branch in ["main", "master"]:
-            logger.warning("Attempted to push to default branch '%s'", current_branch)
-            return False, f"ERROR: Cannot push to default branch '{current_branch}'"
-
-        current_url = subprocess.check_output(
-            ["git", "remote", "get-url", "origin"],
-            cwd=get_codespace(),
-            text=True,
-        ).strip()
-
-        if "https://" in current_url and "@" not in current_url:
-            auth_url = current_url.replace("https://", f"https://{token}@")
-            subprocess.run(
-                ["git", "remote", "set-url", "origin", auth_url],
-                cwd=get_codespace(),
-                check=True,
-            )
-
-        result = subprocess.run(
-            ["git", "push", "-u", "origin", "HEAD"],
-            cwd=get_codespace(),
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        logger.info("Git push successful")
-        return True, result.stdout
-    except subprocess.CalledProcessError as e:
-        safe_stderr = e.stderr.replace(token, "***") if token else e.stderr
-        logger.error("Git push failed: %s", safe_stderr)
-        return False, f"Push FAILED: {safe_stderr}"
+    return git_push(get_codespace(), token)
