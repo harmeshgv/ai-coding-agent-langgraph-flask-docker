@@ -33,10 +33,16 @@ web_bp = Blueprint("web", __name__, template_folder="templates", static_folder="
 
 
 @web_bp.route("/", methods=["GET"])
+def landing():
+    """Handles the landing page."""
+    return render_template("landing.html")
+
+
+@web_bp.route("/dashboard", methods=["GET"])
 def dashboard():
     """Handles the main dashboard page."""
     context = dashboard_service.get_template_context()
-    return render_template("index.html", **context)
+    return render_template("dashboard.html", **context)
 
 
 @web_bp.route("/settings", methods=["GET", "POST"])

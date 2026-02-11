@@ -5,6 +5,18 @@
     <!-- Scrollable Content Area -->
     <div class="container container-sm flex-grow-1" style="max-width: 1000px;">
 
+        <!-- Agent Status Card -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-1">Agent Status</h5>
+                {% if agent_state.current_node %}
+                <div class="mt-2">
+                    <span class="badge bg-primary ms-2">{{ agent_state.current_node }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
         <!-- Task Card -->
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-body">

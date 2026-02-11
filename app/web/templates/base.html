@@ -46,11 +46,9 @@
     <div class="d-flex h-100">
         <!-- Sidebar -->
         <div class="sidebar d-flex flex-column flex-shrink-0 p-3">
-            <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+            <a href="{{ url_for('web.landing') }}"
+                class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
                 <span class="fs-4 fw-bold">CleanKoda</span>
-                {% if agent_status %}
-                <span class="badge bg-primary ms-2">{{ agent_status }}</span>
-                {% endif %}
             </a>
             <hr>
             <ul class="nav nav-pills flex-column mb-auto">
@@ -78,7 +76,7 @@
             </ul>
             <hr>
             <div class="small text-muted">
-                v0.1.0-alpha
+                v0.5.0
             </div>
         </div>
 
