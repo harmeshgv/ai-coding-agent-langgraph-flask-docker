@@ -1,20 +1,32 @@
 """Create a pull request node"""
 
 import logging
-import subprocess
 from typing import Any, Dict
 
+from app.agent.services.git_workspace import (
+    commit as git_commit,
+    has_changes as git_has_changes,
+    push as git_push,
+    stage_all as git_stage_all,
+)
 from app.agent.services.summaries import (
     append_agent_summary,
     build_agent_summary_markdown,
 )
 from app.agent.services.pull_request import create_or_update_pr
 from app.agent.state import AgentState
-from app.agent.utils import get_codespace, get_current_git_branch
+from app.agent.utils import get_codespace
 from app.core.config import get_env_settings
-from app.core.db_task_utils import update_db_task
+from app.core.localdb.db_task_utils import update_db_task
 
 logger = logging.getLogger(__name__)
+
+
+ROLE_PREFIX_MAP = {
+    "coder": "feat",
+    "bugfixer": "fix",
+    "analyst": "chore",
+}
 
 
 def create_pull_request_node():
@@ -43,18 +55,23 @@ def _append_summary(
 
 def _create_or_update_pr(state: AgentState):
     summary_entries = list(state.get("agent_summary") or [])
-    has_changes, _ = _execute_git_status()
+
+    has_changes = git_has_changes(get_codespace())
+    logger.info("Git status check: %s changes found", "Some" if has_changes else "No")
+
     failure_detected = False
     failure_reason = "Pull request skipped"
+
+    commit_message = _generate_commit_message(state)
     if not has_changes:
         logger.info("No changes detected, skipping Git workflow")
         failure_detected = True
         failure_reason = "Pull request skipped: no changes detected"
-    elif not _execute_git_add():
+    elif not git_stage_all(work_dir=get_codespace()):
         logger.error("Git add failed, skipping remaining Git operations")
         failure_detected = True
         failure_reason = "Pull request failed: git add failed"
-    elif not _execute_git_commit("fix: automated test-driven changes"):
+    elif not git_commit(work_dir=get_codespace(), message=commit_message):
         logger.error("Git commit failed, skipping remaining Git operations")
         failure_detected = True
         failure_reason = "Pull request failed: git commit failed"
@@ -63,7 +80,9 @@ def _create_or_update_pr(state: AgentState):
         summary_entries = _append_summary(summary_entries, state, "PR", failure_reason)
         return False, summary_entries
 
-    push_success, push_msg = _execute_git_push()
+    push_success, push_msg = git_push(
+        work_dir=get_codespace(), token=get_env_settings().github_token
+    )
     if not push_success:
         logger.error("Git push failed: %s", push_msg)
         failure_reason = f"Pull request failed: git push failed ({push_msg})"
@@ -112,6 +131,82 @@ def _create_or_update_pr(state: AgentState):
     return True, summary_entries
 
 
+def _generate_commit_message(state: AgentState) -> str:
+    """Generate a concise commit message from the latest agent summary."""
+    summaries = state.get("agent_summary") or []
+    parsed_entries: list[tuple[str | None, str]] = []
+
+    for entry in summaries:
+        role, text = _parse_summary_entry(entry)
+        cleaned_text = text.strip()
+        if cleaned_text:
+            parsed_entries.append((role, cleaned_text))
+
+    summary_text = ""
+    summary_role: str | None = None
+
+    for role, text in parsed_entries:
+        if (role or "").lower() == "tester":
+            continue
+        summary_text = text
+        summary_role = role
+        break
+
+    if not summary_text:
+        return "fix: automated test-driven changes"
+
+    role = (summary_role or state.get("task_role") or "").strip().lower()
+    prefix = ROLE_PREFIX_MAP.get(role, "chore")
+
+    first_line = f"{prefix}: {summary_text}"
+    if len(first_line) > 75:
+        first_line = first_line[:72].rstrip() + "..."
+
+    if role in {"coder", "bugfixer"}:
+        role_entries = [
+            text for entry_role, text in parsed_entries if (entry_role or "").lower() == role
+        ]
+        details = _build_role_details(role_entries)
+        if details:
+            return f"{first_line}\n\n{details}"
+
+    return first_line
+
+
+def _build_role_details(role_entries: list[str]) -> str | None:
+    """Return formatted detail bullet list for role entries."""
+    if len(role_entries) <= 1:
+        return None
+
+    filtered_entries: list[str] = []
+    previous_text: str | None = None
+    for current_text in role_entries:
+        if current_text and current_text != previous_text:
+            filtered_entries.append(current_text)
+        previous_text = current_text
+
+    if not filtered_entries:
+        return None
+
+    return "\n".join(f"- {text}" for text in filtered_entries)
+
+
+def _parse_summary_entry(entry: str) -> tuple[str | None, str]:
+    """Return (role, summary_text) from a formatted summary entry."""
+    if not entry:
+        return None, ""
+
+    trimmed = entry.strip()
+    if trimmed.startswith("**["):
+        closing = trimmed.find("]**")
+        if closing != -1:
+            role = trimmed[3:closing].strip() or None
+            summary_text = trimmed[closing + 3 :].strip()
+            return (role.lower() if role else None), summary_text
+
+    return None, trimmed
+
+
 def _extract_pr_number_from_url(pr_url: str) -> int | None:
     """
     Extract the PR number from a GitHub PR URL.
@@ -142,130 +237,12 @@ def _build_pr_inputs(state: AgentState) -> tuple[str, str]:
         line_separator="\n",
     )
     pr_body_summary = aggregated_summary
-    task_title = state.get("task_name") or ""
+
+    task = state.get("task")
+    task_title = task.name
     pr_title = task_title or "Automated Fix"
     pr_body = "Automated changes after successful tests."
     if pr_body_summary:
         pr_body += f"\n\n{pr_body_summary}"
 
     return pr_title, pr_body
-
-
-def _execute_git_status() -> tuple[bool, str]:
-    """
-    Executes git status and checks if there are changes.
-    Returns (has_changes, output).
-    """
-    try:
-        result = subprocess.run(
-            ["git", "status", "--porcelain"],
-            cwd=get_codespace(),
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        has_changes = bool(result.stdout.strip())
-        logger.info("Git status check: %s changes found", "Some" if has_changes else "No")
-        return has_changes, result.stdout
-    except subprocess.CalledProcessError as e:
-        logger.error("Git status failed: %s", e.stderr)
-        return False, f"Error: {e.stderr}"
-
-
-def _execute_git_add() -> bool:
-    """
-    Adds all changes to staging area.
-    Returns True if successful.
-    """
-    try:
-        subprocess.run(
-            ["git", "add", "."],
-            cwd=get_codespace(),
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        logger.info("Git add successful")
-        return True
-    except subprocess.CalledProcessError as e:
-        logger.error("Git add failed: %s", e.stderr)
-        return False
-
-
-def _execute_git_commit(message: str) -> bool:
-    """
-    Commits staged changes with the given message.
-    Returns True if successful.
-    """
-    try:
-        subprocess.run(
-            ["git", "config", "user.email", "agent@bot.com"],
-            cwd=get_codespace(),
-            check=True,
-        )
-        subprocess.run(
-            ["git", "config", "user.name", "Coding Agent"],
-            cwd=get_codespace(),
-            check=True,
-        )
-        subprocess.run(
-            ["git", "commit", "-m", message],
-            cwd=get_codespace(),
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        logger.info("Git commit successful: %s", message)
-        return True
-    except subprocess.CalledProcessError as e:
-        logger.error("Git commit failed: %s", e.stderr)
-        return False
-
-
-def _execute_git_push() -> tuple[bool, str]:
-    """
-    Pushes the current branch to origin.
-    Returns (success, message).
-    """
-    token = get_env_settings().github_token
-    if not token:
-        logger.error("GITHUB_TOKEN missing for git push")
-        return False, "ERROR: GITHUB_TOKEN missing"
-
-    try:
-        current_branch = get_current_git_branch()
-        if not current_branch:
-            logger.error("Could not determine current branch")
-            return False, "ERROR: Could not determine current branch"
-
-        if current_branch in ["main", "master"]:
-            logger.warning("Attempted to push to default branch '%s'", current_branch)
-            return False, f"ERROR: Cannot push to default branch '{current_branch}'"
-
-        current_url = subprocess.check_output(
-            ["git", "remote", "get-url", "origin"],
-            cwd=get_codespace(),
-            text=True,
-        ).strip()
-
-        if "https://" in current_url and "@" not in current_url:
-            auth_url = current_url.replace("https://", f"https://{token}@")
-            subprocess.run(
-                ["git", "remote", "set-url", "origin", auth_url],
-                cwd=get_codespace(),
-                check=True,
-            )
-
-        result = subprocess.run(
-            ["git", "push", "-u", "origin", "HEAD"],
-            cwd=get_codespace(),
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        logger.info("Git push successful")
-        return True, result.stdout
-    except subprocess.CalledProcessError as e:
-        safe_stderr = e.stderr.replace(token, "***") if token else e.stderr
-        logger.error("Git push failed: %s", safe_stderr)
-        return False, f"Push FAILED: {safe_stderr}"

@@ -17,7 +17,7 @@ from langgraph.graph import StateGraph
 
 from app.core.constants import TECH_STACKS
 from app.agent.graph import create_workflow
-from app.agent.integrations.mcp.adapter import McpServerClient
+from app.agent.mcp.adapter import McpServerClient
 from app.agent.runtime import RuntimeSetting, prepare_runtime
 from app.agent.services.graph_assets import save_graph_as_mermaid, save_graph_as_png
 from app.agent.utils import get_codespace, save_state_to_workspace

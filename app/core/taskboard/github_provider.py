@@ -10,13 +10,13 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional
 
-from app.agent.integrations.board_provider import (
+from app.core.taskboard.board_provider import (
     BoardComment,
     BoardProvider,
     BoardStateMove,
     BoardTask,
 )
-from app.agent.integrations.github_client import (
+from app.core.taskboard.github_client import (
     add_comment_to_issue,
     create_draft_issue,
     get_issue_comments,
@@ -27,7 +27,7 @@ from app.agent.integrations.github_client import (
     move_item_to_column,
     move_item_to_named_column,
 )
-from app.core.models import AgentSettings
+from app.core.localdb.models import AgentSettings
 
 logger = logging.getLogger(__name__)
 
@@ -149,9 +149,7 @@ class GitHubProvider(BoardProvider):
             for move in moves
         ]
 
-    async def create_task(
-        self, name: str, description: str, state_name: str
-    ) -> BoardTask:
+    async def create_task(self, name: str, description: str, state_name: str) -> BoardTask:
         """Create a new task (draft issue) in the specified state (column)."""
         result = await create_draft_issue(
             name,

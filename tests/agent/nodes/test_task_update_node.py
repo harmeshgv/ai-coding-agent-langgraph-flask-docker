@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
-from app.agent.integrations.board_provider import BoardTask
+from app.core.taskboard.board_provider import BoardTask
 from app.agent.nodes.task_update_node import (
     AGENT_DEFAULT_COMMENT,
     _build_agent_comments,
@@ -15,7 +15,7 @@ from app.agent.nodes.task_update_node import (
     create_task_update_node,
     get_agent_result,
 )
-from app.core.models import AgentSettings, TaskSystem
+from app.core.localdb.models import AgentSettings, TaskSystem
 
 
 @pytest.fixture
@@ -54,33 +54,31 @@ async def test_task_update_node_success(agent_settings, mock_board_provider):
         "messages": [],
         "agent_summary": ["Task completed successfully"],
     }
-    
+
     with patch(
         "app.agent.nodes.task_update_node.create_board_provider",
         return_value=mock_board_provider,
     ):
         task_update = create_task_update_node(agent_settings)
         result = await task_update(state)
-        
+
         assert result["task_state_id"] == "list3"
         mock_board_provider.add_comment.assert_called()
-        mock_board_provider.move_task_to_named_state.assert_called_once_with(
-            "card1", "Done"
-        )
+        mock_board_provider.move_task_to_named_state.assert_called_once_with("card1", "Done")
 
 
 @pytest.mark.asyncio
 async def test_task_update_node_no_task_id(agent_settings, mock_board_provider):
     """Test task update with no task ID."""
     state = {"task": None, "messages": []}
-    
+
     with patch(
         "app.agent.nodes.task_update_node.create_board_provider",
         return_value=mock_board_provider,
     ):
         task_update = create_task_update_node(agent_settings)
         result = await task_update(state)
-        
+
         assert result == {}
         mock_board_provider.add_comment.assert_not_called()
 
@@ -102,14 +100,14 @@ async def test_task_update_node_move_fails(agent_settings, mock_board_provider):
     mock_board_provider.move_task_to_named_state = AsyncMock(
         side_effect=ValueError("State not found")
     )
-    
+
     with patch(
         "app.agent.nodes.task_update_node.create_board_provider",
         return_value=mock_board_provider,
     ):
         task_update = create_task_update_node(agent_settings)
         result = await task_update(state)
-        
+
         assert result["task_id"] is None
 
 
@@ -128,7 +126,7 @@ def test_get_agent_result_with_finish_task():
             ],
         ),
     ]
-    
+
     result = get_agent_result(messages)
     assert result == "Task completed successfully"
 
@@ -136,7 +134,7 @@ def test_get_agent_result_with_finish_task():
 def test_get_agent_result_no_finish_task():
     """Test extracting agent result when no finish_task is present."""
     messages = [HumanMessage(content="Do something")]
-    
+
     result = get_agent_result(messages)
     assert result == AGENT_DEFAULT_COMMENT
 
@@ -161,7 +159,7 @@ def test_check_for_task_creation_found():
             ),
         ]
     }
-    
+
     was_created, info = _check_for_task_creation(state)
     assert was_created is True
     assert "Successfully created implementation task" in info
@@ -170,7 +168,7 @@ def test_check_for_task_creation_found():
 def test_check_for_task_creation_wrong_tool():
     """Test when a different tool is called."""
     state = {"messages": [HumanMessage(content="Do something")]}
-    
+
     was_created, info = _check_for_task_creation(state)
     assert was_created is False
     assert info is None
@@ -182,7 +180,7 @@ def test_build_agent_comments_with_summary():
         "messages": [],
         "agent_summary": ["Analysis complete", "Code updated"],
     }
-    
+
     comments = _build_agent_comments(state)
     assert len(comments) == 2
     assert "Analysis complete" in comments[0]
@@ -192,7 +190,7 @@ def test_build_agent_comments_with_summary():
 def test_build_agent_comments_no_summary():
     """Test building agent comments without summary entries."""
     state = {"messages": [], "agent_summary": []}
-    
+
     comments = _build_agent_comments(state)
     assert len(comments) == 1
     assert comments[0] == AGENT_DEFAULT_COMMENT
@@ -219,7 +217,7 @@ def test_build_agent_comments_with_card_creation():
             ),
         ],
     }
-    
+
     comments = _build_agent_comments(state)
     assert len(comments) == 2
     assert "Analysis complete" in comments[0]

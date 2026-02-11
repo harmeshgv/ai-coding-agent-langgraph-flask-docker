@@ -2,18 +2,17 @@
 
 import logging
 import re
-import subprocess
 from typing import Any, Dict, Optional
 
 from flask import current_app
 from git import Repo
 
-from app.agent.integrations.board_provider import BoardTask
-from app.agent.services.git_workspace import checkout_branch
+from app.core.taskboard.board_provider import BoardTask
+from app.agent.services.git_workspace import checkout_branch, get_current_branch
 from app.agent.state import AgentState
 from app.agent.utils import get_codespace
-from app.core.models import AgentSettings
-from app.core.db_task_utils import read_db_task, update_db_task
+from app.core.localdb.models import AgentSettings
+from app.core.localdb.db_task_utils import read_db_task, update_db_task
 
 logger = logging.getLogger(__name__)
 
@@ -77,11 +76,7 @@ async def checkout_task_branch(
         else:
             logger.warning("No github_repo_url configured, skipping checkout")
 
-        real_git_branch = subprocess.check_output(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            cwd=get_codespace(),
-            text=True,
-        ).strip()
+        real_git_branch = get_current_branch(get_codespace())
         logger.info("Current branch: %s", real_git_branch)
 
 
@@ -186,9 +181,5 @@ async def checkout_branch_for_task(
 
     update_db_task(task_id, branch_name=branch_name, github_repo_url=github_repo_url)
 
-    real_git_branch = subprocess.check_output(
-        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-        cwd=get_codespace(),
-        text=True,
-    ).strip()
+    real_git_branch = get_current_branch(get_codespace())
     logger.info("Current branch after checkout: %s", real_git_branch)

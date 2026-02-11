@@ -8,7 +8,7 @@ import pytest
 
 import app.agent.graph as graph_module
 from app.agent.runtime import RuntimeSetting
-from app.core.models import AgentSettings
+from app.core.localdb.models import AgentSettings
 
 
 class RecordingStateGraph:
@@ -115,9 +115,7 @@ def test_create_workflow_registers_all_nodes(workflow_mocks):
 
     router_mapping = dict(
         next(
-            mapping.items()
-            for source, mapping in workflow.conditional_edges
-            if source == "router"
+            mapping.items() for source, mapping in workflow.conditional_edges if source == "router"
         )  # type: ignore[stop-iteration]
     )
     assert router_mapping == {
