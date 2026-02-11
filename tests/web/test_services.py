@@ -56,7 +56,8 @@ class TestDashboardService:
 
             with patch.dict(os.environ, {"WORKSPACE": tmpdir}):
                 set_env_settings(None)  # Reset to reload from new environment
-                result = dashboard_service.get_template_context()
+                with patch("app.web.services.dashboard_service.read_db_task", return_value=None):
+                    result = dashboard_service.get_template_context()
 
             assert "plan_content" in result
             assert "# My Plan" in result["plan_content"]

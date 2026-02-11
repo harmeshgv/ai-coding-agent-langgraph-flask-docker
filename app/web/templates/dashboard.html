@@ -1,0 +1,129 @@
+{% extends "base.html" %} {% block content %}
+<div id="dashboard-content" hx-get="{{ url_for('web.dashboard') }}" hx-trigger="every 1s" hx-select="#dashboard-content"
+    hx-target="#dashboard-content" hx-swap="outerHTML" class="h-100 d-flex flex-column">
+
+    <!-- Scrollable Content Area -->
+    <div class="container container-sm flex-grow-1" style="max-width: 1000px;">
+
+        <!-- Agent Status Card -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-1">Agent Status</h5>
+                {% if agent_state.current_node %}
+                <div class="mt-2">
+                    <span class="badge bg-primary ms-2">{{ agent_state.current_node }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Task Card -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-1">{{ task.name if task else 'No Active Task' }}</h5>
+                <p class="card-text text-muted mb-0">{{ task.description if task else 'Waiting for task...' }}</p>
+                {% if agent_state.task_skill_level %}
+                <div class="mt-2">
+                    <span class="badge bg-secondary">{{ agent_state.task_skill_level }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Plan Card -->
+        <div class="card shadow-sm border-0 mb-5">
+            <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0 fw-bold">Implementation Plan</h5>
+                <div class="d-flex gap-2">
+                    {% if plan_exists and db_plan_state != 'approved' %}
+                    <button id="btn-reject" class="btn btn-outline-danger">
+                        <i class="bi bi-x-circle me-1"></i>Reject
+                    </button>
+                    <button id="btn-approve" class="btn btn-success">
+                        <i class="bi bi-check-circle me-1"></i>Approve
+                    </button>
+                    {% else %}
+                    <button id="btn-reject" class="btn btn" disabled>
+                        <i class="bi bi-x-circle me-1"></i>Reject
+                    </button>
+                    <button id="btn-approve" class="btn btn" disabled>
+                        <i class="bi bi-check-circle me-1"></i>Approve
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="plan-markdown font-monospace">
+                    {{ plan_html | safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .plan-markdown h1 {
+        font-size: 1.5rem;
+    }
+
+    .plan-markdown h2 {
+        font-size: 1.3rem;
+    }
+
+    .plan-markdown h3 {
+        font-size: 1.1rem;
+    }
+
+    .plan-markdown h4 {
+        font-size: 1.0rem;
+    }
+
+    .plan-markdown code {
+        color: inherit;
+        background-color: rgba(255, 255, 255, 0.1);
+        padding: 0.2rem 0.4rem;
+        border-radius: 0.25rem;
+    }
+
+    .plan-markdown pre code {
+        background-color: transparent;
+        padding: 0;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const reviewPlan = (state) => {
+            fetch('/task/review_plan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ plan_state: state }),
+            })
+                .then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        alert('Failed to update plan state.');
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    alert('An error occurred.');
+                });
+        };
+
+        // Use event delegation for buttons that might be replaced by HTMX
+        document.body.addEventListener('click', function (event) {
+            if (event.target && event.target.closest('#btn-approve')) {
+                reviewPlan('approved');
+            }
+            if (event.target && event.target.closest('#btn-reject')) {
+                reviewPlan('rejected');
+            }
+        });
+    });
+</script>
+{% endblock %}
