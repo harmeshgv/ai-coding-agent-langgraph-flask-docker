@@ -21,7 +21,7 @@ from langchain_openai import ChatOpenAI
 from pydantic import SecretStr
 
 from app.core.config import get_env_settings
-from app.core.models import AgentSettings
+from app.core.localdb.models import AgentSettings
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +33,7 @@ def _create_openai_llm(model: str, temperature: float) -> BaseChatModel:
 
 def _create_mistral_llm(model: str, temperature: float) -> BaseChatModel:
     api_key = get_env_settings().require_llm_api_key("mistral")
-    return ChatMistralAI(
-        model_name=model, temperature=temperature, api_key=SecretStr(api_key)
-    )
+    return ChatMistralAI(model_name=model, temperature=temperature, api_key=SecretStr(api_key))
 
 
 def _create_google_llm(model: str, temperature: float) -> BaseChatModel:

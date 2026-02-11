@@ -10,7 +10,7 @@ from typing import Any, Dict
 from flask import request
 
 from app.core.config import get_env_settings
-from app.core.models import AgentSettings, TaskSystem
+from app.core.localdb.models import AgentSettings, TaskSystem
 from app.web.schemas.settings_schema import (
     GitHubConfigSchema,
     JiraConfigSchema,
@@ -66,9 +66,7 @@ def form_to_schema() -> SettingsFormSchema:
     return SettingsFormSchema(
         task_system_type=task_system_type,
         agent_skill_level=request.form.get("agent_skill_level"),
-        polling_interval_seconds=int(
-            request.form.get("polling_interval_seconds", "60")
-        ),
+        polling_interval_seconds=int(request.form.get("polling_interval_seconds", "60")),
         repo_type=request.form.get("repo_type", "GITHUB"),
         github_repo_url=request.form.get("github_repo_url"),
         is_active="is_active" in request.form,
@@ -79,9 +77,7 @@ def form_to_schema() -> SettingsFormSchema:
     )
 
 
-def schema_to_model(
-    schema: SettingsFormSchema, settings: AgentSettings
-) -> AgentSettings:
+def schema_to_model(schema: SettingsFormSchema, settings: AgentSettings) -> AgentSettings:
     """Apply schema values to an AgentSettings model.
 
     Args:
@@ -117,9 +113,7 @@ def _apply_llm_config(llm_schema: LLMConfigSchema, settings: AgentSettings) -> N
     settings.llm_temperature = llm_schema.temperature
 
 
-def _apply_trello_config(
-    trello_schema: TrelloConfigSchema, settings: AgentSettings
-) -> None:
+def _apply_trello_config(trello_schema: TrelloConfigSchema, settings: AgentSettings) -> None:
     """Apply Trello configuration from schema to model."""
     task_system = _get_or_create_task_system(settings, "trello")
 
@@ -133,9 +127,7 @@ def _apply_trello_config(
     task_system.state_in_review = trello_schema.in_review_list
 
 
-def _apply_github_config(
-    github_schema: GitHubConfigSchema, settings: AgentSettings
-) -> None:
+def _apply_github_config(github_schema: GitHubConfigSchema, settings: AgentSettings) -> None:
     """Apply GitHub Projects configuration from schema to model."""
     task_system = _get_or_create_task_system(settings, "github")
 

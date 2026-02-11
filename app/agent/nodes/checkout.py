@@ -7,12 +7,12 @@ from typing import Any, Dict, Optional
 from flask import current_app
 from git import Repo
 
-from app.agent.integrations.board_provider import BoardTask
+from app.core.taskboard.board_provider import BoardTask
 from app.agent.services.git_workspace import checkout_branch, get_current_branch
 from app.agent.state import AgentState
 from app.agent.utils import get_codespace
-from app.core.models import AgentSettings
-from app.core.db_task_utils import read_db_task, update_db_task
+from app.core.localdb.models import AgentSettings
+from app.core.localdb.db_task_utils import read_db_task, update_db_task
 
 logger = logging.getLogger(__name__)
 

@@ -15,7 +15,7 @@ from app.agent.state import AgentStack
 from app.agent.system_mappings import MCP_SYSTEM_DEFINITIONS
 from app.agent.utils import get_codespace, get_workbench
 from app.core.config import get_env_settings
-from app.core.models import AgentSettings
+from app.core.localdb.models import AgentSettings
 
 logger = logging.getLogger(__name__)
 

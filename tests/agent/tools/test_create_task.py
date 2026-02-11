@@ -6,12 +6,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import anyio
 
-from app.agent.integrations.board_provider import BoardTask
+from app.core.taskboard.board_provider import BoardTask
 from app.agent.tools.create_task import create_task_tool
 
 
 def test_create_task_tool_creates_card_successfully():
     """Test that the tool creates a task successfully with valid config."""
+
     async def _test():
         settings = {
             "board_provider": "trello",
@@ -58,6 +59,7 @@ def test_create_task_tool_creates_card_successfully():
 
 def test_create_task_tool_handles_missing_target_state():
     """Test that the tool handles missing target list configuration."""
+
     async def _test():
         settings = {
             "board_provider": "trello",
@@ -78,6 +80,7 @@ def test_create_task_tool_handles_missing_target_state():
 
 def test_create_task_tool_handles_value_error():
     """Test that the tool handles ValueError from board provider."""
+
     async def _test():
         settings = {
             "board_provider": "trello",
@@ -109,6 +112,7 @@ def test_create_task_tool_handles_value_error():
 
 def test_create_task_tool_handles_runtime_error():
     """Test that the tool handles RuntimeError from board provider."""
+
     async def _test():
         settings = {
             "board_provider": "trello",
@@ -151,6 +155,7 @@ def test_create_task_tool_has_correct_metadata():
 
 def test_create_task_tool_binds_sys_config_and_target_state():
     """Test that the factory function correctly binds sys_config and target state."""
+
     async def _test():
         settings_1 = {"board_provider": "trello"}
         settings_2 = {"board_provider": "trello"}
@@ -163,7 +168,7 @@ def test_create_task_tool_binds_sys_config_and_target_state():
             state_name="List A",
         )
         mock_task_1.url = "https://trello.com/c/task123"
-        
+
         mock_task_2 = BoardTask(
             id="task456",
             name="Task 2",
@@ -175,7 +180,7 @@ def test_create_task_tool_binds_sys_config_and_target_state():
 
         mock_provider_1 = MagicMock()
         mock_provider_1.create_task = AsyncMock(return_value=mock_task_1)
-        
+
         mock_provider_2 = MagicMock()
         mock_provider_2.create_task = AsyncMock(return_value=mock_task_2)
 

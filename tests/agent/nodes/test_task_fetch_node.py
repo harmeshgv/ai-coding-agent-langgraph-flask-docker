@@ -7,16 +7,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.agent.integrations.board_provider import BoardComment, BoardTask
+from app.core.taskboard.board_provider import BoardComment, BoardTask
 from app.agent.nodes.task_fetch_node import (
     create_task_fetch_node,
     fetch_task_from_state,
 )
-from app.agent.services.tasks_services import (
+from app.core.task_utils import (
     filter_comments_between_timestamps,
     get_latest_move_to_in_progress,
 )
-from app.core.models import AgentSettings, TaskSystem
+from app.core.localdb.models import AgentSettings, TaskSystem
 
 
 @pytest.fixture
@@ -220,7 +220,7 @@ async def test_task_fetch_node_no_cards(agent_settings, mock_board_provider):
 @pytest.mark.asyncio
 async def test_task_fetch_node_with_comments(agent_settings, mock_board_provider):
     """Test task fetch with comments when task is already in In Progress (returned from review)."""
-    from app.core.models import Task
+    from app.core.localdb.models import Task
 
     # Create a mock db_task to simulate an existing task
     mock_db_task = Task(
@@ -280,7 +280,7 @@ async def test_task_fetch_node_with_comments(agent_settings, mock_board_provider
 @pytest.mark.asyncio
 async def test_task_fetch_node_no_comments_from_todo(agent_settings, mock_board_provider):
     """Test that comments are NOT included when task is picked from To Do (not from review)."""
-    from app.agent.integrations.board_provider import BoardStateMove
+    from app.core.taskboard.board_provider import BoardStateMove
 
     # Task is in "To Do" state (not returned from review)
     mock_board_provider.get_tasks_from_state = AsyncMock(
@@ -384,7 +384,7 @@ async def test_fetch_task_from_state_not_found(mock_board_provider):
 @pytest.mark.asyncio
 async def test_get_latest_move_to_in_progress(mock_board_provider):
     """Test getting latest move from review to in-progress."""
-    from app.agent.integrations.board_provider import BoardStateMove
+    from app.core.taskboard.board_provider import BoardStateMove
 
     mock_moves = [
         BoardStateMove(

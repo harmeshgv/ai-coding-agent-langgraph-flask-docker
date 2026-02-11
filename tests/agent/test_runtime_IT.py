@@ -6,7 +6,7 @@ from flask import Flask
 
 from app.agent.runtime import RuntimeSetting, prepare_runtime
 from app.core.extensions import db
-from app.core.models import AgentSettings
+from app.core.localdb.models import AgentSettings
 
 
 def _create_app(database_uri: str) -> Flask:

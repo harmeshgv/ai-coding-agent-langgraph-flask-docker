@@ -7,11 +7,11 @@ separating concerns from the route handlers and database operations.
 import logging
 from typing import Any, Dict, Optional, Tuple
 
-from app.agent.integrations.github_client import get_project_id_sync
+from app.core.taskboard.github_client import get_project_id_sync
 from app.core.config import get_env_settings
 from app.core.constants import LLM_PROVIDER_API_ENV
 from app.core.extensions import db
-from app.core.models import AgentSettings
+from app.core.localdb.models import AgentSettings
 from app.web.mappers import settings_mapper
 from app.web.schemas.settings_schema import SettingsFormSchema
 
@@ -57,9 +57,7 @@ def save_settings(schema: SettingsFormSchema, settings: AgentSettings) -> AgentS
     return settings
 
 
-def _fetch_github_project_id(
-    schema: SettingsFormSchema, setting: AgentSettings
-) -> None:
+def _fetch_github_project_id(schema: SettingsFormSchema, setting: AgentSettings) -> None:
     """Fetch and store GitHub project ID if owner and number are provided.
 
     Args:
@@ -95,9 +93,7 @@ def _fetch_github_project_id(
 
     try:
         api_token = github_config.api_token
-        project_id = get_project_id_sync(
-            project_owner, project_number, base_url, api_token
-        )
+        project_id = get_project_id_sync(project_owner, project_number, base_url, api_token)
         if github_task_system:
             github_task_system.board_id = project_id
             logger.info("GitHub project ID fetched and stored: %s", project_id)

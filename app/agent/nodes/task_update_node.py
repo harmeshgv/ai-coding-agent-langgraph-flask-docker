@@ -12,11 +12,11 @@ from typing import Optional
 
 from langchain_core.messages import AIMessage, ToolMessage
 
-from app.agent.integrations.board_factory import create_board_provider
-from app.agent.integrations.board_provider import BoardTask
+from app.core.taskboard.board_factory import create_board_provider
+from app.core.taskboard.board_provider import BoardTask
 from app.agent.services.summaries import get_agent_summary_entries
 from app.agent.state import AgentState
-from app.core.models import AgentSettings
+from app.core.localdb.models import AgentSettings
 
 AGENT_DEFAULT_COMMENT = "Task completed by AI Agent."
 

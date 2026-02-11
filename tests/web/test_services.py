@@ -7,7 +7,7 @@ import tempfile
 from unittest.mock import patch
 
 from app.core.extensions import db
-from app.core.models import AgentSettings, TaskSystem
+from app.core.localdb.models import AgentSettings, TaskSystem
 from app.web.schemas.settings_schema import (
     LLMConfigSchema,
     SettingsFormSchema,
@@ -21,7 +21,7 @@ class TestDashboardService:
     def test_get_plan_content_returns_file_content(self):
         """Should return content of plan.md when it exists."""
         from app.core.config import set_env_settings
-        
+
         with tempfile.TemporaryDirectory() as tmpdir:
             plan_path = os.path.join(tmpdir, "plan.md")
             with open(plan_path, "w", encoding="utf-8") as f:
@@ -37,7 +37,7 @@ class TestDashboardService:
     def test_get_plan_content_returns_default_when_missing(self):
         """Should return default message when plan.md doesn't exist."""
         from app.core.config import set_env_settings
-        
+
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch.dict(os.environ, {"WORKSPACE": tmpdir}):
                 set_env_settings(None)  # Reset to reload from new environment
@@ -48,7 +48,7 @@ class TestDashboardService:
     def test_get_template_context_includes_plan_content(self):
         """Template context should include plan_content."""
         from app.core.config import set_env_settings
-        
+
         with tempfile.TemporaryDirectory() as tmpdir:
             plan_path = os.path.join(tmpdir, "plan.md")
             with open(plan_path, "w", encoding="utf-8") as f:
@@ -158,12 +158,9 @@ class TestSettingsService:
     def test_check_missing_provider_env_returns_env_name_when_missing(self, app):
         """Should return env var name when missing."""
         from app.core.config import set_env_settings
-        
+
         # Clear only OPENAI_API_KEY, keep required vars
-        env_without_openai = {
-            k: v for k, v in os.environ.items() 
-            if k != "OPENAI_API_KEY"
-        }
+        env_without_openai = {k: v for k, v in os.environ.items() if k != "OPENAI_API_KEY"}
         with patch.dict(os.environ, env_without_openai, clear=True):
             set_env_settings(None)  # Reset to reload from new environment
             result = settings_service._check_missing_provider_env("openai")
@@ -172,7 +169,7 @@ class TestSettingsService:
     def test_check_missing_provider_env_returns_none_when_present(self, app):
         """Should return None when env var is present."""
         from app.core.config import set_env_settings
-        
+
         with patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"}):
             set_env_settings(None)  # Reset to reload from new environment
             result = settings_service._check_missing_provider_env("openai")

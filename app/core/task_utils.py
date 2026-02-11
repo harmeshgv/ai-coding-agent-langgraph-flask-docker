@@ -5,12 +5,12 @@ from datetime import datetime
 from typing import Optional
 
 
-from app.agent.integrations.board_provider import (  # pylint: disable=unused-import
+from app.core.taskboard.board_provider import (  # pylint: disable=unused-import
     BoardProvider,
     BoardTask,
 )
 from app.agent.services.pull_request import check_pr_exists_for_branch
-from app.core.db_task_utils import read_db_task
+from app.core.localdb.db_task_utils import read_db_task
 
 logger = logging.getLogger(__name__)
 
