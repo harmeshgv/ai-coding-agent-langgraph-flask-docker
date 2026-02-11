@@ -6,12 +6,12 @@ separating concerns from the route handlers.
 
 import json
 import logging
-import markdown
 import os
+import markdown
 
 from app.agent.utils import get_workspace
 from app.core.plan_utils import get_plan, exist_plan
-from app.core.db_task_utils import read_db_task
+from app.core.localdb.db_task_utils import read_db_task
 
 logger = logging.getLogger(__name__)
 
