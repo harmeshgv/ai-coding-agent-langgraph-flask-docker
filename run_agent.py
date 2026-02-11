@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from app.agent.worker import run_agent_cycle
 from app.core.config import get_env_settings
 from app.core.extensions import db
-from app.core.models import AgentSettings
+from app.core.localdb.models import AgentSettings
 from app.core.utils import log_and_validate_env, setup_logging
 from app.web import create_app
 

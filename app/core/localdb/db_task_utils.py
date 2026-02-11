@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from app.core.extensions import db
-from app.core.models import Task
+from app.core.localdb.models import Task
 
 logger = logging.getLogger(__name__)
 

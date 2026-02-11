@@ -13,7 +13,7 @@ from typing import Any, Optional
 import httpx
 
 from app.core.config import get_env_settings
-from app.core.models import AgentSettings
+from app.core.localdb.models import AgentSettings
 
 logger = logging.getLogger(__name__)
 
@@ -133,9 +133,7 @@ async def get_project_id(
         project = data.get("data", {}).get("user", {}).get("projectV2")
 
         if project:
-            logger.info(
-                "Found user project: %s (id: %s)", project["title"], project["id"]
-            )
+            logger.info("Found user project: %s (id: %s)", project["title"], project["id"])
             return project["id"]
     except RuntimeError:
         pass
@@ -158,9 +156,7 @@ async def get_project_id(
         logger.info("Found org project: %s (id: %s)", project["title"], project["id"])
         return project["id"]
 
-    raise RuntimeError(
-        f"GitHub Project #{project_number} not found for owner '{owner}'"
-    )
+    raise RuntimeError(f"GitHub Project #{project_number} not found for owner '{owner}'")
 
 
 async def get_project_columns(agent_settings: AgentSettings) -> list[dict[str, str]]:
@@ -749,9 +745,7 @@ def get_project_id_sync(
         if "errors" not in data:
             project = data.get("data", {}).get("user", {}).get("projectV2")
             if project:
-                logger.info(
-                    "Found user project: %s (id: %s)", project["title"], project["id"]
-                )
+                logger.info("Found user project: %s (id: %s)", project["title"], project["id"])
                 return project["id"]
 
     query_org = """
@@ -786,6 +780,4 @@ def get_project_id_sync(
         logger.info("Found org project: %s (id: %s)", project["title"], project["id"])
         return project["id"]
 
-    raise RuntimeError(
-        f"GitHub Project #{project_number} not found for owner '{owner}'"
-    )
+    raise RuntimeError(f"GitHub Project #{project_number} not found for owner '{owner}'")

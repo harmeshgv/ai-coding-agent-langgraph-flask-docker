@@ -7,22 +7,22 @@ preparing them for processing by the agent.
 
 import logging
 
-from app.agent.integrations.board_factory import create_board_provider
-from app.agent.integrations.board_provider import BoardTask
+from app.core.taskboard.board_factory import create_board_provider
+from app.core.taskboard.board_provider import BoardTask
 from app.agent.services.pull_request import (
     format_pr_review_message,
     get_latest_open_pr_for_branch,
     get_latest_pr_review_status,
 )
-from app.agent.services.tasks_services import (
+from app.core.task_utils import (
     fetch_review_comments,
     fetch_task_from_state,
     move_task_to_state,
 )
 from app.agent.state import AgentState
-from app.core.models import AgentSettings, Task
+from app.core.localdb.models import AgentSettings, Task
 from app.core.plan_utils import delete_plan
-from app.core.db_task_utils import (
+from app.core.localdb.db_task_utils import (
     create_db_task,
     read_db_task,
     delete_db_task,

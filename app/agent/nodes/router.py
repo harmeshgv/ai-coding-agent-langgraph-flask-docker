@@ -15,8 +15,8 @@ from pydantic import BaseModel, Field
 from app.agent.services.message_processing import filter_messages_for_llm
 from app.agent.state import AgentState, PlanState, TaskType
 from app.agent.services.prompts import load_prompt
-from app.core.db_task_utils import read_db_task
-from app.core.models import Task
+from app.core.localdb.db_task_utils import read_db_task
+from app.core.localdb.models import Task
 
 logger = logging.getLogger(__name__)
 

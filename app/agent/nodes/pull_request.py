@@ -17,7 +17,7 @@ from app.agent.services.pull_request import create_or_update_pr
 from app.agent.state import AgentState
 from app.agent.utils import get_codespace
 from app.core.config import get_env_settings
-from app.core.db_task_utils import update_db_task
+from app.core.localdb.db_task_utils import update_db_task
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +130,7 @@ def _create_or_update_pr(state: AgentState):
     )
     return True, summary_entries
 
+
 def _generate_commit_message(state: AgentState) -> str:
     """Generate a concise commit message from the latest agent summary."""
     summaries = state.get("agent_summary") or []
@@ -163,9 +164,7 @@ def _generate_commit_message(state: AgentState) -> str:
 
     if role in {"coder", "bugfixer"}:
         role_entries = [
-            text
-            for entry_role, text in parsed_entries
-            if (entry_role or "").lower() == role
+            text for entry_role, text in parsed_entries if (entry_role or "").lower() == role
         ]
         details = _build_role_details(role_entries)
         if details:

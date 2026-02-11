@@ -11,7 +11,7 @@ import logging
 
 import httpx
 
-from app.core.models import AgentSettings
+from app.core.localdb.models import AgentSettings
 
 logger = logging.getLogger(__name__)
 

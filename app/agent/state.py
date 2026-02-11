@@ -14,7 +14,7 @@ from typing import Annotated, TypedDict
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
 
-from app.agent.integrations.board_provider import BoardTask, BoardComment
+from app.core.taskboard.board_provider import BoardTask, BoardComment
 
 
 class PlanState(StrEnum):

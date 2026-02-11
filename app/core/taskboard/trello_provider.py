@@ -10,13 +10,13 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional
 
-from app.agent.integrations.board_provider import (
+from app.core.taskboard.board_provider import (
     BoardComment,
     BoardProvider,
     BoardStateMove,
     BoardTask,
 )
-from app.agent.integrations.trello_client import (
+from app.core.taskboard.trello_client import (
     add_comment_to_trello_card,
     create_trello_card,
     get_all_trello_cards,
@@ -27,7 +27,7 @@ from app.agent.integrations.trello_client import (
     move_trello_card_to_list,
     move_trello_card_to_named_list,
 )
-from app.core.models import AgentSettings
+from app.core.localdb.models import AgentSettings
 
 logger = logging.getLogger(__name__)
 
@@ -93,9 +93,7 @@ class TrelloProvider(BoardProvider):
         try:
             trello_lists = await get_all_trello_lists(self.agent_settings)
         except Exception as exc:  # pylint: disable=broad-exception-caught
-            logger.warning(
-                "Failed to resolve Trello state name for %s: %s", state_id, exc
-            )
+            logger.warning("Failed to resolve Trello state name for %s: %s", state_id, exc)
             return ""
 
         for trello_list in trello_lists:
@@ -113,9 +111,7 @@ class TrelloProvider(BoardProvider):
     async def move_task_to_named_state(self, task_id: str, state_name: str) -> str:
         """Move a task to a state (Trello list) identified by name."""
         # state_name corresponds to Trello list_name
-        return await move_trello_card_to_named_list(
-            task_id, state_name, self.agent_settings
-        )
+        return await move_trello_card_to_named_list(task_id, state_name, self.agent_settings)
 
     async def add_comment(self, task_id: str, comment: str) -> None:
         """Add a comment to a Trello task."""
@@ -149,9 +145,7 @@ class TrelloProvider(BoardProvider):
             for move in moves
         ]
 
-    async def create_task(
-        self, name: str, description: str, state_name: str
-    ) -> BoardTask:
+    async def create_task(self, name: str, description: str, state_name: str) -> BoardTask:
         """Create a new task in the specified state (Trello list)."""
         # state_name corresponds to Trello list_name
         result = await create_trello_card(
