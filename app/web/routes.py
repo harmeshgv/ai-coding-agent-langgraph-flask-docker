@@ -174,9 +174,7 @@ async def move_task_to_in_progress(task_id: str) -> bool:
     logger.info("Moving task %s to in progress", task_id)
     agent_settings: AgentSettings = settings_service.get_or_create_settings()
     board_provider = create_board_provider(agent_settings)
-    active_task_system = agent_settings.get_active_task_system()
-    if not active_task_system:
-        logger.warning("No active task system configured")
-        return False
-    await board_provider.move_task_to_named_state(task_id, active_task_system.state_in_progress)
+    await board_provider.move_task_to_named_state(
+        task_id, state_name=board_provider.get_task_system().state_in_progress
+    )
     return True
