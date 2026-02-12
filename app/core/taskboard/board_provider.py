@@ -215,5 +215,5 @@ class BoardProvider(ABC):
         """Return provider identifier (e.g., 'trello', 'github')."""
 
     @abstractmethod
-    def get_task_system(self) -> TaskSystem | None:
+    def get_task_system(self) -> TaskSystem:
         """Return the TaskSystem configuration backing this provider."""
