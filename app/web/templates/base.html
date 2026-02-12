@@ -119,15 +119,29 @@
 
         <!-- Main Content -->
         <main class="main-content flex-grow-1 p-0 p-md-4">
+            <!-- Mobile Header -->
             <div class="d-md-none d-flex align-items-center justify-content-between p-3 border-bottom border-secondary"
                 style="background-color: #0d1117;">
-                <span class="fs-5 fw-bold text-white">CleanKoda</span>
-                <button class="btn btn-outline-secondary btn-sm" onclick="toggleSidebar()">
-                    <i class="bi bi-list fs-4"></i>
-                </button>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="fs-5 fw-bold text-white">CleanKoda</span>
+                    <span class="h5 m-0 text-light border-start border-secondary ps-3">Dashboard</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="#" class="btn btn-sm btn-outline-light">Sign up</a>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="toggleSidebar()">
+                        <i class="bi bi-list fs-4"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="p-4 p-md-0">
+                <!-- Desktop Header -->
+                <div
+                    class="d-none d-md-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-secondary">
+                    <span class="fs-4 fw-bold">Dashboard</span>
+                    <a href="#" class="btn btn-sm btn-outline-light">Sign up</a>
+                </div>
+
                 {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                 <div class="container container-sm mb-4" style="max-width: 1000px;">
