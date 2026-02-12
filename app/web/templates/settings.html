@@ -6,45 +6,54 @@
         <div class="row">
             <div class="col-md-3">
                 <div class="list-group">
-                    <a class="list-group-item list-group-item-action active mb-2" data-bs-toggle="list" href="#agent-config">Agent Configuration</a>
-                    <a class="list-group-item list-group-item-action mb-2" data-bs-toggle="list" href="#task-system">Task System</a>
-                    <a class="list-group-item list-group-item-action mb-2" data-bs-toggle="list" href="#source-code">Source Code</a>
-                    <a class="list-group-item list-group-item-action mb-2" data-bs-toggle="list" href="#llm-config">LLM Configuration</a>
+                    <a class="list-group-item list-group-item-action active" data-bs-toggle="list"
+                        href="#agent-config">Agent Configuration</a>
+                    <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#task-system">Task
+                        System</a>
+                    <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#source-code">Source
+                        Code</a>
+                    <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#llm-config">LLM
+                        Configuration</a>
                 </div>
-                <button type="submit" class="btn btn-primary w-100 py-3 mt-4">Save Settings</button>
+                <button type="submit" class="btn btn-primary w-100 py-3 mt-4 mb-4">Save Settings</button>
             </div>
             <div class="col-md-9">
                 <div class="tab-content">
                     <div class="tab-pane fade show active" id="agent-config">
                         <div class="card">
-                            <div class="card-header"><h5>Agent Configuration</h5></div>
+                            <div class="card-header">
+                                <h5>Agent Configuration</h5>
+                            </div>
                             <div class="card-body">
                                 <div class="mb-3">
-                                    <label for="polling_interval_seconds" class="form-label">Polling Interval (seconds)</label>
-                                    <input
-                                        type="number"
-                                        class="form-control"
-                                        id="polling_interval_seconds"
+                                    <label for="polling_interval_seconds" class="form-label">Polling Interval
+                                        (seconds)</label>
+                                    <input type="number" class="form-control" id="polling_interval_seconds"
                                         name="polling_interval_seconds"
-                                        value="{{ settings.polling_interval_seconds or 60 }}"
-                                        placeholder="e.g. 60"
-                                        required
-                                    />
+                                        value="{{ settings.polling_interval_seconds or 60 }}" placeholder="e.g. 60"
+                                        required />
                                 </div>
                                 <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if settings.is_active %}checked{% endif %}>
+                                    <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {%
+                                        if settings.is_active %}checked{% endif %}>
                                     <label class="form-check-label" for="is_active">Activate Agent Polling</label>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Agent Skill level</label>
                                     <div>
                                         <div class="form-check form-check-inline">
-                                            <input class="form-check-input" type="radio" name="agent_skill_level" id="agent_skill_level_junior" value="junior" {% if form_data.agent_skill_level=="junior" %}checked{% endif %}>
-                                            <label class="form-check-label" for="agent_skill_level_junior">Junior</label>
+                                            <input class="form-check-input" type="radio" name="agent_skill_level"
+                                                id="agent_skill_level_junior" value="junior" {% if
+                                                form_data.agent_skill_level=="junior" %}checked{% endif %}>
+                                            <label class="form-check-label"
+                                                for="agent_skill_level_junior">Junior</label>
                                         </div>
                                         <div class="form-check form-check-inline">
-                                            <input class="form-check-input" type="radio" name="agent_skill_level" id="agent_skill_level_senior" value="senior" {% if form_data.agent_skill_level=="senior" %}checked{% endif %}>
-                                            <label class="form-check-label" for="agent_skill_level_senior">Senior</label>
+                                            <input class="form-check-input" type="radio" name="agent_skill_level"
+                                                id="agent_skill_level_senior" value="senior" {% if
+                                                form_data.agent_skill_level=="senior" %}checked{% endif %}>
+                                            <label class="form-check-label"
+                                                for="agent_skill_level_senior">Senior</label>
                                         </div>
                                     </div>
                                 </div>
@@ -58,36 +67,14 @@
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
-                                    <label
-                                        for="task_system_type"
-                                        class="form-label"
-                                        >Active Task System</label
-                                    >
-                                    <select
-                                        class="form-select"
-                                        id="task_system_type"
-                                        name="task_system_type"
-                                    >
-                                        <option
-                                            value="TRELLO"
-                                            {%
-                                            if
-                                            settings.task_system_type=="TRELLO"
-                                            %}selected{%
-                                            endif
-                                            %}
-                                        >
+                                    <label for="task_system_type" class="form-label">Active Task System</label>
+                                    <select class="form-select" id="task_system_type" name="task_system_type">
+                                        <option value="TRELLO" {% if settings.task_system_type=="TRELLO" %}selected{%
+                                            endif %}>
                                             Trello
                                         </option>
-                                        <option
-                                            value="GITHUB"
-                                            {%
-                                            if
-                                            settings.task_system_type=="GITHUB"
-                                            %}selected{%
-                                            endif
-                                            %}
-                                        >
+                                        <option value="GITHUB" {% if settings.task_system_type=="GITHUB" %}selected{%
+                                            endif %}>
                                             GitHub Projects
                                         </option>
                                     </select>
@@ -100,37 +87,62 @@
                                         <div class="card-body">
                                             <div class="mb-3">
                                                 <label for="trello_api_key" class="form-label">Trello API Key</label>
-                                                <input type="text" class="form-control" id="trello_api_key" name="trello_api_key" value="{{ form_data.trello_api_key or '' }}" placeholder="Enter Trello API key">
+                                                <input type="text" class="form-control" id="trello_api_key"
+                                                    name="trello_api_key" value="{{ form_data.trello_api_key or '' }}"
+                                                    placeholder="Enter Trello API key">
                                             </div>
                                             <div class="mb-3">
-                                                <label for="trello_api_token" class="form-label">Trello API Token</label>
-                                                <input type="password" class="form-control" id="trello_api_token" name="trello_api_token" value="{{ form_data.trello_api_token or '' }}" placeholder="Enter Trello API token">
+                                                <label for="trello_api_token" class="form-label">Trello API
+                                                    Token</label>
+                                                <input type="password" class="form-control" id="trello_api_token"
+                                                    name="trello_api_token"
+                                                    value="{{ form_data.trello_api_token or '' }}"
+                                                    placeholder="Enter Trello API token">
                                             </div>
                                             <div class="mb-3">
                                                 <label for="trello_board_id" class="form-label">Board ID</label>
-                                                <input type="text" class="form-control" id="trello_board_id" name="trello_board_id" value="{{ form_data.trello_board_id or '' }}" placeholder="Trello board ID (e.g. 64d4...)">
+                                                <input type="text" class="form-control" id="trello_board_id"
+                                                    name="trello_board_id" value="{{ form_data.trello_board_id or '' }}"
+                                                    placeholder="Trello board ID (e.g. 64d4...)">
                                             </div>
                                             <hr>
                                             <h6 class="mb-3">Column Mapping</h6>
                                             <div class="mb-3">
                                                 <label for="trello_backlog_list" class="form-label">Backlog List</label>
-                                                <input type="text" class="form-control" id="trello_backlog_list" name="trello_backlog_list" value="{{ form_data.trello_backlog_list or '' }}" placeholder="e.g. Backlog">
+                                                <input type="text" class="form-control" id="trello_backlog_list"
+                                                    name="trello_backlog_list"
+                                                    value="{{ form_data.trello_backlog_list or '' }}"
+                                                    placeholder="e.g. Backlog">
                                             </div>
                                             <div class="mb-3">
                                                 <label for="trello_todo_list" class="form-label">Todo List</label>
-                                                <input type="text" class="form-control" id="trello_todo_list" name="trello_todo_list" value="{{ form_data.trello_todo_list or '' }}" placeholder="e.g. Todo">
+                                                <input type="text" class="form-control" id="trello_todo_list"
+                                                    name="trello_todo_list"
+                                                    value="{{ form_data.trello_todo_list or '' }}"
+                                                    placeholder="e.g. Todo">
                                             </div>
                                             <div class="mb-3">
-                                                <label for="trello_in_progress_list" class="form-label">In Progress List</label>
-                                                <input type="text" class="form-control" id="trello_in_progress_list" name="trello_in_progress_list" value="{{ form_data.trello_in_progress_list or '' }}" placeholder="e.g. In Progress">
+                                                <label for="trello_in_progress_list" class="form-label">In Progress
+                                                    List</label>
+                                                <input type="text" class="form-control" id="trello_in_progress_list"
+                                                    name="trello_in_progress_list"
+                                                    value="{{ form_data.trello_in_progress_list or '' }}"
+                                                    placeholder="e.g. In Progress">
                                             </div>
                                             <div class="mb-3">
-                                                <label for="trello_in_review_list" class="form-label">In Review List</label>
-                                                <input type="text" class="form-control" id="trello_in_review_list" name="trello_in_review_list" value="{{ form_data.trello_in_review_list or '' }}" placeholder="e.g. In Review">
+                                                <label for="trello_in_review_list" class="form-label">In Review
+                                                    List</label>
+                                                <input type="text" class="form-control" id="trello_in_review_list"
+                                                    name="trello_in_review_list"
+                                                    value="{{ form_data.trello_in_review_list or '' }}"
+                                                    placeholder="e.g. In Review">
                                             </div>
                                             <div class="mb-3">
                                                 <label for="trello_base_url" class="form-label">Trello Base URL</label>
-                                                <input type="text" class="form-control" id="trello_base_url" name="trello_base_url" value="{{ form_data.trello_base_url or 'https://api.trello.com' }}" placeholder="https://api.trello.com/1">
+                                                <input type="text" class="form-control" id="trello_base_url"
+                                                    name="trello_base_url"
+                                                    value="{{ form_data.trello_base_url or 'https://api.trello.com' }}"
+                                                    placeholder="https://api.trello.com/1">
                                             </div>
                                         </div>
                                     </div>
@@ -140,45 +152,84 @@
                                         </div>
                                         <div class="card-body">
                                             <div class="mb-3">
-                                                <label for="github_api_token" class="form-label">GitHub API Token (PAT)</label>
-                                                <input type="password" class="form-control" id="github_api_token" name="github_api_token" value="{{ form_data.github_api_token or '' }}" placeholder="Enter GitHub PAT">
-                                                <small class="form-text text-muted">Personal Access Token for board operations. Leave the content as is to use the GITHUB_TOKEN environment variable.</small>
+                                                <label for="github_api_token" class="form-label">GitHub API Token
+                                                    (PAT)</label>
+                                                <input type="password" class="form-control" id="github_api_token"
+                                                    name="github_api_token"
+                                                    value="{{ form_data.github_api_token or '' }}"
+                                                    placeholder="Enter GitHub PAT">
+                                                <small class="form-text text-muted">Personal Access Token for board
+                                                    operations. Leave the content as is to use the GITHUB_TOKEN
+                                                    environment variable.</small>
                                             </div>
                                             <div class="mb-3">
-                                                <label for="github_project_owner" class="form-label">Project Owner (User or Organization)</label>
-                                                <input type="text" class="form-control" id="github_project_owner" name="github_project_owner" value="{{ form_data.github_project_owner or '' }}" placeholder="e.g. octocat or my-org">
+                                                <label for="github_project_owner" class="form-label">Project Owner (User
+                                                    or Organization)</label>
+                                                <input type="text" class="form-control" id="github_project_owner"
+                                                    name="github_project_owner"
+                                                    value="{{ form_data.github_project_owner or '' }}"
+                                                    placeholder="e.g. octocat or my-org">
                                             </div>
                                             <div class="mb-3">
-                                                <label for="github_project_number" class="form-label">Project Number</label>
-                                                <input type="number" class="form-control" id="github_project_number" name="github_project_number" value="{{ form_data.github_project_number or '' }}" placeholder="e.g. 1">
+                                                <label for="github_project_number" class="form-label">Project
+                                                    Number</label>
+                                                <input type="number" class="form-control" id="github_project_number"
+                                                    name="github_project_number"
+                                                    value="{{ form_data.github_project_number or '' }}"
+                                                    placeholder="e.g. 1">
                                             </div>
                                             <div class="mb-3">
-                                                <label for="github_board_id" class="form-label">Project ID (fetched automatically)</label>
-                                                <input type="text" class="form-control" id="github_board_id" value="{{ form_data.github_board_id or '' }}" placeholder="Populated automatically" readonly>
-                                                <small class="form-text text-muted">This field is populated automatically when you save with a valid project owner and number.</small>
+                                                <label for="github_board_id" class="form-label">Project ID (fetched
+                                                    automatically)</label>
+                                                <input type="text" class="form-control" id="github_board_id"
+                                                    value="{{ form_data.github_board_id or '' }}"
+                                                    placeholder="Populated automatically" readonly>
+                                                <small class="form-text text-muted">This field is populated
+                                                    automatically when you save with a valid project owner and
+                                                    number.</small>
                                             </div>
                                             <hr>
                                             <h6 class="mb-3">Column Mapping</h6>
                                             <div class="mb-3">
-                                                <label for="github_backlog_list" class="form-label">Backlog Column</label>
-                                                <input type="text" class="form-control" id="github_backlog_list" name="github_backlog_list" value="{{ form_data.github_backlog_list or '' }}" placeholder="e.g. Backlog">
+                                                <label for="github_backlog_list" class="form-label">Backlog
+                                                    Column</label>
+                                                <input type="text" class="form-control" id="github_backlog_list"
+                                                    name="github_backlog_list"
+                                                    value="{{ form_data.github_backlog_list or '' }}"
+                                                    placeholder="e.g. Backlog">
                                             </div>
                                             <div class="mb-3">
                                                 <label for="github_todo_list" class="form-label">Todo Column</label>
-                                                <input type="text" class="form-control" id="github_readfrom_list" name="github_todo_list" value="{{ form_data.github_todo_list or '' }}" placeholder="e.g. Todo">
+                                                <input type="text" class="form-control" id="github_readfrom_list"
+                                                    name="github_todo_list"
+                                                    value="{{ form_data.github_todo_list or '' }}"
+                                                    placeholder="e.g. Todo">
                                             </div>
                                             <div class="mb-3">
-                                                <label for="github_in_progress_list" class="form-label">In Progress Column</label>
-                                                <input type="text" class="form-control" id="github_in_progress_list" name="github_in_progress_list" value="{{ form_data.github_in_progress_list or '' }}" placeholder="e.g. In Progress">
+                                                <label for="github_in_progress_list" class="form-label">In Progress
+                                                    Column</label>
+                                                <input type="text" class="form-control" id="github_in_progress_list"
+                                                    name="github_in_progress_list"
+                                                    value="{{ form_data.github_in_progress_list or '' }}"
+                                                    placeholder="e.g. In Progress">
                                             </div>
                                             <div class="mb-3">
-                                                <label for="github_in_review_list" class="form-label">In Review Column</label>
-                                                <input type="text" class="form-control" id="github_in_progress_list" name="github_in_progress_list" value="{{ form_data.github_in_progress_list or '' }}" placeholder="e.g. In Review">
+                                                <label for="github_in_review_list" class="form-label">In Review
+                                                    Column</label>
+                                                <input type="text" class="form-control" id="github_in_progress_list"
+                                                    name="github_in_progress_list"
+                                                    value="{{ form_data.github_in_progress_list or '' }}"
+                                                    placeholder="e.g. In Review">
                                             </div>
                                             <div class="mb-3">
-                                                <label for="github_base_url" class="form-label">GitHub API Base URL</label>
-                                                <input type="text" class="form-control" id="github_base_url" name="github_base_url" value="{{ form_data.github_base_url or 'https://api.github.com' }}" placeholder="https://api.github.com">
-                                                <small class="form-text text-muted">Change this for GitHub Enterprise installations.</small>
+                                                <label for="github_base_url" class="form-label">GitHub API Base
+                                                    URL</label>
+                                                <input type="text" class="form-control" id="github_base_url"
+                                                    name="github_base_url"
+                                                    value="{{ form_data.github_base_url or 'https://api.github.com' }}"
+                                                    placeholder="https://api.github.com">
+                                                <small class="form-text text-muted">Change this for GitHub Enterprise
+                                                    installations.</small>
                                             </div>
                                         </div>
                                     </div>
@@ -188,58 +239,82 @@
                     </div>
                     <div class="tab-pane fade" id="source-code">
                         <div class="card">
-                            <div class="card-header"><h5>Source Code</h5></div>
+                            <div class="card-header">
+                                <h5>Source Code</h5>
+                            </div>
                             <div class="card-body">
                                 <div class="mb-3">
                                     <label for="repo_type" class="form-label">Repository Type</label>
                                     <select class="form-select" id="repo_type" name="repo_type">
-                                        <option value="GITHUB" {% if settings.repo_type=="GITHUB" %}selected{% endif %}>GitHub</option>
-                                        <option value="BITBUCKET" {% if settings.repo_type=="BITBUCKET" %}selected{% endif %}>Bitbucket</option>
-                                        <option value="GITLAB" {% if settings.repo_type=="GITLAB" %}selected{% endif %}>GitLab</option>
+                                        <option value="GITHUB" {% if settings.repo_type=="GITHUB" %}selected{% endif %}>
+                                            GitHub</option>
+                                        <option value="BITBUCKET" {% if settings.repo_type=="BITBUCKET" %}selected{%
+                                            endif %}>Bitbucket</option>
+                                        <option value="GITLAB" {% if settings.repo_type=="GITLAB" %}selected{% endif %}>
+                                            GitLab</option>
                                     </select>
                                 </div>
                                 <div class="mb-3">
                                     <label for="github_repo_url" class="form-label">Repository URL</label>
-                                    <input type="text" class="form-control" id="github_repo_url" name="github_repo_url" value="{{ settings.github_repo_url }}" placeholder="https://github.com/org/repo.git">
+                                    <input type="text" class="form-control" id="github_repo_url" name="github_repo_url"
+                                        value="{{ settings.github_repo_url }}"
+                                        placeholder="https://github.com/org/repo.git">
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="tab-pane fade" id="llm-config">
                         <div class="card">
-                            <div class="card-header"><h5>LLM Configuration</h5></div>
+                            <div class="card-header">
+                                <h5>LLM Configuration</h5>
+                            </div>
                             <div class="card-body">
                                 {% if missing_provider_env %}
                                 <div class="alert alert-warning" role="alert">
-                                    <strong>Missing API key:</strong> The selected provider <code>{{ selected_provider }}</code> requires the environment variable <code>{{ missing_provider_env }}</code>. Please set it before activating the agent.
+                                    <strong>Missing API key:</strong> The selected provider
+                                    <code>{{ selected_provider }}</code> requires the environment variable
+                                    <code>{{ missing_provider_env }}</code>. Please set it before activating the agent.
                                 </div>
                                 {% elif show_ollama_warning %}
                                 <div class="alert alert-info" role="alert">
-                                    <strong>Ollama Note:</strong> Local Ollama instances usually do not need an API key, but cloud providers might. Double-check whether your deployment requires <code>OLLAMA_API_KEY</code>.
+                                    <strong>Ollama Note:</strong> Local Ollama instances usually do not need an API key,
+                                    but cloud providers might. Double-check whether your deployment requires
+                                    <code>OLLAMA_API_KEY</code>.
                                 </div>
                                 {% endif %}
                                 <div class="mb-3">
                                     <label for="llm_provider" class="form-label">AI Provider</label>
                                     <select class="form-select" id="llm_provider" name="llm_provider">
-                                        <option value="mistral" {% if form_data.llm_provider=="mistral" %}selected{% endif %}>Mistral</option>
-                                        <option value="openai" {% if form_data.llm_provider=="openai" %}selected{% endif %}>OpenAI</option>
-                                        <option value="google" {% if form_data.llm_provider=="google" %}selected{% endif %}>Google</option>
-                                        <option value="openrouter" {% if form_data.llm_provider=="openrouter" %}selected{% endif %}>OpenRouter</option>
-                                        <option value="ollama" {% if form_data.llm_provider=="ollama" %}selected{% endif %}>Ollama</option>
-                                        <option value="anthropic" {% if form_data.llm_provider=="anthropic" %}selected{% endif %}>Anthropic</option>
+                                        <option value="mistral" {% if form_data.llm_provider=="mistral" %}selected{%
+                                            endif %}>Mistral</option>
+                                        <option value="openai" {% if form_data.llm_provider=="openai" %}selected{% endif
+                                            %}>OpenAI</option>
+                                        <option value="google" {% if form_data.llm_provider=="google" %}selected{% endif
+                                            %}>Google</option>
+                                        <option value="openrouter" {% if form_data.llm_provider=="openrouter"
+                                            %}selected{% endif %}>OpenRouter</option>
+                                        <option value="ollama" {% if form_data.llm_provider=="ollama" %}selected{% endif
+                                            %}>Ollama</option>
+                                        <option value="anthropic" {% if form_data.llm_provider=="anthropic" %}selected{%
+                                            endif %}>Anthropic</option>
                                     </select>
                                 </div>
                                 <div class="mb-3">
                                     <label for="llm_model_large" class="form-label">LLM for complex tasks</label>
-                                    <input type="text" class="form-control" id="llm_model_large" name="llm_model_large" placeholder="e.g. devstral-latest or gpt-4o" value="{{ form_data.llm_model_large or '' }}">
+                                    <input type="text" class="form-control" id="llm_model_large" name="llm_model_large"
+                                        placeholder="e.g. devstral-latest or gpt-4o"
+                                        value="{{ form_data.llm_model_large or '' }}">
                                 </div>
                                 <div class="mb-3">
                                     <label for="llm_model_small" class="form-label">LLM for simple tasks</label>
-                                    <input type="text" class="form-control" id="llm_model_small" name="llm_model_small" placeholder="e.g. mistral-small" value="{{ form_data.llm_model_small or '' }}">
+                                    <input type="text" class="form-control" id="llm_model_small" name="llm_model_small"
+                                        placeholder="e.g. mistral-small" value="{{ form_data.llm_model_small or '' }}">
                                 </div>
                                 <div class="mb-3">
-                                    <label for="llm_temperature" class="form-label">Temperature (Creativity) <span id="temperature_value">{{ form_data.llm_temperature or 0.0 }}</span></label>
-                                    <input type="range" class="form-range" id="llm_temperature" name="llm_temperature" min="0.0" max="1.0" step="0.1" value="{{ form_data.llm_temperature or 0.0 }}">
+                                    <label for="llm_temperature" class="form-label">Temperature (Creativity) <span
+                                            id="temperature_value">{{ form_data.llm_temperature or 0.0 }}</span></label>
+                                    <input type="range" class="form-range" id="llm_temperature" name="llm_temperature"
+                                        min="0.0" max="1.0" step="0.1" value="{{ form_data.llm_temperature or 0.0 }}">
                                 </div>
                             </div>
                         </div>
@@ -261,7 +336,7 @@
     }
 
     // Restore active tabs from sessionStorage
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const activeSection = sessionStorage.getItem('activeSection');
         if (activeSection) {
             const sectionLink = document.querySelector(`[href="#${activeSection}"]`);
@@ -294,8 +369,8 @@
     });
 
     // Save active section when changed
-    document.querySelectorAll('.list-group [data-bs-toggle="list"]').forEach(function(item) {
-        item.addEventListener('shown.bs.tab', function(event) {
+    document.querySelectorAll('.list-group [data-bs-toggle="list"]').forEach(function (item) {
+        item.addEventListener('shown.bs.tab', function (event) {
             const targetId = event.target.getAttribute('href').substring(1);
             sessionStorage.setItem('activeSection', targetId);
         });
