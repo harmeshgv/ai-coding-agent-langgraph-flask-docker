@@ -37,6 +37,30 @@ def get_codespace() -> str:
     return f"{get_workspace()}/code"
 
 
+def write_to_file_in_workspace(filepath: str, content: str):
+    """
+    Writes content to a file.
+    """
+    try:
+        # FIX: Remove leading slashes
+        clean_path = filepath.lstrip("/")
+        full_path = os.path.join(get_workspace(), clean_path)
+
+        full_path_real = os.path.realpath(full_path)
+        workspace_real = os.path.realpath(get_workspace())
+        if not full_path_real.startswith(workspace_real):
+            return (
+                f"Access denied target file: {full_path_real} is not in workspace {workspace_real}"
+            )
+
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
+        with open(full_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        return f"Successfully wrote to {clean_path}"
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        return f"ERROR writing file: {str(e)}"
+
+
 def save_state_to_workspace(state: dict, filename: str = "agent_state.json") -> str:
     """Saves the agent state to a JSON file in the workspace.
 

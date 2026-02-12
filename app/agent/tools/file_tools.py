@@ -5,7 +5,7 @@ import os
 
 from langchain_core.tools import tool
 
-from app.agent.utils import get_workspace
+from app.agent.utils import get_workspace, write_to_file_in_workspace
 
 logger = logging.getLogger(__name__)
 
@@ -82,24 +82,4 @@ def write_to_file(filepath: str, content: str):
     """
     Writes content to a file.
     """
-    try:
-        # FIX: Remove leading slashes
-        clean_path = filepath.lstrip("/")
-        full_path = os.path.join(get_workspace(), clean_path)
-
-        full_path_real = os.path.realpath(full_path)
-        workspace_real = os.path.realpath(get_workspace())
-        if not full_path_real.startswith(workspace_real):
-            logger.warning(
-                "Access denied target file: %s is not in workspace %s",
-                full_path_real,
-                workspace_real,
-            )
-            return "ERROR: Access denied."
-
-        os.makedirs(os.path.dirname(full_path), exist_ok=True)
-        with open(full_path, "w", encoding="utf-8") as f:
-            f.write(content)
-        return f"Successfully wrote to {clean_path}"
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        return f"ERROR writing file: {str(e)}"
+    return write_to_file_in_workspace(filepath, content)
