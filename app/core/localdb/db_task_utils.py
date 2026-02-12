@@ -34,7 +34,7 @@ def read_db_task(id: int | None = None, task_id: str | None = None) -> Task | No
     if task is None:
         logger.warning("No task found in database")
     else:
-        logger.info("Current task found: %s (%s)", task.task_id, task.task_name)
+        logger.debug("Current task found: %s (%s)", task.task_id, task.task_name)
     return task
 
 

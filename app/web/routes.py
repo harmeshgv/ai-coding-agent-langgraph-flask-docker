@@ -26,6 +26,8 @@ from app.agent.services.pull_request import (
 )
 from app.core.localdb.db_task_utils import read_db_task, update_db_task
 from app.web.services import dashboard_service, settings_service
+from app.core.localdb.models import AgentSettings
+from app.core.taskboard.board_factory import create_board_provider
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +140,7 @@ def get_pr_formatted(owner: str, repo: str, pr_number: int):
 
 
 @web_bp.route("/task/review_plan", methods=["POST"])
-def review_plan():
+async def review_plan():
     """Updates the plan state of the current task."""
     data = request.json or {}
     new_state = data.get("plan_state")
@@ -154,12 +156,27 @@ def review_plan():
     updated_task = update_db_task(task.task_id, plan_state=new_state)
 
     if updated_task:
-        return jsonify(
-            {
-                "message": f"Plan state updated to {new_state}",
-                "task_id": updated_task.task_id,
-                "plan_state": updated_task.plan_state,
-            }
-        )
+        moved = await move_task_to_in_progress(updated_task.task_id)
+        if moved:
+            return jsonify(
+                {
+                    "message": f"Plan state updated to {new_state}",
+                    "task_id": updated_task.task_id,
+                    "plan_state": updated_task.plan_state,
+                }
+            )
 
     return jsonify({"error": "Failed to update task"}), 500
+
+
+async def move_task_to_in_progress(task_id: str) -> bool:
+    """Moves the task to the state in progress."""
+    logger.info("Moving task %s to in progress", task_id)
+    agent_settings: AgentSettings = settings_service.get_or_create_settings()
+    board_provider = create_board_provider(agent_settings)
+    active_task_system = agent_settings.get_active_task_system()
+    if not active_task_system:
+        logger.warning("No active task system configured")
+        return False
+    await board_provider.move_task_to_named_state(task_id, active_task_system.state_in_progress)
+    return True

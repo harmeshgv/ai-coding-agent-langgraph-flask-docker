@@ -15,6 +15,7 @@ def setup_logging():
     )
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
+    logging.getLogger("werkzeug").setLevel(logging.WARNING)
     return logging.getLogger("entrypoint")
 
 
@@ -31,7 +32,7 @@ def mask_secret(value: str) -> str:
 
 def log_and_validate_env(logger, env_settings: EnvironmentSettings):
     """Log environment variables and validate required settings, return encryption key.
-    
+
     Note: GITHUB_TOKEN is now optional and validated at use time.
     Only ENCRYPTION_KEY and WORKSPACE are validated here.
     """

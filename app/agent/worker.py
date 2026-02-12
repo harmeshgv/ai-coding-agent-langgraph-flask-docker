@@ -5,20 +5,17 @@ This module contains the core asynchronous function that executes a single agent
 from fetching tasks to running the graph.
 """
 
-import asyncio
 import logging
 import sys
 from contextlib import AsyncExitStack
-from typing import Optional
 
-from flask import Flask
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph
 
 from app.core.constants import TECH_STACKS
 from app.agent.graph import create_workflow
 from app.agent.mcp.adapter import McpServerClient
-from app.agent.runtime import RuntimeSetting, prepare_runtime
+from app.agent.runtime import RuntimeSetting
 from app.agent.services.graph_assets import save_graph_as_mermaid, save_graph_as_png
 from app.agent.utils import get_codespace, save_state_to_workspace
 from app.core.config import get_env_settings
@@ -26,17 +23,7 @@ from app.core.config import get_env_settings
 logger = logging.getLogger(__name__)
 
 
-async def run_agent_cycle_async(app: Flask) -> None:
-    """Runs one complete asynchronous cycle of the agent."""
-    with app.app_context():
-        runtime: Optional[RuntimeSetting] = prepare_runtime()
-        if not runtime:
-            return
-
-        await _execute_agent_cycle(runtime)
-
-
-async def _execute_agent_cycle(runtime: RuntimeSetting) -> None:
+async def run_agent_cycle(runtime: RuntimeSetting) -> None:
     """Internal helper that orchestrates one graph execution."""
     async with AsyncExitStack() as stack:
         enable_mcp = get_env_settings().enable_mcp_servers
@@ -103,11 +90,3 @@ async def _execute_agent_cycle(runtime: RuntimeSetting) -> None:
                 save_state_to_workspace(current_state)
 
         logger.info("Finish graph cycle.")
-
-
-def run_agent_cycle(app: Flask) -> None:
-    """Synchronous wrapper for the main async agent cycle."""
-    try:
-        asyncio.run(run_agent_cycle_async(app))
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        logger.error("Critical error in agent cycle: %s", e, exc_info=True)

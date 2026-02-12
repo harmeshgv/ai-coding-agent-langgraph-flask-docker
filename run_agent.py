@@ -1,20 +1,21 @@
-import time
+import asyncio
 
 from dotenv import load_dotenv
 
 from app.agent.worker import run_agent_cycle
 from app.core.config import get_env_settings
 from app.core.extensions import db
-from app.core.localdb.models import AgentSettings
 from app.core.utils import log_and_validate_env, setup_logging
 from app.web import create_app
+from app.agent.runtime import RuntimeSetting, prepare_runtime
 
 load_dotenv()
 
-if __name__ == "__main__":
+
+async def main():
     # 1. Logging Setup
     logger = setup_logging()
-    logger.info("Starting Agent ...")
+    logger.info("Starting Agent (Async)...")
 
     # 2. Env Validierung
     encryption_key = log_and_validate_env(logger, get_env_settings())
@@ -26,24 +27,30 @@ if __name__ == "__main__":
     with app.app_context():
         db.create_all()
 
-    # 4. Der Infinite Loop (Ersatz für Scheduler)
+    # 4. Der Infinite Loop
     while True:
-        with app.app_context():
-            try:
-                # Polling Interval dynamisch aus DB lesen
-                settings = AgentSettings.query.first()
-                polling_interval = settings.polling_interval_seconds if settings else 60
-
+        polling_interval = 60
+        try:
+            # Synchrone DB-Abfrage muss in einem Thread oder Sync-Kontext passieren.
+            # Da SQLAlchemy lazy loading etc. macht, ist es am sichersten,
+            # dies kurz synchron zu machen.
+            with app.app_context():
+                runtime: RuntimeSetting | None = prepare_runtime()
+                if not runtime:
+                    logger.error("No runtime found, skipping cycle")
+                    return
+                polling_interval = runtime.agent_settings.polling_interval_seconds
                 # Den eigentlichen Job ausführen
-                # Hinweis: run_agent_cycle muss so angepasst sein,
-                # dass es nicht erwartet, vom Scheduler aufgerufen zu werden.
-                run_agent_cycle(app)
+                await run_agent_cycle(runtime)
 
-            except Exception as e:
-                logger.error(f"❌ Error in worker cycle: {e}", exc_info=True)
-                # Fallback Interval bei Fehler, damit wir nicht spammen
-                polling_interval = 60
+        except Exception as e:
+            logger.error("Error in main: %s", e, exc_info=True)
+            # Fallback Interval bei Fehler
+            polling_interval = 60
 
-        # Schlafen bis zum nächsten Zyklus
-        # logger.debug(f"Sleeping for {interval} seconds...")
-        time.sleep(polling_interval)
+        # Schlafen bis zum nächsten Zyklus (non-blocking)
+        await asyncio.sleep(polling_interval)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
