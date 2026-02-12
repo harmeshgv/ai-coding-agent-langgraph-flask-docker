@@ -30,6 +30,7 @@ from app.agent.tools.file_tools import (
     read_file,
     write_to_file,
 )
+from app.agent.tools.plan_tools import write_plan
 from app.agent.tools.finish_task import finish_task
 from app.agent.tools.run_command import run_command
 from app.agent.tools.thinking import thinking
@@ -135,7 +136,7 @@ def create_workflow(runtime: RuntimeSetting) -> StateGraph:
     analyst_tools = [
         list_files,
         read_file,
-        write_to_file,
+        write_plan,
         thinking,
         create_task_tool(runtime.agent_settings, impl_task_target_state),
         finish_task,
