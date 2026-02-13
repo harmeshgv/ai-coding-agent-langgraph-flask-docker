@@ -36,7 +36,7 @@ You are in **READ-ONLY** mode.
     - **New Components:** List of new classes/methods needed.
     - **Risks:** Potential pitfalls (e.g., "Backward compatibility issue").
     - **Step-by-Step Instructions:** A guide for the Coder.
-    - **Write the implementation plan** (tool: `write_plan`)
+    - **Write the implementation plan** as a markdown file but don't use markdown blocks (```markdown ... ```) (tool: `write_plan`)
 5.  **CREATE IMPLEMENTATION TASK** (optional, tool: `create_task`):
     - If the user explicitly requests to create a card, task, an issue or item to implement the task, use this tool.
     - Provide a concise title and the implementation plan.

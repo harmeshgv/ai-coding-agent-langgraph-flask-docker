@@ -10,7 +10,6 @@ import os
 import markdown
 
 from app.agent.utils import get_workspace
-from app.core.plan_utils import get_plan, exist_plan
 from app.core.localdb.db_task_utils import read_db_task
 
 logger = logging.getLogger(__name__)
@@ -22,21 +21,27 @@ def get_template_context() -> dict:
     Returns:
         Dictionary with all template variables.
     """
-    plan_content = get_plan()
-    agent_state = get_agent_state()
-    db_task = read_db_task()
-    return {
-        "plan_content": plan_content,
-        "plan_html": markdown.markdown(plan_content),
-        "plan_exists": exist_plan(),
+    agent_state = _get_agent_state()
+    state_dict = {
         "agent_state": agent_state,
         "agent_status": agent_state.get("current_node"),
         "task": agent_state.get("task"),
-        "db_plan_state": db_task.plan_state if db_task else None,
     }
+    db_task = read_db_task()
+    db_task_dict = {}
+    if db_task:
+        db_task_dict = {
+            "task_type": db_task.task_type,
+            "task_skill_level": db_task.task_skill_level,
+            "plan_content": markdown.markdown(db_task.plan_content) if db_task.plan_content else "",
+            "plan_state": db_task.plan_state,
+            "plan_exists": bool(db_task.plan_content),
+            "current_node": db_task.current_node,
+        }
+    return state_dict | db_task_dict
 
 
-def get_agent_state() -> dict:
+def _get_agent_state() -> dict:
     """Read and return the agent_state.json content from workspace.
 
     Returns:

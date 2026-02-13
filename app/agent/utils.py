@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Final
 
 from app.core.config import get_env_settings
+from app.core.localdb.db_task_utils import update_db_task
 
 __all__ = [
     "get_workbench",
@@ -35,6 +36,22 @@ def get_workbench() -> str:
 def get_codespace() -> str:
     """Return the path to the code repository."""
     return f"{get_workspace()}/code"
+
+
+def save_state_to_dbtask(state: dict) -> None:
+    """Saves the agent state to a JSON file in the workspace."""
+    task = state["task"]
+    if not task:
+        return
+
+    update_db_task(
+        task_id=task.id,
+        task_type=state["task_type"],
+        task_skill_level=state["task_skill_level"],
+        # plan_content=state["plan_content"],
+        plan_state=state["plan_state"],
+        current_node=state["current_node"],
+    )
 
 
 def save_state_to_workspace(state: dict, filename: str = "agent_state.json") -> str:

@@ -75,6 +75,7 @@ class AgentState(TypedDict):
     git_branch: str | None
     agent_skill_level: str | None
     agent_summary: list[str] | None
+    plan_content: str | None
     plan_state: PlanState | None
     current_node: str | None
     last_update: datetime | None

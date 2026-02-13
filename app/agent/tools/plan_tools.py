@@ -4,7 +4,7 @@ import logging
 
 from langchain_core.tools import tool
 
-from app.agent.tools.file_tools import write_to_file_in_workspace
+from app.core.plan_utils import save_plan_to_db
 
 logger = logging.getLogger(__name__)
 
@@ -14,4 +14,6 @@ def write_plan(content: str):
     """
     Writes the implementation plan to a file.
     """
-    return write_to_file_in_workspace("plan.md", content)
+    if not save_plan_to_db(content):
+        return "No task in database found. Can not store the plan."
+    return "Successfully wrote plan to database"

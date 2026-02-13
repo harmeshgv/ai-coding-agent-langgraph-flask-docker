@@ -21,7 +21,6 @@ from app.core.task_utils import (
 )
 from app.agent.state import AgentState
 from app.core.localdb.models import AgentSettings, Task
-from app.core.plan_utils import delete_plan
 from app.core.localdb.db_task_utils import (
     create_db_task,
     read_db_task,
@@ -91,7 +90,6 @@ async def _cleanup_new_task(task: BoardTask, board_provider, active_task_system)
     """
     logger.info("Processing task ID: %s - %s", task.id, task.name)
     task = await move_task_to_state(board_provider, task, active_task_system.state_in_progress)
-    delete_plan()
     return task
 
 

@@ -15,8 +15,8 @@ The comments below indicate ADDITIONAL work that needs to be done.
 # PULL REQUEST MESSAGE
 {{ pr_review_message }}
 {% endif %}
-{% if plan %}
+{% if plan_content %}
 # IMPLEMENTATION PLAN
 The following plan needs to be revised:
-{{plan}}
+{{plan_content}}
 {% endif %}

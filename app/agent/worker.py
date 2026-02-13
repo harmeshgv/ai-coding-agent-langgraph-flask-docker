@@ -17,7 +17,7 @@ from app.agent.graph import create_workflow
 from app.agent.mcp.adapter import McpServerClient
 from app.agent.runtime import RuntimeSetting
 from app.agent.services.graph_assets import save_graph_as_mermaid, save_graph_as_png
-from app.agent.utils import get_codespace, save_state_to_workspace
+from app.agent.utils import get_codespace, save_state_to_workspace, save_state_to_dbtask
 from app.core.config import get_env_settings
 
 logger = logging.getLogger(__name__)
@@ -68,6 +68,7 @@ async def run_agent_cycle(runtime: RuntimeSetting) -> None:
             "task_comments": [],
             "task_skill_level": None,
             "task_skill_level_reasoning": None,
+            "task_type": None,
             "agent_stack": runtime.agent_stack,
             "agent_skill_level": runtime.agent_settings.agent_skill_level,
             "plan_state": None,
@@ -87,6 +88,7 @@ async def run_agent_cycle(runtime: RuntimeSetting) -> None:
             inputs, config=thread_config, stream_mode="values"
         ):
             if current_state["current_node"] and current_state["current_node"] != "task_fetch":
-                save_state_to_workspace(current_state)
+                save_state_to_dbtask(current_state)
+                save_state_to_workspace(current_state)  # this must be removed!!!
 
         logger.info("Finish graph cycle.")

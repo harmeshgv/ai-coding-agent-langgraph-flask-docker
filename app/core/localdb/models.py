@@ -129,13 +129,29 @@ class Task(db.Model):
     __tablename__ = "task"
 
     id = db.Column(db.Integer, primary_key=True)
+    # Task ID from the external task system
     task_id = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    # Task title from the external task system
     task_name = db.Column(db.String(500), nullable=False)
+    # Task type (e.g., "coding", "analyzing", "bugfixing")
+    task_type = db.Column(db.String(20), nullable=True)
+    # Task skill level ("junior", "senior")
+    task_skill_level = db.Column(db.String(20), nullable=True)
+    # Branch name of the repository
     branch_name = db.Column(db.String(200), nullable=True)
+    # URL of the repository
     repo_url = db.Column(db.String(200), nullable=True)
+    # Number of the Pull Request in GitHub
     pr_number = db.Column(db.Integer, nullable=True)
+    # URL of the Pull Request
     pr_url = db.Column(db.String(500), nullable=True)
+    # Content of the implementation plan
+    plan_content = db.Column(db.Text, nullable=True)
+    # State of the implementation plan ("created", "updated", "approved", "rejected")
     plan_state = db.Column(db.String(20), nullable=True)
+    # Current node of the agent ("task_fetch", "coder", "tester", "task_update")
+    current_node = db.Column(db.String(20), nullable=True)
+    # created_at and updated_at are automatically managed by SQLAlchemy
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
 
