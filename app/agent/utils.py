@@ -14,8 +14,7 @@ from app.core.config import get_env_settings
 __all__ = [
     "get_workbench",
     "get_workspace",
-    "get_codespace",
-    "save_state_to_workspace",
+    "save_state_to_instance",
 ]
 
 
@@ -26,19 +25,17 @@ def get_workspace() -> str:
     """Return the workspace directory path."""
     return get_env_settings().workspace
 
+def get_instance_dir() -> str:
+    """Return the instance directory path."""
+    return get_env_settings().instance_dir
 
 def get_workbench() -> str:
     """Return the workbench container name."""
     return get_env_settings().workbench
 
 
-def get_codespace() -> str:
-    """Return the path to the code repository."""
-    return f"{get_workspace()}/code"
-
-
-def save_state_to_workspace(state: dict, filename: str = "agent_state.json") -> str:
-    """Saves the agent state to a JSON file in the workspace.
+def save_state_to_instance(state: dict, filename: str = "agent_state.json") -> str:
+    """Saves the agent state to a JSON file in the instance directory.
 
     This function serializes the agent's state, handling complex objects
     like BaseMessage and enums, and writes it to a specified file.
@@ -50,11 +47,11 @@ def save_state_to_workspace(state: dict, filename: str = "agent_state.json") -> 
     Returns:
         The full path to the saved file.
     """
-    workspace_path = get_workspace()
-    file_path = os.path.join(workspace_path, filename)
+    instance_path = get_instance_dir()
+    file_path = os.path.join(instance_path, filename)
 
-    # Ensure the workspace directory exists
-    os.makedirs(workspace_path, exist_ok=True)
+    # Ensure the instance directory exists
+    os.makedirs(instance_path, exist_ok=True)
 
     # Create a serializable copy of the state to avoid modifying the original
     serializable_state = dict(state)

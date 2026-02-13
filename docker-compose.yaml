@@ -12,8 +12,8 @@ services:
     environment:
       - WORKSPACE=/coding-agent-workspace
     volumes:
-      - ./workspace:/coding-agent-workspace
-      - ./app/instance:/coding-agent/app/instance
+      - workspace:/coding-agent-workspace
+      - instance:/coding-agent/app/instance
 
   # ----------------------------------------
   # CONTAINER 2: the AI coding agent
@@ -26,9 +26,8 @@ services:
     environment:
       - WORKSPACE=/coding-agent-workspace
     volumes:
-      - ./app/instance:/coding-agent/app/instance
-      # mapping ./workspace to /workspace in container
-      - ./workspace:/coding-agent-workspace
+      - instance:/coding-agent/app/instance
+      - workspace:/coding-agent-workspace
       # the socket to connect to the docker daemon
       - /var/run/docker.sock:/var/run/docker.sock
 
@@ -43,9 +42,12 @@ services:
     # in which workspace=working_dir the commands are executed
     working_dir: /coding-agent-workspace
     volumes:
-      # HIER: Exakt gleicher Pfad wie beim Agenten, damit Pfad-Befehle stimmen
-      - ./workspace:/coding-agent-workspace
+      - workspace:/coding-agent-workspace
       # Optional: Maven Cache (macht Tests schneller)
       - ~/.m2:/root/.m2
       # the socket to connect to the docker daemon
       - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  workspace:
+  instance:

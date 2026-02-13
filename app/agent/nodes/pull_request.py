@@ -15,7 +15,7 @@ from app.agent.services.summaries import (
 )
 from app.agent.services.pull_request import create_or_update_pr
 from app.agent.state import AgentState
-from app.agent.utils import get_codespace
+from app.agent.utils import get_workspace
 from app.core.config import get_env_settings
 from app.core.localdb.db_task_utils import update_db_task
 
@@ -56,7 +56,7 @@ def _append_summary(
 def _create_or_update_pr(state: AgentState):
     summary_entries = list(state.get("agent_summary") or [])
 
-    has_changes = git_has_changes(get_codespace())
+    has_changes = git_has_changes(get_workspace())
     logger.info("Git status check: %s changes found", "Some" if has_changes else "No")
 
     failure_detected = False
@@ -67,11 +67,11 @@ def _create_or_update_pr(state: AgentState):
         logger.info("No changes detected, skipping Git workflow")
         failure_detected = True
         failure_reason = "Pull request skipped: no changes detected"
-    elif not git_stage_all(work_dir=get_codespace()):
+    elif not git_stage_all(work_dir=get_workspace()):
         logger.error("Git add failed, skipping remaining Git operations")
         failure_detected = True
         failure_reason = "Pull request failed: git add failed"
-    elif not git_commit(work_dir=get_codespace(), message=commit_message):
+    elif not git_commit(work_dir=get_workspace(), message=commit_message):
         logger.error("Git commit failed, skipping remaining Git operations")
         failure_detected = True
         failure_reason = "Pull request failed: git commit failed"
@@ -81,7 +81,7 @@ def _create_or_update_pr(state: AgentState):
         return False, summary_entries
 
     push_success, push_msg = git_push(
-        work_dir=get_codespace(), token=get_env_settings().github_token
+        work_dir=get_workspace(), token=get_env_settings().github_token
     )
     if not push_success:
         logger.error("Git push failed: %s", push_msg)
