@@ -70,6 +70,16 @@ def mock_board_provider():
         )
     )
 
+    mock_task_system = TaskSystem(
+        task_system_type="TRELLO",
+        board_provider="trello",
+        state_backlog="Backlog",
+        state_todo="To Do",
+        state_in_progress="In Progress",
+        state_in_review="In Review",
+    )
+    provider.get_task_system = MagicMock(return_value=mock_task_system)
+
     return provider
 
 

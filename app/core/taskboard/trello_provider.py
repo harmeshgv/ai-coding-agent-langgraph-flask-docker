@@ -27,7 +27,7 @@ from app.core.taskboard.trello_client import (
     move_trello_card_to_list,
     move_trello_card_to_named_list,
 )
-from app.core.localdb.models import AgentSettings
+from app.core.localdb.models import AgentSettings, TaskSystem
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +48,7 @@ class TrelloProvider(BoardProvider):
             agent_settings: Agent settings containing Trello credentials and settings
         """
         self.agent_settings = agent_settings
+        self._task_system: TaskSystem | None = agent_settings.get_task_system("trello")
 
     async def get_states(self) -> list[dict]:
         """Fetch all states (Trello lists) from the board."""
@@ -167,6 +168,10 @@ class TrelloProvider(BoardProvider):
     def get_type(self) -> str:
         """Return the provider identifier."""
         return "trello"
+
+    def get_task_system(self) -> TaskSystem | None:
+        """Return the configured Trello TaskSystem if available."""
+        return self._task_system
 
     def _parse_timestamp(self, value: str | None) -> datetime:
         """

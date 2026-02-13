@@ -115,7 +115,8 @@ def _create_or_update_pr(state: AgentState):
         )
         return False, summary_entries
 
-    task_id = state.get("task_id")
+
+    task_id = state.get("task").id if state.get("task") else None
     if task_id and pr_url:
         pr_number = _extract_pr_number_from_url(pr_url)
         if pr_number:
