@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import tempfile
 from unittest.mock import patch
 
 from app.core.extensions import db
