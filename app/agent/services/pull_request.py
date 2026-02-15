@@ -12,7 +12,7 @@ from app.agent.services.git_workspace import (
     get_remote_url,
     parse_github_owner_repo,
 )
-from app.agent.utils import get_codespace
+from app.agent.utils import get_workspace
 from app.core.config import get_env_settings
 
 logger = logging.getLogger(__name__)
@@ -297,7 +297,7 @@ def get_github_repo_info() -> tuple[Optional[str], Optional[str]]:
     Returns:
         Tuple of (owner, repo)
     """
-    remote_url = get_remote_url(get_codespace())
+    remote_url = get_remote_url(get_workspace())
     if not remote_url:
         return None, None
     return parse_github_owner_repo(remote_url)
@@ -310,7 +310,7 @@ def get_github_repo_info_with_branch() -> tuple[Optional[str], Optional[str], Op
     Returns:
         Tuple of (owner, repo, branch)
     """
-    remote_url = get_remote_url(get_codespace())
+    remote_url = get_remote_url(get_workspace())
     if not remote_url:
         return None, None, None
 
@@ -318,7 +318,7 @@ def get_github_repo_info_with_branch() -> tuple[Optional[str], Optional[str], Op
     if not owner or not repo:
         return None, None, None
 
-    current_branch = get_current_branch(get_codespace())
+    current_branch = get_current_branch(get_workspace())
     if not current_branch:
         return None, None, None
 

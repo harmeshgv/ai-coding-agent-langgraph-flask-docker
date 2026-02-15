@@ -11,6 +11,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
+from app.core.localdb.models import TaskSystem
+
 
 @dataclass
 class BoardTask:
@@ -211,3 +213,7 @@ class BoardProvider(ABC):
     @abstractmethod
     def get_type(self) -> str:
         """Return provider identifier (e.g., 'trello', 'github')."""
+
+    @abstractmethod
+    def get_task_system(self) -> TaskSystem:
+        """Return the TaskSystem configuration backing this provider."""

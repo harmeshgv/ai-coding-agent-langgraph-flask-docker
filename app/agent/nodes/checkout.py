@@ -10,7 +10,7 @@ from git import Repo
 from app.core.taskboard.board_provider import BoardTask
 from app.agent.services.git_workspace import checkout_branch, get_current_branch
 from app.agent.state import AgentState
-from app.agent.utils import get_codespace
+from app.agent.utils import get_workspace
 from app.core.localdb.models import AgentSettings
 from app.core.localdb.db_task_utils import read_db_task, update_db_task
 
@@ -52,7 +52,7 @@ async def checkout_task_branch(
     """
 
     if role not in ["coder", "bugfixer"]:
-        repo = Repo(get_codespace())
+        repo = Repo(get_workspace())
         repo.git.fetch()
         repo.git.reset("--hard")
         return
@@ -72,11 +72,11 @@ async def checkout_task_branch(
 
         github_repo_url = agent_settings.github_repo_url
         if github_repo_url:
-            checkout_branch(github_repo_url, git_branch, get_codespace())
+            checkout_branch(github_repo_url, git_branch, get_workspace())
         else:
             logger.warning("No github_repo_url configured, skipping checkout")
 
-        real_git_branch = get_current_branch(get_codespace())
+        real_git_branch = get_current_branch(get_workspace())
         logger.info("Current branch: %s", real_git_branch)
 
 
@@ -153,7 +153,7 @@ async def checkout_branch_for_task(
     if not task_id or not task_name:
         raise ValueError("task_id and task_name are required to create a git branch.")
 
-    repo = Repo(get_codespace())
+    repo = Repo(get_workspace())
     repo.git.reset("--hard")
     repo.git.fetch("--prune")
 
@@ -181,5 +181,5 @@ async def checkout_branch_for_task(
 
     update_db_task(task_id, branch_name=branch_name, github_repo_url=github_repo_url)
 
-    real_git_branch = get_current_branch(get_codespace())
+    real_git_branch = get_current_branch(get_workspace())
     logger.info("Current branch after checkout: %s", real_git_branch)

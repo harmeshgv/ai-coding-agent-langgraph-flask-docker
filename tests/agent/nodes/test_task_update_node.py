@@ -37,6 +37,9 @@ def mock_board_provider():
     provider = MagicMock()
     provider.add_comment = AsyncMock()
     provider.move_task_to_named_state = AsyncMock(return_value="list3")
+    mock_task_system = MagicMock()
+    mock_task_system.state_in_review = "Done"
+    provider.get_task_system = MagicMock(return_value=mock_task_system)
     return provider
 
 
@@ -64,7 +67,7 @@ async def test_task_update_node_success(agent_settings, mock_board_provider):
 
         assert result["task_state_id"] == "list3"
         mock_board_provider.add_comment.assert_called()
-        mock_board_provider.move_task_to_named_state.assert_called_once_with("card1", "Done")
+        mock_board_provider.move_task_to_named_state.assert_called_once_with(task_id="card1", state_name="Done")
 
 
 @pytest.mark.asyncio
@@ -108,7 +111,7 @@ async def test_task_update_node_move_fails(agent_settings, mock_board_provider):
         task_update = create_task_update_node(agent_settings)
         result = await task_update(state)
 
-        assert result["task_id"] is None
+        assert result is None
 
 
 def test_get_agent_result_with_finish_task():

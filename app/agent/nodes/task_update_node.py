@@ -13,7 +13,7 @@ from typing import Optional
 from langchain_core.messages import AIMessage, ToolMessage
 
 from app.core.taskboard.board_factory import create_board_provider
-from app.core.taskboard.board_provider import BoardTask
+from app.core.taskboard.board_provider import BoardProvider, BoardTask
 from app.agent.services.summaries import get_agent_summary_entries
 from app.agent.state import AgentState
 from app.core.localdb.models import AgentSettings
@@ -47,7 +47,7 @@ def create_task_update_node(agent_settings: AgentSettings):
 
         logger.info("Updating task %s", task)
 
-        board_provider = create_board_provider(agent_settings)
+        board_provider: BoardProvider = create_board_provider(agent_settings)
 
         try:
             final_comments = _build_agent_comments(state)
@@ -58,14 +58,13 @@ def create_task_update_node(agent_settings: AgentSettings):
             logger.error("Failed to add comment to task: %s", e)
 
         try:
-            active_task_system = agent_settings.get_active_task_system()
-            if not active_task_system:
-                logger.warning("No active task system configured")
-                return {"task_id": None}
+            task_moveto_state = board_provider.get_task_system().state_in_review
+            if not task_moveto_state:
+                logger.warning("state_in_review not configured for provider %s", board_provider)
+                return
 
-            task_moveto_state = active_task_system.state_in_review
             task_moveto_state_id = await board_provider.move_task_to_named_state(
-                task.id, task_moveto_state
+                task_id=task.id, state_name=task_moveto_state
             )
 
             return {
@@ -74,10 +73,10 @@ def create_task_update_node(agent_settings: AgentSettings):
             }
         except ValueError as exc:
             logger.warning(str(exc))
-            return {"task_id": None}
+            return
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Error moving task to state: %s", e)
-            return {"task_id": None}
+            return
 
     return task_update
 

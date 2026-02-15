@@ -63,7 +63,7 @@ class EnvironmentSettings:  # pylint: disable=too-many-instance-attributes
     ollama_base_url: str = "http://host.docker.internal:11434"
     secret_key: str = "a-default-secret-key-for-development"
     database_url: str | None = None
-    instance_dir: str | None = None
+    instance_dir: str = "/coding-agent/app/instance"
     workbench: str = ""
     agent_stack: str = ""
     github_repo_url: str = ""
@@ -110,7 +110,7 @@ class EnvironmentSettings:  # pylint: disable=too-many-instance-attributes
             ),
             secret_key=os.environ.get("SECRET_KEY", "a-default-secret-key-for-development"),
             database_url=os.environ.get("DATABASE_URL"),
-            instance_dir=os.environ.get("INSTANCE_DIR"),
+            instance_dir=os.environ.get("INSTANCE_DIR", "/coding-agent/app/instance"),
             workbench=os.environ.get("WORKBENCH", "workbench-backend"),
             agent_stack=os.environ.get("AGENT_STACK", ""),
             github_repo_url=os.environ.get("GITHUB_REPO_URL", ""),

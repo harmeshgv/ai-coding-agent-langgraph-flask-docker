@@ -13,7 +13,7 @@ from app.agent.services.git_workspace import ensure_repository_exists
 from app.agent.services.llm_factory import get_llm
 from app.agent.state import AgentStack
 from app.agent.system_mappings import MCP_SYSTEM_DEFINITIONS
-from app.agent.utils import get_codespace, get_workbench
+from app.agent.utils import get_workbench, get_workspace
 from app.core.config import get_env_settings
 from app.core.localdb.models import AgentSettings
 
@@ -45,8 +45,8 @@ def prepare_runtime() -> Optional[RuntimeSetting]:
         logger.error("GitHub repository URL not provided.")
         return None
 
-    logger.info("Codespace: %s", get_codespace())
-    ensure_repository_exists(settings.github_repo_url, get_codespace())
+    logger.info("Workspace: %s", get_workspace())
+    ensure_repository_exists(settings.github_repo_url, get_workspace())
 
     if settings.task_system_type not in MCP_SYSTEM_DEFINITIONS:
         logger.error("Task system '%s' not defined.", settings.task_system_type)

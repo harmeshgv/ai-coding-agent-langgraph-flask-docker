@@ -27,7 +27,7 @@ from app.core.taskboard.github_client import (
     move_item_to_column,
     move_item_to_named_column,
 )
-from app.core.localdb.models import AgentSettings
+from app.core.localdb.models import AgentSettings, TaskSystem
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +48,7 @@ class GitHubProvider(BoardProvider):
             agent_settings: Agent settings containing GitHub project configuration.
         """
         self.agent_settings = agent_settings
+        self._task_system: TaskSystem | None = agent_settings.get_task_system("github")
 
     async def get_states(self) -> list[dict]:
         """Fetch all states (columns) from the GitHub Project."""
@@ -170,6 +171,10 @@ class GitHubProvider(BoardProvider):
     def get_type(self) -> str:
         """Return the provider identifier."""
         return "github"
+
+    def get_task_system(self) -> TaskSystem | None:
+        """Return the configured GitHub TaskSystem if available."""
+        return self._task_system
 
     def _parse_timestamp(self, value: str | None) -> datetime:
         """

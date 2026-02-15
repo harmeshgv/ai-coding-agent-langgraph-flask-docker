@@ -8,7 +8,7 @@ preparing them for processing by the agent.
 import logging
 
 from app.core.taskboard.board_factory import create_board_provider
-from app.core.taskboard.board_provider import BoardTask
+from app.core.taskboard.board_provider import BoardProvider, BoardTask
 from app.agent.services.pull_request import (
     format_pr_review_message,
     get_latest_open_pr_for_branch,
@@ -42,12 +42,8 @@ def create_task_fetch_node(agent_settings: AgentSettings):
         db_task: Task | None = read_db_task()
 
         try:
-            active_task_system = agent_settings.get_active_task_system()
-            if not active_task_system:
-                raise RuntimeError("active_task_system is not set.")
-
             task_id: str | None = db_task.task_id if db_task else None
-            task, task_is_new = await _resolve_task(task_id, board_provider, active_task_system)
+            task, task_is_new = await _resolve_task(task_id, board_provider)
 
             if not task:
                 logger.info("There is no current task to work on.")
@@ -57,15 +53,15 @@ def create_task_fetch_node(agent_settings: AgentSettings):
             pr_review_message = ""
             if task_is_new:
                 # if the task is new and has the state "todo" then clean up the workspace
-                task = await _cleanup_new_task(task, board_provider, active_task_system)
+                task = await _cleanup_new_task(task, board_provider)
             else:
                 # otherwise fetch revie comments from board and pr, in order
                 # to give further user information
                 comments = await fetch_review_comments(
                     board_provider,
                     task.id,
-                    active_task_system.state_in_progress,
-                    active_task_system.state_in_review,
+                    board_provider.get_task_system().state_in_progress,
+                    board_provider.get_task_system().state_in_review,
                 )
                 pr_review_message = _fetch_pr_review_info(task.id)
 
@@ -84,17 +80,21 @@ def create_task_fetch_node(agent_settings: AgentSettings):
     return task_fetch
 
 
-async def _cleanup_new_task(task: BoardTask, board_provider, active_task_system) -> BoardTask:
+async def _cleanup_new_task(task: BoardTask, board_provider: BoardProvider) -> BoardTask:
     """
     Process the task and prepare the return value.
     """
     logger.info("Processing task ID: %s - %s", task.id, task.name)
-    task = await move_task_to_state(board_provider, task, active_task_system.state_in_progress)
+    task = await move_task_to_state(
+        board_provider=board_provider,
+        task=task,
+        task_state_name=board_provider.get_task_system().state_in_progress,
+    )
     return task
 
 
 async def _resolve_task(
-    task_id: str | None, board_provider, active_task_system
+    task_id: str | None, board_provider: BoardProvider
 ) -> tuple[BoardTask | None, bool]:
     """
     Get the last task (with task_id) or create a new task.
@@ -114,11 +114,11 @@ async def _resolve_task(
 
         if task:
             # check if task in review or in progress
-            if task.state_name == active_task_system.state_in_review:
+            if task.state_name == board_provider.get_task_system().state_in_review:
                 logger.info("Task is in review. Wait for user action.")
                 return None, False
 
-            if task.state_name == active_task_system.state_in_progress:
+            if task.state_name == board_provider.get_task_system().state_in_progress:
                 logger.info("Task is in progress. Add review comments.")
                 return task, False
 
@@ -126,7 +126,7 @@ async def _resolve_task(
 
     # Get a new task from todo
     logger.info("Fetching new task from todo.")
-    task = await fetch_task_from_state(board_provider, active_task_system.state_todo)
+    task = await fetch_task_from_state(board_provider, board_provider.get_task_system().state_todo)
     # update local db: remove the old task and insert the new task
     if task:
         if task_id:

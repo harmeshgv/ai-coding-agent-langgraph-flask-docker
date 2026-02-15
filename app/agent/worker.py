@@ -17,7 +17,7 @@ from app.agent.graph import create_workflow
 from app.agent.mcp.adapter import McpServerClient
 from app.agent.runtime import RuntimeSetting
 from app.agent.services.graph_assets import save_graph_as_mermaid, save_graph_as_png
-from app.agent.utils import get_codespace
+from app.agent.utils import get_workspace, save_state_to_instance
 from app.core.config import get_env_settings
 from app.core.localdb.db_task_utils import update_db_task
 
@@ -32,7 +32,7 @@ async def run_agent_cycle(runtime: RuntimeSetting) -> None:
         if enable_mcp:
             git_mcp = McpServerClient(
                 command=sys.executable,
-                args=["-m", "mcp_server_git", "--repository", get_codespace()],
+                args=["-m", "mcp_server_git", "--repository", get_workspace()],
                 env=None,  # Uses default os.environ.copy() in adapter
             )
             await stack.enter_async_context(git_mcp)
@@ -89,6 +89,7 @@ async def run_agent_cycle(runtime: RuntimeSetting) -> None:
             inputs, config=thread_config, stream_mode="values"
         ):
             if current_state["task"]:
+                save_state_to_instance(current_state)
                 update_db_task(
                     task_id=current_state["task"].id,
                     task_name=current_state["task"].name,

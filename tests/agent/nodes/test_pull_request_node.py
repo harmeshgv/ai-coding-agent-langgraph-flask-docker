@@ -5,6 +5,7 @@ from unittest.mock import Mock
 import pytest
 
 from app.agent.nodes import pull_request as pr_module
+from app.core.taskboard.board_provider import BoardTask
 
 
 @pytest.fixture
@@ -12,7 +13,14 @@ def base_state():
     """Provide a default agent state structure."""
     return {
         "agent_summary": ["Initial summary"],
-        "task_id": "task-123",
+        "task": BoardTask(
+            id="task-123",
+            name="Improve testing",
+            description="Ensure PR node is covered",
+            state_id="todo",
+            state_name="To Do",
+            url="https://example.com/task/123",
+        ),
     }
 
 
