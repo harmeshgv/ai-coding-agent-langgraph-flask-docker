@@ -27,7 +27,7 @@ class TestDashboardService:
             with open(plan_path, "w", encoding="utf-8") as f:
                 f.write("# Test Plan\n\nThis is a test.")
 
-            with patch.dict(os.environ, {"INSTANCE_DIR": tmpdir}):
+            with patch.dict(os.environ, {"WORKSPACE": tmpdir}):
                 set_env_settings(None)  # Reset to reload from new environment
                 result = dashboard_service.get_plan()
 
@@ -39,7 +39,7 @@ class TestDashboardService:
         from app.core.config import set_env_settings
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch.dict(os.environ, {"INSTANCE_DIR": tmpdir}):
+            with patch.dict(os.environ, {"WORKSPACE": tmpdir}):
                 set_env_settings(None)  # Reset to reload from new environment
                 result = dashboard_service.get_plan()
 
@@ -54,7 +54,7 @@ class TestDashboardService:
             with open(plan_path, "w", encoding="utf-8") as f:
                 f.write("# My Plan")
 
-            with patch.dict(os.environ, {"INSTANCE_DIR": tmpdir}):
+            with patch.dict(os.environ, {"WORKSPACE": tmpdir}):
                 set_env_settings(None)  # Reset to reload from new environment
                 with patch("app.web.services.dashboard_service.read_db_task", return_value=None):
                     result = dashboard_service.get_template_context()

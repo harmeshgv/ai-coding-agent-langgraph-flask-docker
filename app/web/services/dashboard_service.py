@@ -9,7 +9,7 @@ import logging
 import os
 import markdown
 
-from app.agent.utils import get_instance_dir
+from app.agent.utils import get_workspace
 from app.core.plan_utils import get_plan, exist_plan
 from app.core.localdb.db_task_utils import read_db_task
 
@@ -37,13 +37,13 @@ def get_template_context() -> dict:
 
 
 def get_agent_state() -> dict:
-    """Read and return the agent_state.json content from instance directory.
+    """Read and return the agent_state.json content from workspace.
 
     Returns:
         A dictionary with the agent's state or default values if not found.
     """
-    instance_dir = get_instance_dir()
-    state_file_path = os.path.join(instance_dir, "agent_state.json")
+    workspace_path = get_workspace()
+    state_file_path = os.path.join(workspace_path, "agent_state.json")
 
     default_state = {
         "task": None,
@@ -67,7 +67,7 @@ def get_agent_state() -> dict:
     }
 
     if not os.path.exists(state_file_path):
-        logger.info("No agent_state.json found in instance directory: %s", instance_dir)
+        logger.info("No agent_state.json found in workspace.")
         return default_state
 
     try:
