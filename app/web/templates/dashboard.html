@@ -36,7 +36,7 @@
             <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center py-3">
                 <h5 class="mb-0 fw-bold">Implementation Plan</h5>
                 <div class="d-flex gap-2">
-                    {% if plan_exists and db_plan_state != 'approved' %}
+                    {% if plan_exists and plan_state != 'approved' %}
                     <button id="btn-reject" class="btn btn-outline-danger">
                         <i class="bi bi-x-circle me-1"></i>Reject
                     </button>

@@ -25,8 +25,8 @@ TECH_STACKS = {
         "database": "PostgreSQL",
         "other": ["Lombok"],
         "scripts": {
-            "test": "mvn clean test -f <path/to/pom.xml>",
-            "build": "mvn clean package -f <path/to/pom.xml>",
+            "test": "mvn clean test",
+            "build": "mvn clean package",
             "run": "mvn spring-boot:run",
         },
     },

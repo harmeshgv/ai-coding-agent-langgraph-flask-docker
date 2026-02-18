@@ -96,6 +96,7 @@ async def run_agent_cycle(runtime: RuntimeSetting) -> None:
                     task_description=current_state["task"].description,
                     task_type=current_state["task_type"],
                     task_skill_level=current_state["task_skill_level"],
+                    task_skill_level_reasoning=current_state["task_skill_level_reasoning"],
                     plan_state=current_state["plan_state"],
                     current_node=current_state["current_node"],
                 )

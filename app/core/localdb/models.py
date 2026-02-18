@@ -139,6 +139,8 @@ class Task(db.Model):
     task_type = db.Column(db.String(20), nullable=True)
     # Task skill level ("junior", "senior")
     task_skill_level = db.Column(db.String(20), nullable=True)
+    # The LLM description of the skill level decision
+    task_skill_level_reasoning = db.Column(db.Text, nullable=True)
     # Branch name of the repository
     branch_name = db.Column(db.String(200), nullable=True)
     # URL of the repository

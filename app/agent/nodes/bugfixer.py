@@ -32,7 +32,8 @@ def create_bugfixer_node(llm, tools):
     """
 
     async def bugfixer_node(state: AgentState):
-        logger.info("--- BUGFIXER node ---")
+        if state["current_node"] != "bugfixer":
+            logger.info("--- BUGFIXER node ---")
         # Filter messages to keep only recent relevant context (original task + last 15 messages)
         # pylint: disable=duplicate-code
         system_message = load_prompt("systemprompt_bugfixer.md", state)

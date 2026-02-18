@@ -13,7 +13,7 @@ services:
       - WORKSPACE=/coding-agent-workspace
     volumes:
       - workspace:/coding-agent-workspace
-      - instance:/coding-agent/app/instance
+      - ./app/instance:/coding-agent/app/instance
 
   # ----------------------------------------
   # CONTAINER 2: the AI coding agent
@@ -26,7 +26,7 @@ services:
     environment:
       - WORKSPACE=/coding-agent-workspace
     volumes:
-      - instance:/coding-agent/app/instance
+      - ./app/instance:/coding-agent/app/instance
       - workspace:/coding-agent-workspace
       # the socket to connect to the docker daemon
       - /var/run/docker.sock:/var/run/docker.sock
@@ -50,4 +50,4 @@ services:
 
 volumes:
   workspace:
-  instance:
+  #instance:

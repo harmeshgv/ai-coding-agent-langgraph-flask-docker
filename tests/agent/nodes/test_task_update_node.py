@@ -56,6 +56,7 @@ async def test_task_update_node_success(agent_settings, mock_board_provider):
         ),
         "messages": [],
         "agent_summary": ["Task completed successfully"],
+        "current_node": "any_node",
     }
 
     with patch(
@@ -73,7 +74,7 @@ async def test_task_update_node_success(agent_settings, mock_board_provider):
 @pytest.mark.asyncio
 async def test_task_update_node_no_task_id(agent_settings, mock_board_provider):
     """Test task update with no task ID."""
-    state = {"task": None, "messages": []}
+    state = {"task": None, "messages": [], "current_node": "any_node"}
 
     with patch(
         "app.agent.nodes.task_update_node.create_board_provider",
@@ -99,6 +100,7 @@ async def test_task_update_node_move_fails(agent_settings, mock_board_provider):
         ),
         "messages": [],
         "agent_summary": [],
+        "current_node": "any_node",
     }
     mock_board_provider.move_task_to_named_state = AsyncMock(
         side_effect=ValueError("State not found")

@@ -35,7 +35,7 @@ def _collect_tool_call_ids(ai_msg: AIMessage) -> set[str]:
 
 def _trim_trailing_invalid_ai(messages: list[BaseMessage]) -> list[BaseMessage]:
     """Remove trailing AIMessages that have no content and no tool_calls.
-    
+
     An AIMessage is invalid as the last message if it has no content AND no tool_calls.
     """
     result = list(messages)
@@ -111,10 +111,7 @@ def filter_messages_for_llm(
     window_messages = _build_message_window(remaining_messages, max_messages)
 
     # Combine: system + window
-    filtered_messages = (
-        ([first_system_message] if first_system_message else [])
-        + window_messages
-    )
+    filtered_messages = ([first_system_message] if first_system_message else []) + window_messages
 
     # Remove trailing empty AIMessages
     filtered_messages = _trim_trailing_invalid_ai(filtered_messages)
@@ -123,11 +120,9 @@ def filter_messages_for_llm(
     filtered_count = len(filtered_messages)
     filtered_tokens = _estimate_tokens(filtered_messages)
     saved_tokens = original_tokens - filtered_tokens
-    saved_percentage = (
-        (saved_tokens / original_tokens * 100) if original_tokens > 0 else 0
-    )
+    saved_percentage = (saved_tokens / original_tokens * 100) if original_tokens > 0 else 0
 
-    logger.info(
+    logger.debug(
         "Message filter: %d → %d messages (~%d → ~%d tokens, saved ~%d tokens / %.1f%%)",
         original_count,
         filtered_count,

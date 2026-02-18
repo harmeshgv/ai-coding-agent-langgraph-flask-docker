@@ -33,7 +33,8 @@ def create_pull_request_node():
     """Create a pull request node"""
 
     async def pull_request_node(state: AgentState) -> Dict[str, Any]:
-        logger.info("--- PULL REQUEST node ---")
+        if state["current_node"] != "pull_request":
+            logger.info("--- PULL REQUEST node ---")
         success, summary_entries = _create_or_update_pr(state)
         if success:
             logger.info("Pull request created/updated successfully")
@@ -114,7 +115,6 @@ def _create_or_update_pr(state: AgentState):
             "Pull request missing URL despite success",
         )
         return False, summary_entries
-
 
     task_id = state.get("task").id if state.get("task") else None
     if task_id and pr_url:

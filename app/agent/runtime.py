@@ -87,7 +87,7 @@ def _resolve_agent_stack(env_value: str | None) -> AgentStack:
     derived_stack = (
         AgentStack.FRONTEND if workbench_name == "workbench-frontend" else AgentStack.BACKEND
     )
-    logger.info(
+    logger.warning(
         "AGENT_STACK not provided or invalid; derived stack '%s' from workbench '%s'",
         derived_stack,
         workbench_name,

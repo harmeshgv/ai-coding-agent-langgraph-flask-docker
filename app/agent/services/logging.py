@@ -20,7 +20,16 @@ def safe_truncate(value: Any, length: int = 100) -> str:
     return string_value.replace("\n", "\\n")
 
 
-def log_agent_response(
+def _get_tool_call_info(tool_call: dict) -> str:
+    name = tool_call.get("name", "unknown")
+    args = tool_call.get("args", {}) or {}
+    if name in ["read_file", "write_to_file", "run_command"]:
+        params = list(args.values())
+        return f"{name} {params[0]}"
+    return f"{name}"
+
+
+def log_agent_response(  # pylint: disable=unused-argument
     agent_name: str,
     response: AIMessage,
     *,
@@ -29,23 +38,19 @@ def log_agent_response(
     arg_limit: int = 250,
 ) -> None:
     """Log LLM responses consistently across nodes."""
-    header = f"\n=== {agent_name.upper()} RESPONSE"
-    if attempt is not None:
-        header += f" (Attempt {attempt})"
-    header += " ==="
-    # logger.info(header)
 
     tool_calls = getattr(response, "tool_calls", []) or []
     if tool_calls:
         for tool_call in tool_calls:
             name = tool_call.get("name", "unknown")
-            logger.info("Tool Call: %s", name)
+            logger.info("Tool Call: %s", _get_tool_call_info(tool_call))
+            logger.debug("Tool Call: %s", name)
             args = tool_call.get("args", {}) or {}
             for key, value in args.items():
-                logger.info(" └─ %s: %s", key, safe_truncate(value, length=arg_limit))
+                logger.debug(" └─ %s: %s", key, safe_truncate(value, length=arg_limit))
 
     if getattr(response, "content", None):
-        logger.info("Content: %s", safe_truncate(response.content, content_limit))
+        logger.debug("Content: %s", safe_truncate(response.content, content_limit))
 
 
 def _log_message_detail(idx: int, message: BaseMessage, content_limit: int) -> None:

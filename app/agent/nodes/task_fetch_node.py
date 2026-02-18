@@ -38,7 +38,8 @@ def create_task_fetch_node(agent_settings: AgentSettings):
         """
         Fetches the first task from the board in a specified list.
         """
-        logger.info("--- TASK FETCH node ---")
+        if state["current_node"] != "task_fetch":
+            logger.info("--- TASK FETCH node ---")
         db_task: Task | None = read_db_task()
 
         try:
@@ -65,11 +66,25 @@ def create_task_fetch_node(agent_settings: AgentSettings):
                 )
                 pr_review_message = _fetch_pr_review_info(task.id)
 
+            # if a new task is get from todo then initialize its fields in localdb
+            plan_state = None
+            task_skill_level = None
+            task_skill_level_reasoning = None
+            task_type = None
+            if db_task and not task_is_new:
+                # if the task is not new then get its data from localdb
+                plan_state = db_task.plan_state
+                task_skill_level = db_task.task_skill_level
+                task_skill_level_reasoning = db_task.task_skill_level_reasoning
+                task_type = db_task.task_type
             return {
                 "task": task,
                 "task_comments": comments,
                 "pr_review_message": pr_review_message,
-                "plan_state": db_task.plan_state if db_task else None,
+                "plan_state": plan_state,
+                "task_skill_level": task_skill_level,
+                "task_skill_level_reasoning": task_skill_level_reasoning,
+                "task_type": task_type,
                 "current_node": "task_fetch",
             }
 

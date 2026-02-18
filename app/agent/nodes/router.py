@@ -47,7 +47,8 @@ def create_router_node(llm):
     structured_llm = llm.with_structured_output(RouterDecision, method="json_mode")
 
     async def router_node(state: AgentState) -> Dict[str, str]:
-        logger.info("--- ROUTER node ---")
+        if state["current_node"] != "router":
+            logger.info("--- ROUTER node ---")
         system_message = load_prompt("systemprompt_router.md", state)
         human_message = load_prompt("prompt_routing.md", state)
         # Router only needs the original task to make routing decision

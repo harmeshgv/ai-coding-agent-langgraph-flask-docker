@@ -128,7 +128,9 @@ async def test_task_fetch_node_success(agent_settings, mock_board_provider):
         ),
     ):
         task_fetch = create_task_fetch_node(agent_settings)
-        result = await task_fetch({})
+        result = await task_fetch({
+            "current_node": "any_node",
+        })
 
         assert result["task"].id == "card1"
         assert result["task"].name == "Test Task"
@@ -194,7 +196,11 @@ async def test_task_fetch_node_no_review_list(agent_settings, mock_board_provide
         ),
     ):
         task_fetch = create_task_fetch_node(temp_settings)
-        result = await task_fetch({})
+        result = await task_fetch(
+            {
+                "current_node": "any_node",
+            }
+        )
 
         # Should still fetch task from To Do even without review list
         assert result["task"] is not None
@@ -222,7 +228,11 @@ async def test_task_fetch_node_no_cards(agent_settings, mock_board_provider):
         ),
     ):
         task_fetch = create_task_fetch_node(agent_settings)
-        result = await task_fetch({})
+        result = await task_fetch(
+            {
+                "current_node": "any_node",
+            }
+        )
 
         assert result["task"] is None
 
@@ -279,7 +289,11 @@ async def test_task_fetch_node_with_comments(agent_settings, mock_board_provider
         ),
     ):
         task_fetch = create_task_fetch_node(agent_settings)
-        result = await task_fetch({})
+        result = await task_fetch(
+            state={
+                "current_node": "any_node",
+            }
+        )
 
         # Comments should be included since task was already in In Progress (returned from review)
         assert result["task_comments"] is not None
@@ -356,7 +370,11 @@ async def test_task_fetch_node_no_comments_from_todo(agent_settings, mock_board_
         ),
     ):
         task_fetch = create_task_fetch_node(agent_settings)
-        result = await task_fetch({})
+        result = await task_fetch(
+            state={
+                "current_node": "any_node",
+            }
+        )
 
         # Comments should NOT be included since task was picked from To Do
         assert result["task_comments"] is not None
