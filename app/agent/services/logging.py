@@ -104,8 +104,8 @@ def log_agent_state(
     logger.info("retry_count       : %s", state.get("retry_count"))
     logger.info("test_result       : %s", state.get("test_result"))
     logger.info("error_log         : %s", state.get("error_log"))
-    logger.info("task_id           : %s", state.get("task").id if state.get("task") else None)
-    logger.info("task_state_id     : %s", state.get("task_state_id"))
+    board_task = state.get("board_task")
+    logger.info("task_id           : %s", board_task.id if board_task else None)
 
     messages = state.get("messages", [])
     logger.info("\n--- Messages (%d) ---", len(messages))

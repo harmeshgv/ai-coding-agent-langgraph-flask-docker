@@ -34,7 +34,7 @@ def test_add_task_comment_tool_adds_comment_successfully():
         # Mock runtime with state and context
         mock_runtime = ToolRuntime(
             state={
-                "task": mock_task,
+                "board_task": mock_task,
                 "messages": [],
                 "current_node": "analyst",
             },
@@ -116,7 +116,7 @@ def test_add_task_comment_tool_handles_none_agent_settings():
         # Mock runtime with None context
         mock_runtime = ToolRuntime(
             state={
-                "task": mock_task,
+                "board_task": mock_task,
                 "messages": [],
                 "current_node": "analyst",
             },
@@ -160,7 +160,7 @@ def test_add_task_comment_tool_handles_value_error():
         # Mock runtime with state and context
         mock_runtime = ToolRuntime(
             state={
-                "task": mock_task,
+                "board_task": mock_task,
                 "messages": [],
                 "current_node": "analyst",
             },
@@ -211,7 +211,7 @@ def test_add_task_comment_tool_handles_runtime_error():
         # Mock runtime with state and context
         mock_runtime = ToolRuntime(
             state={
-                "task": mock_task,
+                "board_task": mock_task,
                 "messages": [],
                 "current_node": "analyst",
             },
@@ -270,7 +270,7 @@ def test_add_task_comment_tool_logs_long_comment():
         # Mock runtime with state and context
         mock_runtime = ToolRuntime(
             state={
-                "task": mock_task,
+                "board_task": mock_task,
                 "messages": [],
                 "current_node": "analyst",
             },

@@ -2,7 +2,7 @@
 Tests for the task update node.
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
@@ -44,7 +44,7 @@ def mock_board_provider():
 
 
 @pytest.mark.asyncio
-async def test_task_update_node_success(agent_settings, mock_board_provider):
+async def test_task_update_node_success(agent_settings, mock_board_provider, monkeypatch):
     """Test successful task update."""
     state = {
         "board_task": BoardTask(
@@ -59,36 +59,36 @@ async def test_task_update_node_success(agent_settings, mock_board_provider):
         "current_node": "any_node",
     }
 
-    with patch(
+    monkeypatch.setattr(
         "app.agent.nodes.task_update_node.create_board_provider",
-        return_value=mock_board_provider,
-    ):
-        task_update = create_task_update_node(agent_settings)
-        result = await task_update(state)
+        lambda *_: mock_board_provider,
+    )
+    task_update = create_task_update_node(agent_settings)
+    result = await task_update(state)
 
-        assert result["task_state_id"] == "list3"
-        mock_board_provider.add_comment.assert_called()
-        mock_board_provider.move_task_to_named_state.assert_called_once_with(task_id="card1", state_name="Done")
+    assert result["current_node"] == "task_update"
+    mock_board_provider.add_comment.assert_called()
+    mock_board_provider.move_task_to_named_state.assert_called_once_with(task_id="card1", state_name="Done")
 
 
 @pytest.mark.asyncio
-async def test_task_update_node_no_task_id(agent_settings, mock_board_provider):
+async def test_task_update_node_no_task_id(agent_settings, mock_board_provider, monkeypatch):
     """Test task update with no task ID."""
     state = {"board_task": None, "messages": [], "current_node": "any_node"}
 
-    with patch(
+    monkeypatch.setattr(
         "app.agent.nodes.task_update_node.create_board_provider",
-        return_value=mock_board_provider,
-    ):
-        task_update = create_task_update_node(agent_settings)
-        result = await task_update(state)
+        lambda *_: mock_board_provider,
+    )
+    task_update = create_task_update_node(agent_settings)
+    result = await task_update(state)
 
-        assert result == {}
-        mock_board_provider.add_comment.assert_not_called()
+    assert result == {}
+    mock_board_provider.add_comment.assert_not_called()
 
 
 @pytest.mark.asyncio
-async def test_task_update_node_move_fails(agent_settings, mock_board_provider):
+async def test_task_update_node_move_fails(agent_settings, mock_board_provider, monkeypatch):
     """Test task update when move operation fails."""
     state = {
         "board_task": BoardTask(
@@ -106,14 +106,14 @@ async def test_task_update_node_move_fails(agent_settings, mock_board_provider):
         side_effect=ValueError("State not found")
     )
 
-    with patch(
+    monkeypatch.setattr(
         "app.agent.nodes.task_update_node.create_board_provider",
-        return_value=mock_board_provider,
-    ):
-        task_update = create_task_update_node(agent_settings)
-        result = await task_update(state)
+        lambda *_: mock_board_provider,
+    )
+    task_update = create_task_update_node(agent_settings)
+    result = await task_update(state)
 
-        assert result is None
+    assert result is None
 
 
 def test_get_agent_result_with_finish_task():

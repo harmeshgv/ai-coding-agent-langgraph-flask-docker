@@ -63,12 +63,11 @@ def create_task_update_node(agent_settings: AgentSettings):
                 logger.warning("state_in_review not configured for provider %s", board_provider)
                 return
 
-            task_moveto_state_id = await board_provider.move_task_to_named_state(
+            await board_provider.move_task_to_named_state(
                 task_id=board_task.id, state_name=task_moveto_state
             )
 
             return {
-                "task_state_id": task_moveto_state_id,
                 "current_node": "task_update",
             }
         except ValueError as exc:

@@ -13,7 +13,7 @@ def base_state():
     """Provide a default agent state structure."""
     return {
         "agent_summary": ["Initial summary"],
-        "task": BoardTask(
+        "board_task": BoardTask(
             id="task-123",
             name="Improve testing",
             description="Ensure PR node is covered",

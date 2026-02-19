@@ -116,7 +116,7 @@ def _create_or_update_pr(state: AgentState):
         )
         return False, summary_entries
 
-    task_id = state.get("task").id if state.get("task") else None
+    task_id = state.get("board_task").id if state.get("board_task") else None
     if task_id and pr_url:
         pr_number = _extract_pr_number_from_url(pr_url)
         if pr_number:
@@ -156,7 +156,7 @@ def _generate_commit_message(state: AgentState) -> str:
     if not summary_text:
         return "fix: automated test-driven changes"
 
-    role = (summary_role or state.get("task_role") or "").strip().lower()
+    role = (summary_role or "").strip().lower()
     prefix = ROLE_PREFIX_MAP.get(role, "chore")
 
     first_line = f"{prefix}: {summary_text}"
@@ -239,7 +239,7 @@ def _build_pr_inputs(state: AgentState) -> tuple[str, str]:
     )
     pr_body_summary = aggregated_summary
 
-    task = state.get("task")
+    task = state.get("board_task")
     task_title = task.name
     pr_title = task_title or "Automated Fix"
     pr_body = "Automated changes after successful tests."

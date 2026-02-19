@@ -26,7 +26,7 @@ async def add_task_comment(
     """
     try:
         # Extract the current task from AgentState
-        current_task = runtime.state.get("task")
+        current_task = runtime.state.get("board_task")
         if not current_task:
             return "Error: No current task found in state"
 
