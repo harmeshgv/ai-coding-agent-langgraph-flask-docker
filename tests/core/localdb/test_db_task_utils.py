@@ -4,7 +4,7 @@ Tests for the task repository.
 
 import pytest
 
-from app.core.localdb.models import Task
+from app.core.localdb.models import AgentTask
 from app.core.localdb.db_task_utils import (
     read_db_task,
     delete_db_task,
@@ -39,7 +39,7 @@ def test_update_db_task_update_existing(app_context, db_session):
     assert updated_task.task_name == "Updated Name"
     assert updated_task.branch_name == "feature/updated"
 
-    all_tasks = Task.query.filter_by(task_id="task123").all()
+    all_tasks = AgentTask.query.filter_by(task_id="task123").all()
     assert len(all_tasks) == 1
 
 

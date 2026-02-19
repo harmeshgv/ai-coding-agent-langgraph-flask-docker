@@ -24,7 +24,7 @@ from app.agent.services.pull_request import (
     format_pr_review_message,
     get_latest_pr_review_status,
 )
-from app.core.localdb.db_task_utils import read_db_task, update_db_task
+from app.core.localdb.agent_tasks_utils import read_db_task, update_db_task
 from app.web.services import dashboard_service, settings_service
 from app.web.services.dashboard_service import move_task_to_in_progress
 

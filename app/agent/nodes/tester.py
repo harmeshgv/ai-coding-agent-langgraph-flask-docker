@@ -70,9 +70,8 @@ def create_tester_node(llm, tools):
                 )
                 response = await chain.ainvoke(current_messages)
 
-                has_tool_calls = bool(getattr(response, "tool_calls", []))
-
-                if has_tool_calls:
+                tool_calls = getattr(response, "tool_calls", [])
+                if tool_calls:
                     log_agent_response("tester", response, attempt=attempt + 1)
 
                     summary_entries = list(state.get("agent_summary") or [])
@@ -89,6 +88,7 @@ def create_tester_node(llm, tools):
                     result = {
                         "messages": [response],
                         "current_node": "tester",
+                        "current_tool_calls": tool_calls,
                         "prompt": human_message,
                         "system_prompt": system_message,
                     }

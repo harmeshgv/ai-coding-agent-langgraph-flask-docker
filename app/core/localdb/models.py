@@ -123,10 +123,10 @@ class TaskSystem(db.Model):
 
 
 # pylint: disable=too-few-public-methods
-class Task(db.Model):
+class AgentTask(db.Model):
     """Model for tracking tasks"""
 
-    __tablename__ = "task"
+    __tablename__ = "agent_tasks"
 
     id = db.Column(db.Integer, primary_key=True)
     # Task ID from the external task system
@@ -153,11 +153,73 @@ class Task(db.Model):
     plan_content = db.Column(db.Text, nullable=True)
     # State of the implementation plan ("created", "updated", "approved", "rejected")
     plan_state = db.Column(db.String(20), nullable=True)
+    # created_at and updated_at are automatically managed by SQLAlchemy
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
+
+    actions = db.relationship(
+        "AgentAction",
+        backref="task",
+        cascade="all, delete-orphan",  # <-- That is important for SQLAlchemy!
+        passive_deletes=True,  # <-- That is important for SQLAlchemy!
+    )
+
+    def __repr__(self):
+        return f"<Task id={self.task_id} branch={self.branch_name}>"
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "task_id": self.task_id,
+            "task_name": self.task_name,
+            "task_description": self.task_description,
+            "task_type": self.task_type,
+            "task_skill_level": self.task_skill_level,
+            "task_skill_level_reasoning": self.task_skill_level_reasoning,
+            "branch_name": self.branch_name,
+            "repo_url": self.repo_url,
+            "pr_number": self.pr_number,
+            "pr_url": self.pr_url,
+            "plan_content": self.plan_content,
+            "plan_state": self.plan_state,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+# pylint: disable=too-few-public-methods
+class AgentAction(db.Model):
+    """Model for tracking agent actions"""
+
+    __tablename__ = "agent_actions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    # Foreign key to Task
+    task_id = db.Column(
+        db.Integer, db.ForeignKey("agent_tasks.id", ondelete="CASCADE"), nullable=True
+    )
     # Current node of the agent ("task_fetch", "coder", "tester", "task_update")
-    current_node = db.Column(db.String(20), nullable=True)
+    current_node = db.Column(db.String(50), nullable=True)
+    # Tool used by the agent
+    tool_name = db.Column(db.String(50), nullable=True)
+    tool_arg0_name = db.Column(db.String(50), nullable=True)
+    tool_arg0_value = db.Column(db.String(200), nullable=True)
+
     # created_at and updated_at are automatically managed by SQLAlchemy
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
 
     def __repr__(self):
-        return f"<Task id={self.task_id} branch={self.branch_name}>"
+        return f"<AgentAction id={self.id} task_id={self.task_id} node={self.current_node}>"
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "task_id": self.task_id,
+            "current_node": self.current_node,
+            "tool_name": self.tool_name,
+            "tool_arg0_name": self.tool_arg0_name,
+            "tool_arg0_value": self.tool_arg0_value,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }

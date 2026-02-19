@@ -7,7 +7,7 @@ separating concerns from the route handlers.
 import logging
 import markdown
 
-from app.core.localdb.db_task_utils import read_db_task
+from app.core.localdb.agent_tasks_utils import read_db_task
 from app.core.localdb.models import AgentSettings
 from app.core.taskboard.board_factory import create_board_provider
 from app.web.services import settings_service
@@ -22,19 +22,21 @@ async def get_template_context() -> dict:
         Dictionary with all template variables.
     """
     dashboard_data = {}
-    db_task = read_db_task()
-    if db_task:
-        logger.info("current node: %s", db_task.current_node)
+    agent_task = read_db_task()
+    if agent_task:
+        # logger.info("current node: %s", agent_task.current_node)
         dashboard_data = {
-            "task_id": db_task.task_id,
-            "task_name": db_task.task_name,
-            "task_description": db_task.task_description,
-            "task_type": db_task.task_type,
-            "task_skill_level": db_task.task_skill_level,
-            "plan_content": markdown.markdown(db_task.plan_content) if db_task.plan_content else "",
-            "plan_state": db_task.plan_state,
-            "plan_exists": bool(db_task.plan_content),
-            "current_node": db_task.current_node,
+            "task_id": agent_task.task_id,
+            "task_name": agent_task.task_name,
+            "task_description": agent_task.task_description,
+            "task_type": agent_task.task_type,
+            "task_skill_level": agent_task.task_skill_level,
+            "plan_content": markdown.markdown(agent_task.plan_content)
+            if agent_task.plan_content
+            else "",
+            "plan_state": agent_task.plan_state,
+            "plan_exists": bool(agent_task.plan_content),
+            "current_node": "todo",
         }
     return dashboard_data
 

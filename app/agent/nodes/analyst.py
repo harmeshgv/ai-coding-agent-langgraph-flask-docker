@@ -65,9 +65,8 @@ def create_analyst_node(llm: BaseChatModel, tools):
                 response = await chain.ainvoke(current_messages)
                 response = sanitize_response(response)
 
-                has_tool_calls = bool(getattr(response, "tool_calls", []))
-
-                if has_tool_calls:
+                tool_calls = getattr(response, "tool_calls", [])
+                if tool_calls:
                     log_agent_response("analyst", response, attempt=attempt + 1)
                     recorded, agent_summary = record_finish_task_summary(state, "analyst", response)
 
@@ -83,11 +82,14 @@ def create_analyst_node(llm: BaseChatModel, tools):
                         )
                         recorded = True
 
+                    agent_task = state["agent_task"]
+                    agent_task.plan_content = plan_content
+                    agent_task.plan_state = plan_state
                     result = {
-                        "plan_content": plan_content,
-                        "plan_state": plan_state,
+                        "agent_task": agent_task,
                         "messages": [response],
                         "current_node": "analyst",
+                        "current_tool_calls": tool_calls,
                         "prompt": human_message,
                         "system_prompt": system_message,
                     }
@@ -98,9 +100,7 @@ def create_analyst_node(llm: BaseChatModel, tools):
                 logger.warning("Attempt %d: No tool calls. Escalating strategy...", attempt + 1)
                 current_tool_choice = "any"
                 current_messages.append(
-                    HumanMessage(
-                        content="ERROR: Invalid response. You MUST call a tool."
-                    )
+                    HumanMessage(content="ERROR: Invalid response. You MUST call a tool.")
                 )
 
             except Exception as e:  # pylint: disable=broad-exception-caught

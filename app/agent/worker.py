@@ -19,7 +19,8 @@ from app.agent.runtime import RuntimeSetting
 from app.agent.services.graph_assets import save_graph_as_mermaid, save_graph_as_png
 from app.agent.utils import get_workspace, save_state_to_instance
 from app.core.config import get_env_settings
-from app.core.localdb.db_task_utils import update_db_task
+from app.core.localdb.agent_tasks_utils import update_db_task, read_db_task
+from app.core.localdb.agent_actions_utils import create_db_agent_action
 
 logger = logging.getLogger(__name__)
 
@@ -65,15 +66,13 @@ async def run_agent_cycle(runtime: RuntimeSetting) -> None:
         inputs = {
             "messages": [],
             "next_step": "",
-            "task": None,
-            "task_comments": [],
-            "task_skill_level": None,
-            "task_skill_level_reasoning": None,
-            "task_type": None,
+            "board_task": None,
+            "board_task_comments": [],
+            "agent_task": read_db_task(),
             "agent_stack": runtime.agent_stack,
             "agent_skill_level": runtime.agent_settings.agent_skill_level,
-            "plan_state": None,
             "current_node": None,
+            "current_tool_calls": [],
             "prompt": None,
             "system_prompt": None,
             "tech_stack": TECH_STACKS[runtime.agent_stack],
@@ -88,17 +87,23 @@ async def run_agent_cycle(runtime: RuntimeSetting) -> None:
         async for current_state in app_graph.astream(
             inputs, config=thread_config, stream_mode="values"
         ):
-            if current_state["task"]:
+            if current_state["board_task"] and current_state["agent_task"]:
                 save_state_to_instance(current_state)
                 update_db_task(
-                    task_id=current_state["task"].id,
-                    task_name=current_state["task"].name,
-                    task_description=current_state["task"].description,
-                    task_type=current_state["task_type"],
-                    task_skill_level=current_state["task_skill_level"],
-                    task_skill_level_reasoning=current_state["task_skill_level_reasoning"],
-                    plan_state=current_state["plan_state"],
+                    task_id=current_state["board_task"].id,
+                    task_name=current_state["board_task"].name,
+                    task_description=current_state["board_task"].description,
+                    task_type=current_state["agent_task"].task_type,
+                    task_skill_level=current_state["agent_task"].task_skill_level,
+                    task_skill_level_reasoning=current_state[
+                        "agent_task"
+                    ].task_skill_level_reasoning,
+                    plan_state=current_state["agent_task"].plan_state,
+                )
+                create_db_agent_action(
+                    agent_task=current_state["agent_task"],
                     current_node=current_state["current_node"],
+                    tool_calls=current_state["current_tool_calls"],
                 )
 
         logger.info("Finish graph cycle.")

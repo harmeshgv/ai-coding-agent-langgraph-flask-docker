@@ -30,7 +30,7 @@ You are in **READ-ONLY** mode.
 1.  **EXPLORE** the project structure (tool: `list_files`).
 2.  **READ** specific relevant files (tool: `read_file`.
 3.  **ANALYZE** findings (tool: `thinking`).
-{% if task_type == 'coding' %}
+{% if agent_task.task_type == 'coding' %}
 4.  **CREATE A IMPLEMENTATION PLAN** as instructions for the coder who will implement the task.
     The implementation plan MUST contain the following sections:
     - **Affected Files:** List of files that need changes.

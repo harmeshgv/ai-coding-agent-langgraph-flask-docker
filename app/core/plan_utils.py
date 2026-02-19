@@ -2,7 +2,7 @@
 
 import logging
 
-from app.core.localdb.db_task_utils import read_db_task, update_db_task
+from app.core.localdb.agent_tasks_utils import read_db_task, update_db_task
 
 logger = logging.getLogger(__name__)
 

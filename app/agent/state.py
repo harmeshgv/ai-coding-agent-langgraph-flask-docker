@@ -15,6 +15,7 @@ from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
 
 from app.core.taskboard.board_provider import BoardTask, BoardComment
+from app.core.localdb.models import AgentTask
 
 
 class PlanState(StrEnum):
@@ -62,12 +63,10 @@ class AgentState(TypedDict):
 
     messages: Annotated[list[BaseMessage], add_messages]
     next_step: str
-    task: BoardTask | None
-    task_comments: list[BoardComment]
+    board_task: BoardTask | None
+    board_task_comments: list[BoardComment]
+    agent_task: AgentTask | None
     pr_review_message: str | None
-    task_type: TaskType | None
-    task_skill_level: str | None
-    task_skill_level_reasoning: str | None
     agent_stack: AgentStack
     retry_count: int  # Attempts: how often switched between coder and tester
     test_result: str | None
@@ -75,9 +74,8 @@ class AgentState(TypedDict):
     git_branch: str | None
     agent_skill_level: str | None
     agent_summary: list[str] | None
-    plan_content: str | None
-    plan_state: PlanState | None
     current_node: str | None
+    current_tool_calls: list[dict]
     last_update: datetime | None
     prompt: str | None
     system_prompt: str | None

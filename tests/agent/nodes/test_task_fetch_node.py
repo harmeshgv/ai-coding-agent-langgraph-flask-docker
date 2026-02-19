@@ -128,9 +128,11 @@ async def test_task_fetch_node_success(agent_settings, mock_board_provider):
         ),
     ):
         task_fetch = create_task_fetch_node(agent_settings)
-        result = await task_fetch({
-            "current_node": "any_node",
-        })
+        result = await task_fetch(
+            {
+                "current_node": "any_node",
+            }
+        )
 
         assert result["task"].id == "card1"
         assert result["task"].name == "Test Task"
@@ -240,10 +242,10 @@ async def test_task_fetch_node_no_cards(agent_settings, mock_board_provider):
 @pytest.mark.asyncio
 async def test_task_fetch_node_with_comments(agent_settings, mock_board_provider):
     """Test task fetch with comments when task is already in In Progress (returned from review)."""
-    from app.core.localdb.models import Task
+    from app.core.localdb.models import AgentTask
 
     # Create a mock db_task to simulate an existing task
-    mock_db_task = Task(
+    mock_db_task = AgentTask(
         task_id="card1",
         task_name="Test Task",
         branch_name="feature/test",

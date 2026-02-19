@@ -52,9 +52,8 @@ def create_bugfixer_node(llm, tools):
                 chain = llm.bind_tools(tools, tool_choice=current_tool_choice)
                 response = await chain.ainvoke(current_messages)
 
-                has_tool_calls = bool(getattr(response, "tool_calls", []))
-
-                if has_tool_calls:
+                tool_calls = getattr(response, "tool_calls", [])
+                if tool_calls:
                     log_agent_response(
                         "bugfixer",
                         response,
@@ -68,6 +67,7 @@ def create_bugfixer_node(llm, tools):
                     result = {
                         "messages": [response],
                         "current_node": "bugfixer",
+                        "current_tool_calls": tool_calls,
                         "prompt": human_message,
                         "system_prompt": system_message,
                     }

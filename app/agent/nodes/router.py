@@ -15,8 +15,6 @@ from pydantic import BaseModel, Field
 from app.agent.services.message_processing import filter_messages_for_llm
 from app.agent.state import AgentState, PlanState, TaskType
 from app.agent.services.prompts import load_prompt
-from app.core.localdb.db_task_utils import read_db_task
-from app.core.localdb.models import Task
 
 logger = logging.getLogger(__name__)
 
@@ -74,17 +72,19 @@ def create_router_node(llm):
         elif task_type == TaskType.BUGFIXING:
             next_step = "bugfixer"
         elif task_type == TaskType.CODING:
-            db_task: Task | None = read_db_task()
-            plan_state = db_task.plan_state if db_task else None
             next_step = route_to_coder_or_analyst(
-                plan_state, state["agent_skill_level"], response.task_skill_level
+                state["agent_task"].plan_state,
+                state["agent_skill_level"],
+                response.task_skill_level,
             )
 
+        agent_task = state["agent_task"]
+        agent_task.task_type = response.task_type
+        agent_task.task_skill_level = response.task_skill_level
+        agent_task.task_skill_level_reasoning = response.reasoning
         return {
             "next_step": next_step,
-            "task_type": response.task_type,
-            "task_skill_level": response.task_skill_level,
-            "task_skill_level_reasoning": response.reasoning,
+            "agent_task": agent_task,
             "current_node": "router",
         }
 

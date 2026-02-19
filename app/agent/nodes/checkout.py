@@ -2,7 +2,7 @@
 
 import logging
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from flask import current_app
 from git import Repo
@@ -12,7 +12,7 @@ from app.agent.services.git_workspace import checkout_branch, get_current_branch
 from app.agent.state import AgentState
 from app.agent.utils import get_workspace
 from app.core.localdb.models import AgentSettings
-from app.core.localdb.db_task_utils import read_db_task, update_db_task
+from app.core.localdb.agent_tasks_utils import read_db_task, update_db_task
 
 logger = logging.getLogger(__name__)
 
@@ -28,12 +28,12 @@ def create_checkout_node(agent_settings: AgentSettings):
     async def checkout_node(state: AgentState) -> Dict[str, Any]:  # pylint: disable=unused-argument
         if state["current_node"] != "checkout":
             logger.info("--- CHECKOUT node ---")
-        task: Optional[BoardTask] = state["task"] if state["task"] else None
+        board_task: BoardTask | None = state["board_task"]
 
-        if task:
+        if board_task:
             await checkout_task_branch(
-                task.id,
-                task.name,
+                board_task.id,
+                board_task.name,
                 "coder",
                 agent_settings,
             )
