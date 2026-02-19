@@ -20,7 +20,7 @@ async def add_task_comment(
 
     Args:
         comment: The comment text to add to the task.
-        runtime: The runtime context containing the current AgentState.
+        runtime: The runtime context containing the current AgentSettings.
     Returns:
         Confirmation message with the comment details.
     """
