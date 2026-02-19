@@ -24,7 +24,7 @@ from app.agent.nodes.tester import create_tester_node
 from app.agent.runtime import RuntimeSetting
 from app.agent.services.summaries import has_finish_task_call
 from app.agent.state import AgentState
-from app.agent.tools.add_task_comment import create_add_task_comment_tool
+from app.agent.tools.add_task_comment import add_task_comment
 from app.agent.tools.file_tools import (
     list_files,
     read_file,
@@ -136,7 +136,7 @@ def create_workflow(runtime: RuntimeSetting) -> StateGraph:
         read_file,
         write_plan,
         thinking,
-        create_add_task_comment_tool(runtime.agent_settings),
+        add_task_comment,
         finish_task,
     ]
     coder_tools = [

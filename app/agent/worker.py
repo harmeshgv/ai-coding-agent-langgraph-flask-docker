@@ -86,7 +86,7 @@ async def run_agent_cycle(runtime: RuntimeSetting) -> None:
 
         # stream_mode="values" gibt uns den kompletten State nach jedem Node zurück
         async for current_state in app_graph.astream(
-            inputs, config=thread_config, stream_mode="values"
+            inputs, config=thread_config, stream_mode="values", context=runtime.agent_settings
         ):
             if current_state["task"]:
                 save_state_to_instance(current_state)
