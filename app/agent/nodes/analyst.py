@@ -99,8 +99,7 @@ def create_analyst_node(llm: BaseChatModel, tools):
                 current_tool_choice = "any"
                 current_messages.append(
                     HumanMessage(
-                        content="ERROR: Invalid response. You MUST call a tool. "
-                        + "Use 'finish_task' to complete your analysis."
+                        content="ERROR: Invalid response. You MUST call a tool."
                     )
                 )
 

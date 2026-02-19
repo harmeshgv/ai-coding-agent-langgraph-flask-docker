@@ -24,7 +24,7 @@ from app.agent.nodes.tester import create_tester_node
 from app.agent.runtime import RuntimeSetting
 from app.agent.services.summaries import has_finish_task_call
 from app.agent.state import AgentState
-from app.agent.tools.create_task import create_task_tool
+from app.agent.tools.add_task_comment import create_add_task_comment_tool
 from app.agent.tools.file_tools import (
     list_files,
     read_file,
@@ -131,14 +131,12 @@ def route_after_tools_analyst(state: AgentState) -> str:
 def create_workflow(runtime: RuntimeSetting) -> StateGraph:
     """Creates and configures the main LangGraph workflow."""
     # --- Tool Sets ---
-    active_task_system = runtime.agent_settings.get_active_task_system()
-    impl_task_target_state = active_task_system.state_backlog if active_task_system else None
     analyst_tools = [
         list_files,
         read_file,
         write_plan,
         thinking,
-        create_task_tool(runtime.agent_settings, impl_task_target_state),
+        create_add_task_comment_tool(runtime.agent_settings),
         finish_task,
     ]
     coder_tools = [
