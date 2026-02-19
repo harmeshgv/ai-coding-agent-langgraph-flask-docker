@@ -79,10 +79,7 @@ def create_coder_node(llm, tools, agent_stack):
                 logger.warning("Attempt %d: No tool calls. Escalating strategy...", attempt + 1)
                 current_tool_choice = "any"
                 current_messages.append(
-                    HumanMessage(
-                        content="ERROR: Invalid response. You MUST call a tool. "
-                        + "Use 'write_to_file' with the complete content NOW."
-                    )
+                    HumanMessage(content="ERROR: Invalid response. You MUST call a tool!")
                 )
 
             except Exception as e:  # pylint: disable=broad-exception-caught
