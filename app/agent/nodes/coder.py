@@ -71,6 +71,9 @@ def create_coder_node(llm, tools, agent_stack):
                         "current_tool_calls": tool_calls,
                         "prompt": human_message,
                         "system_prompt": system_message,
+                        "user_message": "Review the pull request. If you approve it, "
+                        + "move the task to 'done'. If you reject it, "
+                        + "comment the task and move it to 'in progress'.",
                     }
                     if recorded:
                         result["agent_summary"] = agent_summary

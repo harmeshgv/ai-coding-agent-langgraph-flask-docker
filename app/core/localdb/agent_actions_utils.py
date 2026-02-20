@@ -8,6 +8,16 @@ from sqlalchemy import select
 logger = logging.getLogger(__name__)
 
 
+def read_db_agent_actions(agent_task: AgentTask) -> list[AgentAction]:
+    """Get the last task from the database."""
+    stmt = (
+        select(AgentAction)
+        .where(AgentAction.task_id == agent_task.id)
+        .order_by(AgentAction.id.asc())
+    )
+    return db.session.execute(stmt).scalars().all()
+
+
 def create_db_agent_action(
     agent_task: AgentTask, current_node: str | None, tool_calls: list[dict] | None
 ):

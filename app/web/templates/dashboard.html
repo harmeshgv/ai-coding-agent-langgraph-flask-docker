@@ -3,62 +3,96 @@
     hx-target="#dashboard-content" hx-swap="outerHTML" class="h-100 d-flex flex-column">
 
     <!-- Scrollable Content Area -->
-    <div class="container container-sm flex-grow-1" style="max-width: 1000px;">
+    <div class="container-fluid flex-grow-1">
+        <div class="row">
+            <div class="col-12 col-lg-8 order-2 order-lg-1">
 
-        <!-- Agent Status Card -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-body">
-                <h5 class="card-title fw-bold mb-1">Agent Status</h5>
-                {% if current_node %}
-                <div class="mt-2">
-                    <span class="badge bg-primary ms-2">{{ current_node }}</span>
+                <!-- Task Card -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title fw-bold mb-1">{{ agent_task.task_name if agent_task.task_name else 'No
+                            Active
+                            Task' }}</h5>
+                        {% if agent_task.task_skill_level %}
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-secondary">{{ agent_task.task_type }}</span>
+                            <span class="badge bg-secondary">{{ agent_task.task_skill_level }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text text-muted mb-0">{{ agent_task.task_description if
+                            agent_task.task_description else
+                            'Waiting for task...'
+                            }}</p>
+                    </div>
                 </div>
-                {% endif %}
+
+                <!-- Plan Card -->
+                <div class="card shadow-sm border-0 mb-5">
+                    <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0 fw-bold">Implementation Plan</h5>
+                        <div class="d-flex gap-2">
+                            {% if plan_exists and agent_task.plan_state != 'approved' %}
+                            <button id="btn-reject" class="btn btn-outline-danger">
+                                <i class="bi bi-x-circle me-1"></i>Reject
+                            </button>
+                            <button id="btn-approve" class="btn btn-success">
+                                <i class="bi bi-check-circle me-1"></i>Approve
+                            </button>
+                            {% else %}
+                            <button id="btn-reject" class="btn btn" disabled>
+                                <i class="bi bi-x-circle me-1"></i>Reject
+                            </button>
+                            <button id="btn-approve" class="btn btn" disabled>
+                                <i class="bi bi-check-circle me-1"></i>Approve
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="plan-markdown font-monospace">
+                            {{ plan_content | safe }}
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+
+            <div class="col-12 col-lg-4 order-1 order-lg-2">
+
+
+                <!-- Agent Status Card -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title fw-bold mb-1">Agent Status</h5>
+                    </div>
+                    <div class="card-body">
+                        {% for agent_action in agent_actions %}
+                        {% if agent_action.current_node in ['analyst', 'coder', 'bugfixer', 'tester'] %}
+                        {% if agent_action.tool_name != 'finish_task' %}
+                        <span>({{ agent_action.current_node }}) {{ agent_action.tool_name }} {{
+                            agent_action.tool_arg0_value
+                            }}</span>
+                        <br>
+                        {% endif %}
+                        {% endif %}
+                        {% endfor %}
+                        <span>{{ agent_task.working_state }}</span>
+                        {% if agent_task.user_message %}
+                        <br><br>
+                        <span class="fw-bold">{{ agent_task.user_message }}</span>
+                        <br>
+                        <span>Waiting for user response...</span>
+                        {% endif %}
+                    </div>
+                </div>
+
             </div>
         </div>
 
-        <!-- Task Card -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-body">
-                <h5 class="card-title fw-bold mb-1">{{ task_name if task_name else 'No Active Task' }}</h5>
-                <p class="card-text text-muted mb-0">{{ task_description if task_description else 'Waiting for task...'
-                    }}</p>
-                {% if task_skill_level %}
-                <div class="mt-2">
-                    <span class="badge bg-secondary">{{ task_skill_level }}</span>
-                </div>
-                {% endif %}
-            </div>
-        </div>
 
-        <!-- Plan Card -->
-        <div class="card shadow-sm border-0 mb-5">
-            <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center py-3">
-                <h5 class="mb-0 fw-bold">Implementation Plan</h5>
-                <div class="d-flex gap-2">
-                    {% if plan_exists and plan_state != 'approved' %}
-                    <button id="btn-reject" class="btn btn-outline-danger">
-                        <i class="bi bi-x-circle me-1"></i>Reject
-                    </button>
-                    <button id="btn-approve" class="btn btn-success">
-                        <i class="bi bi-check-circle me-1"></i>Approve
-                    </button>
-                    {% else %}
-                    <button id="btn-reject" class="btn btn" disabled>
-                        <i class="bi bi-x-circle me-1"></i>Reject
-                    </button>
-                    <button id="btn-approve" class="btn btn" disabled>
-                        <i class="bi bi-check-circle me-1"></i>Approve
-                    </button>
-                    {% endif %}
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="plan-markdown font-monospace">
-                    {{ plan_content | safe }}
-                </div>
-            </div>
-        </div>
     </div>
 
 </div>

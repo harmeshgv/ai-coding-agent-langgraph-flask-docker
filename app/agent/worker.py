@@ -76,6 +76,7 @@ async def run_agent_cycle(runtime: RuntimeSetting) -> None:
             "prompt": None,
             "system_prompt": None,
             "tech_stack": TECH_STACKS[runtime.agent_stack],
+            "user_message": None,
         }
         # Config for threa level persistence
         thread_config: RunnableConfig = {
@@ -99,6 +100,12 @@ async def run_agent_cycle(runtime: RuntimeSetting) -> None:
                         "agent_task"
                     ].task_skill_level_reasoning,
                     plan_state=current_state["agent_task"].plan_state,
+                    working_state="working..."
+                    if current_state["current_node"] != "task_update"
+                    else "finished.",
+                    user_message=current_state["user_message"]
+                    if current_state["current_node"] == "task_update"
+                    else "",
                 )
                 create_db_agent_action(
                     agent_task=current_state["agent_task"],

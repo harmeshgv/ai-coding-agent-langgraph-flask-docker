@@ -92,6 +92,7 @@ def create_analyst_node(llm: BaseChatModel, tools):
                         "current_tool_calls": tool_calls,
                         "prompt": human_message,
                         "system_prompt": system_message,
+                        "user_message": "Review the plan and approve or reject it",
                     }
                     if recorded:
                         result["agent_summary"] = agent_summary

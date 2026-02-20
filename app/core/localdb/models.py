@@ -153,6 +153,10 @@ class AgentTask(db.Model):
     plan_content = db.Column(db.Text, nullable=True)
     # State of the implementation plan ("created", "updated", "approved", "rejected")
     plan_state = db.Column(db.String(20), nullable=True)
+    # Working state of the task ("working...", "finished")
+    working_state = db.Column(db.String(20), nullable=True)
+    # User message
+    user_message = db.Column(db.String(200), nullable=True)
     # created_at and updated_at are automatically managed by SQLAlchemy
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())

@@ -11,6 +11,8 @@ from app.core.localdb.agent_tasks_utils import read_db_task
 from app.core.localdb.models import AgentSettings
 from app.core.taskboard.board_factory import create_board_provider
 from app.web.services import settings_service
+from app.core.localdb.agent_actions_utils import read_db_agent_actions
+from app.core.localdb.models import AgentAction, AgentTask
 
 logger = logging.getLogger(__name__)
 
@@ -21,22 +23,18 @@ async def get_template_context() -> dict:
     Returns:
         Dictionary with all template variables.
     """
-    dashboard_data = {}
-    agent_task = read_db_task()
+    dashboard_data: dict = {}
+    agent_task: AgentTask | None = read_db_task()
     if agent_task:
+        agent_actions: list[AgentAction] = read_db_agent_actions(agent_task)
         # logger.info("current node: %s", agent_task.current_node)
+        plan_content = markdown.markdown(agent_task.plan_content) if agent_task.plan_content else ""
         dashboard_data = {
-            "task_id": agent_task.task_id,
-            "task_name": agent_task.task_name,
-            "task_description": agent_task.task_description,
-            "task_type": agent_task.task_type,
-            "task_skill_level": agent_task.task_skill_level,
-            "plan_content": markdown.markdown(agent_task.plan_content)
-            if agent_task.plan_content
-            else "",
-            "plan_state": agent_task.plan_state,
+            "agent_task": agent_task,
+            "plan_content": plan_content,
             "plan_exists": bool(agent_task.plan_content),
             "current_node": "todo",
+            "agent_actions": agent_actions,
         }
     return dashboard_data
 

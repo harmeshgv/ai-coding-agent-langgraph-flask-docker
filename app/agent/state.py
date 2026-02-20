@@ -80,3 +80,4 @@ class AgentState(TypedDict):
     prompt: str | None
     system_prompt: str | None
     tech_stack: str | None
+    user_message: str | None
