@@ -99,6 +99,9 @@ async def run_agent_cycle(runtime: RuntimeSetting) -> None:
                         "agent_task"
                     ].task_skill_level_reasoning,
                     plan_state=current_state["agent_task"].plan_state,
+                    working_state="working..."
+                    if current_state["current_node"] != "task_update"
+                    else "finished.",
                 )
                 create_db_agent_action(
                     agent_task=current_state["agent_task"],
