@@ -10,10 +10,10 @@
                 <!-- Task Card -->
                 <div class="card shadow-sm border-0 mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="card-title fw-bold mb-1">{{ agent_task.task_name if agent_task.task_name else 'No
+                        <h5 class="card-title fw-bold mb-1">{{ agent_task.task_name if agent_task and agent_task.task_name else 'No
                             Active
                             Task' }}</h5>
-                        {% if agent_task.task_skill_level %}
+                        {% if agent_task and agent_task.task_skill_level %}
                         <div class="d-flex gap-2">
                             <span class="badge bg-secondary">{{ agent_task.task_type }}</span>
                             <span class="badge bg-secondary">{{ agent_task.task_skill_level }}</span>
@@ -22,7 +22,7 @@
                     </div>
                     <div class="card-body">
                         <p class="card-text text-muted mb-0">{{ agent_task.task_description if
-                            agent_task.task_description else
+                            agent_task and agent_task.task_description else
                             'Waiting for task...'
                             }}</p>
                     </div>
@@ -33,7 +33,7 @@
                     <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-3">
                         <h5 class="mb-0 fw-bold">Implementation Plan</h5>
                         <div class="d-flex gap-2">
-                            {% if plan_exists and agent_task.plan_state != 'approved' %}
+                            {% if plan_exists and agent_task and agent_task.plan_state != 'approved' %}
                             <button id="btn-reject" class="btn btn-outline-danger">
                                 <i class="bi bi-x-circle me-1"></i>Reject
                             </button>
@@ -79,8 +79,8 @@
                         {% endif %}
                         {% endif %}
                         {% endfor %}
-                        <span>{{ agent_task.working_state }}</span>
-                        {% if agent_task.user_message %}
+                        <span>{{ agent_task.working_state if agent_task and agent_task.working_state else '' }}</span>
+                        {% if agent_task and agent_task.user_message %}
                         <br><br>
                         <span class="fw-bold">{{ agent_task.user_message }}</span>
                         <br>

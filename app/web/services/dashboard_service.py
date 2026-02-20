@@ -23,20 +23,25 @@ async def get_template_context() -> dict:
     Returns:
         Dictionary with all template variables.
     """
-    dashboard_data: dict = {}
     agent_task: AgentTask | None = read_db_task()
+
+    plan_content = ""
+    plan_exists = False
+    agent_actions: list[AgentAction] = []
+
     if agent_task:
-        agent_actions: list[AgentAction] = read_db_agent_actions(agent_task)
+        agent_actions = read_db_agent_actions(agent_task)
         # logger.info("current node: %s", agent_task.current_node)
         plan_content = markdown.markdown(agent_task.plan_content) if agent_task.plan_content else ""
-        dashboard_data = {
-            "agent_task": agent_task,
-            "plan_content": plan_content,
-            "plan_exists": bool(agent_task.plan_content),
-            "current_node": "todo",
-            "agent_actions": agent_actions,
-        }
-    return dashboard_data
+        plan_exists = bool(agent_task.plan_content)
+
+    return {
+        "agent_task": agent_task,
+        "plan_content": plan_content,
+        "plan_exists": plan_exists,
+        "current_node": "todo",
+        "agent_actions": agent_actions,
+    }
 
 
 async def move_task_to_in_progress(task_id: str) -> bool:
