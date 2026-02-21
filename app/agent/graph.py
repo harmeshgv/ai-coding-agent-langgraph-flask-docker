@@ -166,20 +166,33 @@ def create_workflow(runtime: RuntimeSetting) -> StateGraph:
     # 1. Start -> Router
     workflow.add_conditional_edges(
         "task_fetch",
-        lambda state: "checkout" if state.get("board_task") else END,
-        {END: END, "checkout": "checkout"},
+        lambda state: "router" if state.get("board_task") else END,
+        {END: END, "router": "router"},
     )
 
-    workflow.add_edge("checkout", "router")
+    # 2. Router -> task_update (reject) or checkout (coder/analyst)
+    def _route_router(state: AgentState) -> str:
+        return "reject" if state.get("next_step") == "reject" else "coding | analyzing"
 
-    # 2. Router -> Specialists: Coder | Analyst
     workflow.add_conditional_edges(
         "router",
-        lambda state: state.get("next_step", "coder"),
+        _route_router,
         {
+            "coding | analyzing": "checkout",
             "reject": "task_update",
-            "coder": "coder",
-            "analyst": "analyst",
+        },
+    )
+
+    # 3. Checkout -> Specialists: Coder | Analyst
+    def _route_checkout(state: AgentState) -> str:
+        return "analyzing" if state.get("next_step") == "analyst" else "coding"
+
+    workflow.add_conditional_edges(
+        "checkout",
+        _route_checkout,
+        {
+            "coding": "coder",
+            "analyzing": "analyst",
         },
     )
 
