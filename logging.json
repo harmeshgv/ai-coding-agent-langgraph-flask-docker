@@ -3,7 +3,8 @@
   "disable_existing_loggers": false,
   "formatters": {
     "standard": {
-      "format": "%(name)s - %(levelname)s - %(message)s"
+      "format": "%(asctime)s %(name)s - %(levelname)s - %(message)s",
+      "datefmt": "%Y-%m-%d %H:%M:%S"
     }
   },
   "handlers": {
@@ -37,6 +38,13 @@
     },
     "werkzeug": {
       "level": "WARNING"
+    },
+    "my.module": {
+      "level": "DEBUG",
+      "handlers": [
+        "console"
+      ],
+      "propagate": false
     }
   }
 }

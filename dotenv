@@ -31,3 +31,10 @@ GITHUB_TOKEN=your_github_token_here
 
 # enable or disable the mcp servers
 ENABLE_MCP_SERVERS=True
+
+# LLM calls per second limit the calls to the LLMs if you have a rate limit 
+# (e.g. 0.8 to be save for Mistral with 1 call per second)
+#LLM_CALLS_PER_SECOND=0.8
+
+# Logging config file
+LOGGING_CONFIG_FILE=logging.json

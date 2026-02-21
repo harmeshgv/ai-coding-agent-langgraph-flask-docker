@@ -96,6 +96,26 @@ The JSON file must follow the standard Python logging dict-config schema. A read
 
 The INI file must follow the `logging.config.fileConfig` schema (sections `[loggers]`, `[handlers]`, `[formatters]`). See the [Python docs](https://docs.python.org/3/library/logging.config.html#configuration-file-format) for the full specification.
 
+### Running in Docker
+
+When the stack runs under Docker (via `docker-compose up`), set the env var in `.env` so every service receives the custom configuration automatically:
+
+```dotenv
+LOGGING_CONFIG_FILE=logging.json
+```
+
+The compose file already mounts the project root, so `logging.json` is available inside the container at the same relative path. Adjust the value if you store the file elsewhere (e.g., `.local/logging.json`). Remember to restart the containers after changing `.env` so the new variable propagates.
+
+#### Tail the rotating log file inside the container
+
+The sample JSON config writes DEBUG output to `logs/agent-debug.log`. To inspect it while the container is running:
+
+```bash
+docker exec -it ai-coding-agent tail -f logs/agent-debug.log
+```
+
+Replace `ai-coding-agent` with the container name reported by `docker ps` if you use a different service name. The `tail -f` command follows rotations performed by the `RotatingFileHandler`, so you can watch live log output without leaving the container.
+
 ## Adding a Rolling File Handler
 
 To capture DEBUG output to a rotating log file, use the JSON config above (or the `.local/logging.json` local override) and point `LOGGING_CONFIG_FILE` at it:
