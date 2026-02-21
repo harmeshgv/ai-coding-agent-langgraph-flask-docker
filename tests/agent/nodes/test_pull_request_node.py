@@ -5,6 +5,7 @@ from unittest.mock import Mock
 import pytest
 
 from app.agent.nodes import pull_request as pr_module
+from app.core.localdb.models import AgentTask
 from app.core.taskboard.board_provider import BoardTask
 
 
@@ -120,13 +121,24 @@ class TestGenerateCommitMessage:
 
         assert result == "fix: automated test-driven changes"
 
+    def test_uses_chore_prefix_when_agent_task_is_none(self):
+        state = {
+            "agent_summary": ["**[Coder]** Implement feature"],
+            "agent_task": None,
+        }
+
+        result = pr_module._generate_commit_message(state)  # pylint: disable=protected-access
+
+        assert result.startswith("chore: ")
+
     def test_multiline_coder_message_preserves_order(self):
         state = {
             "agent_summary": [
                 "**[Coder]** Implement persistence layer",
                 "**[Coder]** Document storage contract",
                 "**[Tester]** All tests green",
-            ]
+            ],
+            "agent_task": AgentTask(task_type="coding"),
         }
 
         result = pr_module._generate_commit_message(state)  # pylint: disable=protected-access
@@ -143,7 +155,8 @@ class TestGenerateCommitMessage:
                 "**[Tester]** Initial feedback",
                 "**[Bugfixer]** Resolve race condition",
                 "**[Bugfixer]** Add regression test",
-            ]
+            ],
+            "agent_task": AgentTask(task_type="bugfixing"),
         }
 
         result = pr_module._generate_commit_message(state)  # pylint: disable=protected-access
@@ -160,7 +173,8 @@ class TestGenerateCommitMessage:
                 "**[Coder]** Implement persistence layer",
                 "**[Coder]** Implement persistence layer",
                 "**[Coder]** Implement persistence layer",
-            ]
+            ],
+            "agent_task": AgentTask(task_type="coding"),
         }
 
         result = pr_module._generate_commit_message(state)  # pylint: disable=protected-access
