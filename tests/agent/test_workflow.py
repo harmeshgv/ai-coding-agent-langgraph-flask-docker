@@ -56,9 +56,9 @@ class TestRouteAfterToolsTester:
         ai_msg = self._make_report_test_result_msg("fail")
         state = _base_state(
             messages=[ai_msg, HumanMessage(content="tool output")],
-            next_step="bugfixer",
+            next_step="coder",
         )
-        assert route_after_tools_tester(state) == "bugfixer failed"
+        assert route_after_tools_tester(state) == "failed"
 
     def test_routes_back_to_coder_failed_when_coder_was_active(self):
         ai_msg = self._make_report_test_result_msg("fail")
@@ -66,14 +66,12 @@ class TestRouteAfterToolsTester:
             messages=[ai_msg, HumanMessage(content="tool output")],
             current_node="coder",
         )
-        assert route_after_tools_tester(state) == "coder failed"
+        assert route_after_tools_tester(state) == "failed"
 
     def test_loops_tester_when_no_report_test_result(self):
         ai_msg = AIMessage(
             content="",
-            tool_calls=[
-                {"name": "run_command", "args": {}, "id": "call_run", "type": "tool_call"}
-            ],
+            tool_calls=[{"name": "run_command", "args": {}, "id": "call_run", "type": "tool_call"}],
         )
         state = _base_state(messages=[ai_msg, HumanMessage(content="tool output")])
         assert route_after_tools_tester(state) == "tester"
@@ -127,7 +125,6 @@ def workflow_mocks(monkeypatch):
 
     factories = [
         "create_analyst_node",
-        "create_bugfixer_node",
         "create_checkout_node",
         "create_coder_node",
         "create_pull_request_node",
@@ -170,7 +167,6 @@ def test_create_workflow_registers_all_nodes(workflow_mocks):
         "checkout",
         "router",
         "coder",
-        "bugfixer",
         "analyst",
         "tester",
         "tools_coder",
@@ -191,7 +187,6 @@ def test_create_workflow_registers_all_nodes(workflow_mocks):
     assert router_mapping == {
         "reject": "task_update",
         "coder": "coder",
-        "bugfixer": "bugfixer",
         "analyst": "analyst",
     }
 
@@ -203,7 +198,7 @@ def test_create_workflow_registers_all_nodes(workflow_mocks):
         )
     )
     assert tools_coder_mapping["finish"] == "tester"
-    assert {"coder", "bugfixer"}.issubset(tools_coder_mapping.keys())
+    assert {"coder"}.issubset(tools_coder_mapping.keys())
 
     assert ("tester", "tools_tester") in workflow.edges
     assert ("pull_request", "task_update") in workflow.edges
