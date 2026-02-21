@@ -105,6 +105,7 @@ All other settings are optional and validated when used:
 - `AGENT_STACK` - Optional override for the runtime technology stack. Accepts `backend` or `frontend`. When unset or invalid, the stack is derived automatically from the `WORKBENCH` name.
 - `GITHUB_REPO_URL` - Default GitHub repository URL (default: empty)
 - `ENABLE_MCP_SERVERS` - Enable MCP servers (default: `true`)
+- `LOGGING_CONFIG_FILE` - Path to an external logging configuration file (`.json` or `.ini`). When set, overrides the built-in default logging setup. See [Logging](./logging.md) for details.
 - `LLM_CALLS_PER_SECOND` - Optional rate limit for LLM calls. Set to a positive float to cap how many tool-call attempts are sent to the LLM each second (default: `0`, which means unlimited). Useful when working with providers that enforce strict QPS limits.
 
 When `LLM_CALLS_PER_SECOND` is configured, the shared `invoke_tool_node` helper delays each LLM invocation just enough to keep the average call rate at or below the configured value. This guard applies to every tool-based node (coder, analyst, tester, bugfixer) and is enforced per worker process. Leave the value at `0` to keep the existing behavior with no throttling.
