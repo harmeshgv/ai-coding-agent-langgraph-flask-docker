@@ -3,7 +3,7 @@ Defines the router node for the agent graph.
 
 This node is responsible for the initial analysis of a task. It uses a
 specialized LLM call to classify the user's request and decide which
-specialist agent (e.g., Coder, Bugfixer, Analyst) should handle it next.
+specialist agent (e.g., Coder, Analyst) should handle it next.
 """
 
 import logging
@@ -70,7 +70,7 @@ def create_router_node(llm):
         if task_type == TaskType.ANALYZING:
             next_step = "analyst"
         elif task_type == TaskType.BUGFIXING:
-            next_step = "bugfixer"
+            next_step = "coder"
         elif task_type == TaskType.CODING:
             next_step = route_to_coder_or_analyst(
                 state["agent_task"].plan_state,

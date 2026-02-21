@@ -36,6 +36,15 @@ class TaskType(StrEnum):
     BUGFIXING = "bugfixing"
     ANALYZING = "analyzing"
 
+    @classmethod
+    def from_string(cls, value: str) -> "TaskType":
+        """Convert a string to a TaskType, normalizing whitespace and case."""
+        normalized = value.strip().lower() if value else ""
+        try:
+            return cls(normalized)
+        except ValueError:
+            return cls.UNKNOWN
+
 
 class TaskStateType(StrEnum):
     """Defines the states of tasks."""

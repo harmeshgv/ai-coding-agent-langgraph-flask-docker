@@ -14,7 +14,7 @@ from app.agent.services.summaries import (
     build_agent_summary_markdown,
 )
 from app.agent.services.pull_request import create_or_update_pr
-from app.agent.state import AgentState
+from app.agent.state import AgentState, TaskType
 from app.agent.utils import get_workspace
 from app.core.config import get_env_settings
 from app.core.localdb.agent_tasks_utils import update_db_task
@@ -22,10 +22,12 @@ from app.core.localdb.agent_tasks_utils import update_db_task
 logger = logging.getLogger(__name__)
 
 
+
 ROLE_PREFIX_MAP = {
-    "coder": "feat",
-    "bugfixer": "fix",
-    "analyst": "chore",
+    TaskType.CODING: "feat",
+    TaskType.BUGFIXING: "fix",
+    TaskType.ANALYZING: "chore",
+    TaskType.UNKNOWN: "chore",
 }
 
 
@@ -156,16 +158,20 @@ def _generate_commit_message(state: AgentState) -> str:
     if not summary_text:
         return "fix: automated test-driven changes"
 
-    role = (summary_role or "").strip().lower()
-    prefix = ROLE_PREFIX_MAP.get(role, "chore")
+    task_type = TaskType.from_string(
+        state.get("agent_task").task_type if state.get("agent_task") else ""
+    )
+    prefix = ROLE_PREFIX_MAP.get(task_type, "chore")
 
     first_line = f"{prefix}: {summary_text}"
     if len(first_line) > 75:
         first_line = first_line[:72].rstrip() + "..."
 
-    if role in {"coder", "bugfixer"}:
+    if task_type in {TaskType.CODING, TaskType.BUGFIXING} and summary_role:
         role_entries = [
-            text for entry_role, text in parsed_entries if (entry_role or "").lower() == role
+            text
+            for entry_role, text in parsed_entries
+            if (entry_role or "").lower() == summary_role
         ]
         details = _build_role_details(role_entries)
         if details:

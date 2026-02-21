@@ -12,7 +12,6 @@ from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolNode
 
 from app.agent.nodes.analyst import create_analyst_node
-from app.agent.nodes.bugfixer import create_bugfixer_node
 from app.agent.nodes.checkout import create_checkout_node
 from app.agent.nodes.coder import create_coder_node
 from app.agent.nodes.pull_request import create_pull_request_node
@@ -39,7 +38,7 @@ from app.agent.tools.report_test_result import report_test_result
 def route_after_tools_tester(state: AgentState):
     """
     Routes flow after the tester's tools have run. Checks for a 'pass' result
-    to finish, a 'fail' result to loop back to the coder/bugfixer, or loops
+    to finish, a 'fail' result to loop back to the coder, or loops
     back to the tester if other tools were used.
     """
     messages = state["messages"]
@@ -64,8 +63,7 @@ def route_after_tools_tester(state: AgentState):
                 if result == "pass":
                     return "pass"  # Success -> End
                 # Failed -> Back to the handler
-                previous_agent = state.get("next_step", "coder")
-                return f"{previous_agent} failed"
+                return "failed"
 
     # If no 'report_test_result' was present (e.g., only 'run_command' or 'git_add')
     # then return to the tester (loop) so it can continue.
@@ -74,13 +72,13 @@ def route_after_tools_tester(state: AgentState):
 
 def route_after_tools_coder(state: AgentState) -> str:
     """
-    Decides AFTER the tools for Coder/Bugfixer have run:
+    Decides AFTER the tools for Coder have run:
     - Was the last tool 'finish_task'? -> Continue to Tester.
-    - Otherwise -> Loop back to the current agent (Coder or Bugfixer).
+    - Otherwise -> Loop back to the current agent.
     """
     messages = state["messages"]
 
-    # 1. Determine who was active (Coder or Bugfixer)
+    # 1. Determine who was active
     current_agent = state.get("next_step", "coder")
 
     # 2. Check for finish_task
@@ -144,10 +142,6 @@ def create_workflow(runtime: RuntimeSetting) -> StateGraph:
         "coder", create_coder_node(runtime.llm_large, coder_tools, runtime.agent_stack)
     )
     workflow.add_node(
-        "bugfixer",
-        create_bugfixer_node(runtime.llm_large, coder_tools),
-    )
-    workflow.add_node(
         "analyst",
         create_analyst_node(runtime.llm_large, analyst_tools),
     )
@@ -178,14 +172,13 @@ def create_workflow(runtime: RuntimeSetting) -> StateGraph:
 
     workflow.add_edge("checkout", "router")
 
-    # 2. Router -> Specialists: Coder | Bugfixer | Analyst
+    # 2. Router -> Specialists: Coder | Analyst
     workflow.add_conditional_edges(
         "router",
         lambda state: state.get("next_step", "coder"),
         {
             "reject": "task_update",
             "coder": "coder",
-            "bugfixer": "bugfixer",
             "analyst": "analyst",
         },
     )
@@ -193,22 +186,18 @@ def create_workflow(runtime: RuntimeSetting) -> StateGraph:
     # 3. Specialists -> Tools (invoke_tool_node guarantees a tool call or fallback)
     workflow.add_edge("coder", "tools_coder")
 
-    # 4. Bugfixer shares the same tool node as coder
-    workflow.add_edge("bugfixer", "tools_coder")
-
-    # 5. Analyst -> Analyst tools
+    # 4. Analyst -> Analyst tools
     workflow.add_edge("analyst", "tools_analyst")
 
-    # 6. ROUTING AFTER TOOLS
+    # 5. ROUTING AFTER TOOLS
 
-    # For Coder & Bugfixer:
+    # For Coder:
     # Check for finish_task -> Tester. Otherwise -> Back to agent (Loop).
     workflow.add_conditional_edges(
         "tools_coder",
         route_after_tools_coder,
         {
             "coder": "coder",  # Loop
-            "bugfixer": "bugfixer",  # Loop
             "finish": "tester",  # Exit to Tester
         },
     )
@@ -232,8 +221,7 @@ def create_workflow(runtime: RuntimeSetting) -> StateGraph:
         {
             "tester": "tester",  # Loop (for git, mvn)
             "pass": "pull_request",  # Success
-            "coder failed": "coder",  # Tests failed back to coder or bugfixer
-            "bugfixer failed": "bugfixer",
+            "failed": "coder",  # Tests failed back to coder
         },
     )
 
