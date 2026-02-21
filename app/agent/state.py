@@ -39,7 +39,7 @@ class TaskType(StrEnum):
     @classmethod
     def from_string(cls, value: str) -> "TaskType":
         """Convert a string to a TaskType, normalizing whitespace and case."""
-        normalized = value.strip().lower()
+        normalized = value.strip().lower() if value else ""
         try:
             return cls(normalized)
         except ValueError:

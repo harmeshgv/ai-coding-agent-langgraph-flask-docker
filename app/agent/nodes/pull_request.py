@@ -167,9 +167,11 @@ def _generate_commit_message(state: AgentState) -> str:
     if len(first_line) > 75:
         first_line = first_line[:72].rstrip() + "..."
 
-    if task_type in {TaskType.CODING, TaskType.BUGFIXING}:
+    if task_type in {TaskType.CODING, TaskType.BUGFIXING} and summary_role:
         role_entries = [
-            text for entry_role, text in parsed_entries if (entry_role or "").lower() == summary_role
+            text
+            for entry_role, text in parsed_entries
+            if (entry_role or "").lower() == summary_role
         ]
         details = _build_role_details(role_entries)
         if details:

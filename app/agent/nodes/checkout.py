@@ -9,7 +9,7 @@ from git import Repo
 
 from app.core.taskboard.board_provider import BoardTask
 from app.agent.services.git_workspace import checkout_branch, get_current_branch
-from app.agent.state import AgentState
+from app.agent.state import AgentState, TaskType
 from app.agent.utils import get_workspace
 from app.core.localdb.models import AgentSettings
 from app.core.localdb.agent_tasks_utils import read_db_task, update_db_task
@@ -17,8 +17,8 @@ from app.core.localdb.agent_tasks_utils import read_db_task, update_db_task
 logger = logging.getLogger(__name__)
 
 ROLE_PREFIXES = {
-    "coder": "feature",
-    "bugfixer": "bugfix",
+    TaskType.CODING: "feature",
+    TaskType.BUGFIXING: "bugfix",
 }
 
 
@@ -30,11 +30,16 @@ def create_checkout_node(agent_settings: AgentSettings):
             logger.info("--- CHECKOUT node ---")
         board_task: BoardTask | None = state["board_task"]
 
+        task_type = TaskType.from_string(
+            state.get("agent_task").task_type
+            if state.get("agent_task") and state.get("agent_task").task_type
+            else "coding"
+        )
         if board_task:
             await checkout_task_branch(
                 board_task.id,
                 board_task.name,
-                "coder",
+                task_type,
                 agent_settings,
             )
         else:
@@ -46,13 +51,13 @@ def create_checkout_node(agent_settings: AgentSettings):
 
 
 async def checkout_task_branch(
-    task_id: str, task_name: str, role: str, agent_settings: AgentSettings
+    task_id: str, task_name: str, task_type: TaskType, agent_settings: AgentSettings
 ):
     """
     Checks out the existing git branch for a task from the database.
     """
 
-    if role not in ["coder", "bugfixer"]:
+    if task_type not in [TaskType.CODING, TaskType.BUGFIXING]:
         repo = Repo(get_workspace())
         repo.git.fetch()
         repo.git.reset("--hard")
@@ -62,7 +67,7 @@ async def checkout_task_branch(
 
     if not git_branch:
         logger.info("No git branch found for task %s", task_id)
-        await checkout_branch_for_task(task_id, task_name, role, agent_settings)
+        await checkout_branch_for_task(task_id, task_name, task_type, agent_settings)
     else:
         logger.info(
             "Checking out existing git branch: %s for task %s - %s",
@@ -107,12 +112,12 @@ def _slugify(value: str | None) -> str:
     return value.strip("-")
 
 
-def _build_base_branch_name(task_id: str, task_name: str, role: str) -> str:
+def _build_base_branch_name(task_id: str, task_name: str, task_type: TaskType) -> str:
     slug = _slugify(task_name)
     sanitized_task_id = re.sub(r"[^a-z0-9]", "", task_id.lower())
     short_id = sanitized_task_id[:8] if sanitized_task_id else "task"
     branch_suffix = slug[:48] if slug else "update"
-    role_prefix = ROLE_PREFIXES.get(role, "task")
+    role_prefix = ROLE_PREFIXES.get(task_type, "feature")
     return f"agent/{role_prefix}/{short_id}-{branch_suffix}"
 
 
@@ -144,7 +149,7 @@ def _resolve_unique_branch_name(base_name: str, existing_names: set[str]) -> str
 
 
 async def checkout_branch_for_task(
-    task_id: str, task_name: str, role: str, agent_settings: AgentSettings
+    task_id: str, task_name: str, task_type: TaskType, agent_settings: AgentSettings
 ):
     """
     Checks out a new git branch for a task.
@@ -158,7 +163,7 @@ async def checkout_branch_for_task(
     repo.git.reset("--hard")
     repo.git.fetch("--prune")
 
-    base_branch_name = _build_base_branch_name(task_id, task_name, role)
+    base_branch_name = _build_base_branch_name(task_id, task_name, task_type)
     existing_branches = _collect_branch_names(repo)
     branch_name = _resolve_unique_branch_name(base_branch_name, existing_branches)
 
