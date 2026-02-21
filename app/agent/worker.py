@@ -81,7 +81,7 @@ async def run_agent_cycle(runtime: RuntimeSetting) -> None:
         # Config for threa level persistence
         thread_config: RunnableConfig = {
             "configurable": {"thread_id": "1"},
-            "recursion_limit": 200,
+            "recursion_limit": 500,
         }
 
         # stream_mode="values" gibt uns den kompletten State nach jedem Node zurück

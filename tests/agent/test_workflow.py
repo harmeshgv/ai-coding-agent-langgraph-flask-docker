@@ -5,10 +5,82 @@ from __future__ import annotations
 from collections import OrderedDict
 
 import pytest
+from langchain_core.messages import AIMessage, HumanMessage
 
 import app.agent.graph as graph_module
+from app.agent.graph import route_after_tools_tester
 from app.agent.runtime import RuntimeSetting
 from app.core.localdb.models import AgentSettings
+
+
+def _make_ai_message(with_tool_calls: bool) -> AIMessage:
+    if with_tool_calls:
+        return AIMessage(
+            content="",
+            tool_calls=[{"name": "thinking", "args": {}, "id": "call_1", "type": "tool_call"}],
+        )
+    return AIMessage(content="plain text")
+
+
+def _base_state(**overrides) -> dict:
+    state = {
+        "messages": [],
+        "next_step": "coder",
+        "current_node": "coder",
+    }
+    state.update(overrides)
+    return state
+
+
+class TestRouteAfterToolsTester:
+    def _make_report_test_result_msg(self, result: str) -> AIMessage:
+        return AIMessage(
+            content="",
+            tool_calls=[
+                {
+                    "name": "report_test_result",
+                    "args": {"result": result},
+                    "id": "call_report",
+                    "type": "tool_call",
+                }
+            ],
+        )
+
+    def test_routes_to_pass_on_success(self):
+        ai_msg = self._make_report_test_result_msg("pass")
+        state = _base_state(messages=[ai_msg, HumanMessage(content="tool output")])
+        assert route_after_tools_tester(state) == "pass"
+
+    def test_uses_current_node_not_next_step_on_failure(self):
+        """Regression: stale next_step must not override the active agent on test failure."""
+        ai_msg = self._make_report_test_result_msg("fail")
+        state = _base_state(
+            messages=[ai_msg, HumanMessage(content="tool output")],
+            next_step="bugfixer",
+        )
+        assert route_after_tools_tester(state) == "bugfixer failed"
+
+    def test_routes_back_to_coder_failed_when_coder_was_active(self):
+        ai_msg = self._make_report_test_result_msg("fail")
+        state = _base_state(
+            messages=[ai_msg, HumanMessage(content="tool output")],
+            current_node="coder",
+        )
+        assert route_after_tools_tester(state) == "coder failed"
+
+    def test_loops_tester_when_no_report_test_result(self):
+        ai_msg = AIMessage(
+            content="",
+            tool_calls=[
+                {"name": "run_command", "args": {}, "id": "call_run", "type": "tool_call"}
+            ],
+        )
+        state = _base_state(messages=[ai_msg, HumanMessage(content="tool output")])
+        assert route_after_tools_tester(state) == "tester"
+
+    def test_loops_tester_when_messages_too_short(self):
+        state = _base_state(messages=[HumanMessage(content="only one")])
+        assert route_after_tools_tester(state) == "tester"
 
 
 class RecordingStateGraph:
@@ -58,7 +130,6 @@ def workflow_mocks(monkeypatch):
         "create_bugfixer_node",
         "create_checkout_node",
         "create_coder_node",
-        "create_correction_node",
         "create_pull_request_node",
         "create_router_node",
         "create_tester_node",
@@ -105,7 +176,6 @@ def test_create_workflow_registers_all_nodes(workflow_mocks):
         "tools_coder",
         "tools_analyst",
         "tools_tester",
-        "correction",
         "pull_request",
         "task_update",
     }

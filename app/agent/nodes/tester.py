@@ -1,22 +1,21 @@
+# pylint: disable=duplicate-code
 """
 Defines the Tester agent node for the agent graph.
 
 The Tester is a specialist agent responsible for verifying code changes,
 running tests, and reporting the results.
-"""  # pylint: disable=duplicate-code
+"""
 
 import logging
 from typing import Any, Dict, Literal, Optional
 
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage
 from pydantic import BaseModel, Field
 
-from app.agent.services.logging import log_agent_response
-from app.agent.services.message_processing import filter_messages_for_llm
+from app.agent.nodes.base import invoke_tool_node
 from app.agent.services.prompts import load_prompt
 from app.agent.services.summaries import append_agent_summary
 from app.agent.state import AgentState
-from app.agent.tools.report_test_result import report_test_result
 
 logger = logging.getLogger(__name__)
 
@@ -48,92 +47,48 @@ def create_tester_node(llm, tools):
         A function that represents the tester node.
     """
 
-    async def tester_node(state: AgentState):  # pylint: disable=too-many-locals
+    def _llm_response_hook(state: AgentState, response: AIMessage) -> dict[str, Any]:
+        """
+        Hook function to process the LLM response and update the state.
+        
+        Args:
+            state: The current agent state.
+            response: The AIMessage response from the LLM.
+            
+        Returns:
+            A dictionary containing the updated state.
+        """
+        summary_entries = list(state.get("agent_summary") or [])
+        report_args = _get_report_result_args(response)
+        if report_args and tests_passed(report_args):
+            summary = report_args.get("summary", "")
+            summary_entries = append_agent_summary(summary_entries, "tester", summary)
+        if summary_entries:
+            return {"agent_summary": summary_entries}
+        return {}
+
+    async def tester_node(state: AgentState):
         if state["current_node"] != "tester":
             logger.info("--- TESTER node ---")
+
         system_message = load_prompt("systemprompt_tester.md", state)
         human_message = load_prompt("prompt_testing.md", state)
-        # Filter messages to keep only recent relevant context (original task + last 15 messages)
-        filtered_messages = filter_messages_for_llm(state["messages"], max_messages=15)
-        current_messages: list[BaseMessage | SystemMessage | HumanMessage] = [
-            SystemMessage(content=system_message),
-            HumanMessage(content=human_message),
-        ]
 
-        current_messages += filtered_messages
-        current_tool_choice = "auto"
-
-        for attempt in range(3):
-            try:
-                chain = llm.bind_tools(
-                    tools + [report_test_result], tool_choice=current_tool_choice
-                )
-                response = await chain.ainvoke(current_messages)
-
-                tool_calls = getattr(response, "tool_calls", [])
-                if tool_calls:
-                    log_agent_response("tester", response, attempt=attempt + 1)
-
-                    summary_entries = list(state.get("agent_summary") or [])
-                    report_args = _get_report_result_args(response)
-
-                    if report_args and tests_passed(report_args):
-                        summary = report_args.get("summary", "")
-                        summary_entries = append_agent_summary(
-                            summary_entries,
-                            "tester",
-                            summary,
-                        )
-
-                    result = {
-                        "messages": [response],
-                        "current_node": "tester",
-                        "current_tool_calls": tool_calls,
-                        "prompt": human_message,
-                        "system_prompt": system_message,
-                    }
-                    if summary_entries:
-                        result["agent_summary"] = summary_entries
-                    return result
-
-                logger.warning("Attempt %d: No tool calls. Escalating strategy...", attempt + 1)
-                # Add the invalid response so AI sees its mistake
-                current_messages.append(response)
-                current_messages.append(
-                    HumanMessage(
-                        content="ERROR: Invalid response. You MUST call a tool. "
-                        + "Use 'report_test_result' with the test results NOW."
-                    )
-                )
-
-            except Exception as e:  # pylint: disable=broad-exception-caught
-                logger.error("Error in LLM call (Attempt %d): %s", attempt + 1, e)
-
-        # Fallback
-        logger.error("Agent stuck after 3 attempts. Hard exit.")
-
-        fallback_message = AIMessage(
-            content="Testing stuck.",
-            tool_calls=[
-                {
-                    "name": "report_test_result",
-                    "args": {
-                        "result": "fail",
-                        "summary": "Testing could not complete due to invalid responses.",
-                    },
-                    "id": "call_emergency",
-                    "type": "tool_call",
-                }
-            ],
+        return await invoke_tool_node(
+            node_name="tester",
+            state=state,
+            llm=llm,
+            tools=tools,
+            system_prompt=system_message,
+            human_prompt=human_message,
+            max_messages=10,
+            fallback_tool_name="report_test_result",
+            fallback_tool_args={
+                "result": "fail",
+                "summary": "Testing could not complete due to invalid responses.",
+            },
+            llm_response_hook=_llm_response_hook,
         )
-
-        summary_entries = list(state.get("agent_summary") or [])
-
-        return {
-            "messages": [fallback_message],
-            "agent_summary": summary_entries,
-            "current_node": "tester",
-        }
 
     return tester_node
 

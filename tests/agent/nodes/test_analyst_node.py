@@ -97,7 +97,7 @@ def test_analyst_node_processes_non_coding_task_with_comment_tool():
 
                 # Mock prompt loading and other dependencies
                 with patch("app.agent.nodes.analyst.load_prompt"):
-                    with patch("app.agent.nodes.analyst.filter_messages_for_llm", return_value=[]):
+                    with patch("app.agent.nodes.base.filter_messages_for_llm", return_value=[]):
                         with patch("app.agent.nodes.analyst.record_finish_task_summary", return_value=(False, None)):
                             with patch("app.agent.nodes.analyst._get_plan_content_and_plan_state", return_value=(None, None)):
                                 result = await analyst_node(state)
@@ -183,7 +183,7 @@ def test_analyst_node_processes_coding_task_with_plan_tool():
 
                 # Mock prompt loading and other dependencies
                 with patch("app.agent.nodes.analyst.load_prompt"):
-                    with patch("app.agent.nodes.analyst.filter_messages_for_llm", return_value=[]):
+                    with patch("app.agent.nodes.base.filter_messages_for_llm", return_value=[]):
                         with patch("app.agent.nodes.analyst.record_finish_task_summary", return_value=(False, None)):
                             with patch("app.agent.nodes.analyst._get_plan_content_and_plan_state", return_value=(None, None)):
                                 result = await analyst_node(state)
@@ -267,7 +267,7 @@ def test_analyst_node_handles_finish_task_with_empty_summary():
 
                 # Mock prompt loading and other dependencies
                 with patch("app.agent.nodes.analyst.load_prompt"):
-                    with patch("app.agent.nodes.analyst.filter_messages_for_llm", return_value=[]):
+                    with patch("app.agent.nodes.base.filter_messages_for_llm", return_value=[]):
                         with patch("app.agent.nodes.analyst.record_finish_task_summary", return_value=(True, ["Analysis completed"])) as mock_record:
                             with patch("app.agent.nodes.analyst._get_plan_content_and_plan_state", return_value=(None, None)):
                                 result = await analyst_node(state)
@@ -340,7 +340,7 @@ def test_analyst_node_handles_invalid_response_with_retry():
 
                 # Mock prompt loading and other dependencies
                 with patch("app.agent.nodes.analyst.load_prompt"):
-                    with patch("app.agent.nodes.analyst.filter_messages_for_llm", return_value=[]):
+                    with patch("app.agent.nodes.base.filter_messages_for_llm", return_value=[]):
                         with patch("app.agent.nodes.analyst.record_finish_task_summary", return_value=(False, None)):
                             with patch("app.agent.nodes.analyst._get_plan_content_and_plan_state", return_value=(None, None)):
                                 result = await analyst_node(state)
@@ -420,10 +420,10 @@ def test_analyst_node_sets_current_node_flag():
 
                 # Mock prompt loading and other dependencies
                 with patch("app.agent.nodes.analyst.load_prompt"):
-                    with patch("app.agent.nodes.analyst.filter_messages_for_llm", return_value=[]):
+                    with patch("app.agent.nodes.base.filter_messages_for_llm", return_value=[]):
                         with patch("app.agent.nodes.analyst.record_finish_task_summary", return_value=(False, None)):
                             with patch("app.agent.nodes.analyst._get_plan_content_and_plan_state", return_value=(None, None)):
-                                with patch("app.agent.nodes.analyst.sanitize_response", return_value=mock_response):
+                                with patch("app.agent.nodes.base.sanitize_response", return_value=mock_response):
                                     # Mock logger to verify it doesn't log "--- ANALYST node ---" when already set
                                     with patch("app.agent.nodes.analyst.logger") as mock_logger:
                                         result = await analyst_node(state)

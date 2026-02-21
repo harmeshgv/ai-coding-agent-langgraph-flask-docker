@@ -15,7 +15,6 @@ from app.agent.nodes.analyst import create_analyst_node
 from app.agent.nodes.bugfixer import create_bugfixer_node
 from app.agent.nodes.checkout import create_checkout_node
 from app.agent.nodes.coder import create_coder_node
-from app.agent.nodes.correction import create_correction_node
 from app.agent.nodes.pull_request import create_pull_request_node
 from app.agent.nodes.router import create_router_node
 from app.agent.nodes.task_fetch_node import create_task_fetch_node
@@ -34,6 +33,7 @@ from app.agent.tools.plan_tools import write_plan
 from app.agent.tools.finish_task import finish_task
 from app.agent.tools.run_command import run_command
 from app.agent.tools.thinking import thinking
+from app.agent.tools.report_test_result import report_test_result
 
 
 def route_after_tools_tester(state: AgentState):
@@ -70,25 +70,6 @@ def route_after_tools_tester(state: AgentState):
     # If no 'report_test_result' was present (e.g., only 'run_command' or 'git_add')
     # then return to the tester (loop) so it can continue.
     return "tester"
-
-
-def check_agent_exit(state: AgentState) -> str:
-    """
-    Checks after Coder/Bugfixer/Analyst:
-    - Did the LLM choose a tool? -> tools
-    - Did it output text? -> no tool (correction)
-    """
-    last_msg = state["messages"][-1]
-
-    if not isinstance(last_msg, AIMessage):
-        return "no tool"
-
-    # Only valid parsed tool calls can be executed by ToolNode
-    if last_msg.tool_calls:
-        return "tools"
-
-    # No valid tool calls (includes invalid_tool_cases) -> needs correction
-    return "no tool"
 
 
 def route_after_tools_coder(state: AgentState) -> str:
@@ -149,6 +130,7 @@ def create_workflow(runtime: RuntimeSetting) -> StateGraph:
     tester_tools = [
         thinking,
         run_command,
+        report_test_result,
     ]
 
     # --- Graph Nodes ---
@@ -180,7 +162,6 @@ def create_workflow(runtime: RuntimeSetting) -> StateGraph:
     workflow.add_node("tools_analyst", ToolNode(analyst_tools))
     workflow.add_node("tools_tester", ToolNode(tester_tools))
 
-    workflow.add_node("correction", create_correction_node())
     workflow.add_node("pull_request", create_pull_request_node())
     workflow.add_node("task_update", create_task_update_node(runtime.agent_settings))
 
@@ -209,35 +190,14 @@ def create_workflow(runtime: RuntimeSetting) -> StateGraph:
         },
     )
 
-    # 3. Coder -> Tools | Correction
-    workflow.add_conditional_edges(
-        "coder",
-        check_agent_exit,
-        {
-            "tools": "tools_coder",
-            "no tool": "correction",
-        },
-    )
+    # 3. Specialists -> Tools (invoke_tool_node guarantees a tool call or fallback)
+    workflow.add_edge("coder", "tools_coder")
 
-    # 4. Bugfixer -> Tools | Correction
-    workflow.add_conditional_edges(
-        "bugfixer",
-        check_agent_exit,
-        {
-            "tools": "tools_coder",
-            "no tool": "correction",
-        },
-    )
+    # 4. Bugfixer shares the same tool node as coder
+    workflow.add_edge("bugfixer", "tools_coder")
 
-    # 5. Analyst -> Tools | Correction
-    workflow.add_conditional_edges(
-        "analyst",
-        check_agent_exit,
-        {
-            "tools": "tools_analyst",
-            "no tool": "correction",
-        },
-    )
+    # 5. Analyst -> Analyst tools
+    workflow.add_edge("analyst", "tools_analyst")
 
     # 6. ROUTING AFTER TOOLS
 
@@ -275,13 +235,6 @@ def create_workflow(runtime: RuntimeSetting) -> StateGraph:
             "coder failed": "coder",  # Tests failed back to coder or bugfixer
             "bugfixer failed": "bugfixer",
         },
-    )
-
-    # 8. Correction & End
-    workflow.add_conditional_edges(
-        "correction",
-        lambda state: state.get("next_step"),
-        {"coder": "coder", "bugfixer": "bugfixer", "analyst": "analyst"},
     )
 
     workflow.add_edge("pull_request", "task_update")

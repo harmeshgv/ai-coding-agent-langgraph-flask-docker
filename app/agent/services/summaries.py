@@ -39,11 +39,20 @@ def record_finish_task_summary(
     role: str,
     ai_message: BaseMessage,
 ) -> Tuple[bool, list[str]]:
-    """Store any finish_task summaries emitted by the given role."""
+    """
+    Store any finish_task summaries emitted by the given role.
+
+    Args:
+        state: The current agent state.
+        role: The role that emitted the summary.
+        ai_message: The AIMessage response from the LLM.
+
+    Returns:
+        A tuple containing a boolean indicating whether a summary was recorded
+        and the updated summary entries.
+    """
     summary_entries = list(state.get("agent_summary") or [])
-    if not isinstance(ai_message, AIMessage) or not getattr(
-        ai_message, "tool_calls", None
-    ):
+    if not isinstance(ai_message, AIMessage) or not getattr(ai_message, "tool_calls", None):
         return False, summary_entries
 
     recorded = False
@@ -73,10 +82,7 @@ def has_finish_task_call(message: BaseMessage) -> bool:
     if not tool_calls:
         return False
 
-    return any(
-        tool_call.get("name") == "finish_task"
-        for tool_call in tool_calls
-    )
+    return any(tool_call.get("name") == "finish_task" for tool_call in tool_calls)
 
 
 def collect_finish_task_summaries(
@@ -100,9 +106,7 @@ def collect_finish_task_summaries(
     return summaries
 
 
-def build_agent_summary_text(
-    state: AgentState, separator: str = "\n\n"
-) -> Optional[str]:
+def build_agent_summary_text(state: AgentState, separator: str = "\n\n") -> Optional[str]:
     """Join all recorded summary entries into a single string."""
     entries = get_agent_summary_entries(state)
     if not entries:
@@ -141,9 +145,7 @@ def get_agent_summary_entries(state: AgentState) -> list[str]:
     if cached_entries:
         return _deduplicate_consecutive(cached_entries)
 
-    return _deduplicate_consecutive(
-        _derive_summaries_from_messages(state.get("messages") or [])
-    )
+    return _deduplicate_consecutive(_derive_summaries_from_messages(state.get("messages") or []))
 
 
 def _deduplicate_consecutive(entries: list[str]) -> list[str]:

@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 """
 Defines the Coder agent node for the agent graph.
 
@@ -8,12 +9,11 @@ files, and implementing features based on the task requirements.
 import logging
 from typing import Any
 
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage
 
-from app.agent.services.logging import log_agent_response
-from app.agent.services.message_processing import filter_messages_for_llm
+from app.agent.nodes.base import invoke_tool_node
 from app.agent.services.prompts import load_prompt
-from app.agent.services.summaries import record_finish_task_summary
+from app.agent.services.summaries import has_finish_task_call, record_finish_task_summary
 from app.agent.state import AgentState
 
 logger = logging.getLogger(__name__)
@@ -32,79 +32,39 @@ def create_coder_node(llm, tools, agent_stack):
         A function that represents the coder node.
     """
 
+    def _llm_response_hook(state: AgentState, response: AIMessage) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+
+        if has_finish_task_call(message=response):
+            recorded, agent_summary = record_finish_task_summary(
+                state=state, role="coder", ai_message=response
+            )
+            if recorded:
+                result["agent_summary"] = agent_summary
+
+            result["user_message"] = (
+                "Review the pull request. If you approve it, move the task to 'done'.\n"
+                + "If you reject it, comment the task and move it to 'in progress'."
+            )
+
+        return result
+
     async def coder_node(state: AgentState):
         if state["current_node"] != "coder":
             logger.info("--- CODER node ---")
-        # Filter messages to keep only recent relevant context (original task + last 15 messages)
-        # pylint: disable=duplicate-code
         system_message = load_prompt(f"systemprompt_coder_{agent_stack}.md", state)
         human_message = load_prompt("prompt_coding.md", state)
-        filtered_messages = filter_messages_for_llm(state["messages"], max_messages=25)
-        current_messages: list[BaseMessage | SystemMessage | HumanMessage] = [
-            SystemMessage(content=system_message),
-            HumanMessage(content=human_message),
-        ]
-
-        current_messages += filtered_messages
-        current_tool_choice = "auto"
-
-        for attempt in range(3):
-            try:
-                chain = llm.bind_tools(tools, tool_choice=current_tool_choice)
-                response = await chain.ainvoke(current_messages)
-
-                tool_calls = getattr(response, "tool_calls", [])
-                if tool_calls:
-                    log_agent_response(
-                        "coder",
-                        response,
-                        attempt=attempt + 1,
-                    )
-                    recorded, agent_summary = record_finish_task_summary(
-                        state,
-                        "coder",
-                        response,
-                    )
-                    result = {
-                        "messages": [response],
-                        "current_node": "coder",
-                        "current_tool_calls": tool_calls,
-                        "prompt": human_message,
-                        "system_prompt": system_message,
-                        "user_message": "Review the pull request. If you approve it, "
-                        + "move the task to 'done'. If you reject it, "
-                        + "comment the task and move it to 'in progress'.",
-                    }
-                    if recorded:
-                        result["agent_summary"] = agent_summary
-                    return result
-
-                logger.warning("Attempt %d: No tool calls. Escalating strategy...", attempt + 1)
-                current_tool_choice = "any"
-                current_messages.append(
-                    HumanMessage(content="ERROR: Invalid response. You MUST call a tool!")
-                )
-
-            except Exception as e:  # pylint: disable=broad-exception-caught
-                logger.error("Error in LLM call (Attempt %d): %s", attempt + 1, e)
-        # Fallback
-        logger.error("Agent stuck after 3 attempts. Hard exit.")
-
-        fallback_message = AIMessage(
-            content="Stuck.",
-            tool_calls=[
-                {
-                    "name": "finish_task",
-                    "args": {"summary": "Agent stuck."},
-                    "id": "call_emergency",
-                    "type": "tool_call",
-                }
-            ],
+        return await invoke_tool_node(
+            node_name="coder",
+            state=state,
+            llm=llm,
+            tools=tools,
+            system_prompt=system_message,
+            human_prompt=human_message,
+            max_messages=25,
+            fallback_tool_name="finish_task",
+            fallback_tool_args={"summary": "Agent stuck."},
+            llm_response_hook=_llm_response_hook,
         )
-        recorded, agent_summary = record_finish_task_summary(state, "coder", fallback_message)
-        result: dict[str, Any] = {"messages": [fallback_message]}
-        if recorded:
-            result["agent_summary"] = agent_summary
-        return result
 
     return coder_node

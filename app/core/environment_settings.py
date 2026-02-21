@@ -68,6 +68,7 @@ class EnvironmentSettings:  # pylint: disable=too-many-instance-attributes
     agent_stack: str = ""
     github_repo_url: str = ""
     enable_mcp_servers: bool = True
+    llm_calls_per_second: float = 0.0
 
     @classmethod
     def from_env(cls) -> EnvironmentSettings:
@@ -95,6 +96,8 @@ class EnvironmentSettings:  # pylint: disable=too-many-instance-attributes
         enable_mcp_str = os.environ.get("ENABLE_MCP_SERVERS", "true").lower()
         enable_mcp_servers = enable_mcp_str in {"true", "1", "yes", "on"}
 
+        llm_calls_per_second = float(os.environ.get("LLM_CALLS_PER_SECOND", "0"))
+
         return cls(
             encryption_key=encryption_key,
             workspace=workspace,
@@ -115,6 +118,7 @@ class EnvironmentSettings:  # pylint: disable=too-many-instance-attributes
             agent_stack=os.environ.get("AGENT_STACK", ""),
             github_repo_url=os.environ.get("GITHUB_REPO_URL", ""),
             enable_mcp_servers=enable_mcp_servers,
+            llm_calls_per_second=llm_calls_per_second,
         )
 
     def get_database_uri(self, base_dir: Path) -> str:
