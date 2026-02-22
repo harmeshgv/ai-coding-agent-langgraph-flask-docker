@@ -147,7 +147,26 @@ def checkout_branch(repo_url: str, branch_name: str, work_dir: str) -> None:
             branch_name,
             repo_url,
         )
-        repo.remotes.origin.fetch(branch_name)
+        try:
+            repo.remotes.origin.fetch(branch_name)
+        except GitCommandError as exc:
+            logger.warning(
+                "Remote ref '%s' not found on origin. Creating new local branch from current HEAD.",
+                branch_name,
+            )
+            try:
+                repo.git.checkout("-b", branch_name)
+                # Verify the branch was created successfully
+                if branch_name not in repo.heads:
+                    raise GitCommandError(f"Failed to create local branch '{branch_name}'") from exc
+                logger.info("Created new local branch '%s'.", branch_name)
+                return
+            except GitCommandError as checkout_exc:
+                logger.error(
+                    "Failed to create local branch '%s': %s", branch_name, checkout_exc
+                )
+                raise checkout_exc from exc
+
         remote_ref = f"origin/{branch_name}"
         if remote_ref in repo.refs:
             repo.git.checkout("-b", branch_name, remote_ref)
