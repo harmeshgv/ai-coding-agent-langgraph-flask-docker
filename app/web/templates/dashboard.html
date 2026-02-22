@@ -34,7 +34,7 @@
                     <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-3">
                         <h5 class="mb-0 fw-bold">Implementation Plan</h5>
                         <div class="d-flex gap-2">
-                            {% if plan_exists and agent_task and agent_task.plan_state != 'approved' %}
+                            {% if plan_exists and agent_task and agent_task.plan_state in ('created', 'updated') %}
                             <button id="btn-reject" class="btn btn-outline-danger">
                                 <i class="bi bi-x-circle me-1"></i>Reject
                             </button>
@@ -49,6 +49,19 @@
                                 <i class="bi bi-check-circle me-1"></i>Approve
                             </button>
                             {% endif %}
+                        </div>
+                    </div>
+                    <div id="plan-error" class="alert alert-danger alert-dismissible mx-3 mt-3 mb-0" style="display:none;" role="alert" hx-preserve="true">
+                        <span id="plan-error-msg"></span>
+                        <button type="button" class="btn-close" id="btn-close-error" aria-label="Close"></button>
+                    </div>
+                    <div id="rejection-panel" class="border-bottom px-3 py-3" style="display:none;" hx-preserve="true">
+                        <label for="rejection-reason" class="form-label fw-semibold">Reason for rejection</label>
+                        <textarea id="rejection-reason" class="form-control mb-2" rows="3"
+                            placeholder="Describe why the plan is being rejected..."></textarea>
+                        <div class="d-flex gap-2 justify-content-end">
+                            <button type="button" class="btn btn-secondary btn-sm" id="btn-cancel-reject">Cancel</button>
+                            <button type="button" class="btn btn-danger btn-sm" id="btn-confirm-reject">Confirm Rejection</button>
                         </div>
                     </div>
                     <div class="card-body">
@@ -130,34 +143,110 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const reviewPlan = (state) => {
+        // Track whether the rejection panel should re-open after an error. This allows
+        // reviewers to dismiss the inline error and immediately continue editing.
+        let reopenRejectionPanelOnError = false;
+        // Preserve the last rejection text so we can restore it if the request fails.
+        let lastRejectionReason = '';
+
+        const reviewPlan = (state, rejectionReason) => {
+            const body = { plan_state: state };
+            if (rejectionReason) {
+                body.rejection_reason = rejectionReason;
+            }
+            // Send plan review action to the backend. HTMX refreshes every second, so the
+            // promise handlers also toggle the reopen flag/state accordingly.
             fetch('/task/review_plan', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ plan_state: state }),
+                body: JSON.stringify(body),
             })
                 .then(response => {
                     if (response.ok) {
+                        reopenRejectionPanelOnError = false;
+                        lastRejectionReason = '';
                         location.reload();
                     } else {
-                        alert('Failed to update plan state.');
+                        response.json().then(data => {
+                            showError(data.error || 'Failed to update plan state.');
+                        }).catch(() => {
+                            showError('Failed to update plan state.');
+                        });
                     }
                 })
                 .catch((error) => {
                     console.error('Error:', error);
-                    alert('An error occurred.');
+                    showError('An error occurred.');
                 });
         };
 
-        // Use event delegation for buttons that might be replaced by HTMX
+        const showError = (message) => {
+            const box = document.getElementById('plan-error');
+            const msg = document.getElementById('plan-error-msg');
+            if (box && msg) {
+                // Display inline error message with dashboard styling and keep the message
+                // visible through HTMX swaps (hx-preserve="true" on the element).
+                msg.textContent = message;
+                box.style.display = 'block';
+            }
+        };
+
+        // Suppress HTMX swap while the rejection panel or error box is visible
+        document.body.addEventListener('htmx:beforeSwap', function (event) {
+            const panel = document.getElementById('rejection-panel');
+            const error = document.getElementById('plan-error');
+            if ((panel && panel.style.display !== 'none') || (error && error.style.display !== 'none')) {
+                event.detail.shouldSwap = false;
+            }
+        });
+
+        // Use event delegation for all buttons — avoids stale references after HTMX swaps
+        // the DOM and ensures clicks on dynamically replaced elements still work.
         document.body.addEventListener('click', function (event) {
             if (event.target && event.target.closest('#btn-approve')) {
+                reopenRejectionPanelOnError = false;
                 reviewPlan('approved');
             }
             if (event.target && event.target.closest('#btn-reject')) {
-                reviewPlan('rejected');
+                const panel = document.getElementById('rejection-panel');
+                if (panel && panel.style.display === 'none') {
+                    document.getElementById('rejection-reason').value = '';
+                    panel.style.display = 'block';
+                }
+            }
+            if (event.target && event.target.closest('#btn-confirm-reject')) {
+                const panel = document.getElementById('rejection-panel');
+                const reason = document.getElementById('rejection-reason').value.trim();
+                lastRejectionReason = reason;
+                reopenRejectionPanelOnError = true;
+                if (panel) { panel.style.display = 'none'; }
+                // Trigger plan rejection workflow; on failure the inline error gives the
+                // reviewer a quick path back to the dialog.
+                reviewPlan('rejected', reason);
+            }
+            if (event.target && event.target.closest('#btn-cancel-reject')) {
+                const panel = document.getElementById('rejection-panel');
+                if (panel) { panel.style.display = 'none'; }
+                document.getElementById('rejection-reason').value = '';
+                reopenRejectionPanelOnError = false;
+            }
+            if (event.target && event.target.closest('#btn-close-error')) {
+                const box = document.getElementById('plan-error');
+                if (box) { box.style.display = 'none'; }
+                if (reopenRejectionPanelOnError) {
+                    const panel = document.getElementById('rejection-panel');
+                    const textarea = document.getElementById('rejection-reason');
+                    if (panel && textarea) {
+                        // Restore the previous rejection reason, reopen the panel, and
+                        // focus the textarea so the reviewer can retry immediately.
+                        textarea.value = lastRejectionReason;
+                        panel.style.display = 'block';
+                        textarea.focus();
+                        reopenRejectionPanelOnError = false;
+                    }
+                }
             }
         });
     });
