@@ -1,6 +1,6 @@
-# Contributing to "Autonomous Containerized AI Coding Agent" (CAIASE)
+# Contributing to CleanKoda, the Autonomous AI Coding Agent for Software Engineering
 
-First off, thank you for considering contributing to CAIASE. It's people like you that make CAIASE a useful tool.
+First off, thank you for considering contributing to CleanKoda. It's people like you that make CleanKoda a useful tool.
 We welcome contributions from everyone. 
 
 ## 📋 Table of Contents
@@ -47,9 +47,9 @@ You can suggest a enhancement. This includes completely new features or minor im
 
 1.  **Fork** the repository on GitHub.
 2.  **Clone** your fork locally.
-3.  Create a new **branch** for your feature or bugfix (e.g., `git checkout -b feature/amazing-feature`).
-4.  **Hack away!** Write your code.
-5.  **Test** your changes locally.
+3.  Create a new **branch** for your feature or bugfix (e.g., `git checkout -b feature/#{issue-number}/amazing-feature`).
+4.  **Hack away!** Write your code. Pay attention to good code quality (see section: Writing Quality Code)
+5.  **Test** your changes locally. (see section: Testing)
 6.  **Commit** your changes (see guidelines below).
 7.  **Push** to your fork.
 8.  Submit a **Pull Request (PR)** to the `master` (`main`) branch of the original repository.
@@ -59,10 +59,17 @@ You can suggest a enhancement. This includes completely new features or minor im
 * Keep your Pull Requests small and focused on a single issue.
 * Write clean, readable, and maintainable code.
 * Refactor existing code where appropriate, but try to keep the scope of your PR clear.
+* Analyze zour source code for errors, vulnerabilities, and stylistic issues.
+* **Run the linter** to improve code quality.
+```bash
+uv run pylint /app
+```
 
 ### Testing
-
 * **Run existing tests** to ensure you haven't broken anything.
+```bash
+uv run pytest
+```
 * **Add new tests** (unit tests/integration tests) for any new functionality or bug fix.
 * PRs without adequate test coverage may be rejected.
 
@@ -94,7 +101,7 @@ We follow the standard Python style conventions (PEP 8).
 ---
 
 ## License & Legal
-By contributing to CAIASE, you agree that your contributions will be licensed under the project's Apache 2.0 License.
+By contributing to CleanKoda, you agree that your contributions will be licensed under the project's Apache 2.0 License.
 
 This means:
 
