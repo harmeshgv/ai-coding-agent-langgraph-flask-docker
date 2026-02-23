@@ -24,9 +24,8 @@ from app.agent.services.pull_request import (
     format_pr_review_message,
     get_latest_pr_review_status,
 )
-from app.core.localdb.agent_tasks_utils import read_db_task, update_db_task
 from app.web.services import dashboard_service, settings_service
-from app.web.services.dashboard_service import move_task_to_in_progress
+from app.web.services.dashboard_service import PlanReviewError, process_plan_review
 
 logger = logging.getLogger(__name__)
 
@@ -143,26 +142,13 @@ async def review_plan():
     """Updates the plan state of the current task."""
     data = request.json or {}
     new_state = data.get("plan_state")
+    rejection_reason = data.get("rejection_reason")
 
-    if new_state not in ["approved", "rejected"]:
-        return jsonify({"error": "Invalid state. Must be 'approved' or 'rejected'."}), 400
-
-    # Get current task (uses priority logic: ID, or first)
-    task = read_db_task()
-    if not task:
-        return jsonify({"error": "No active task found in database."}), 404
-
-    updated_task = update_db_task(task.task_id, plan_state=new_state)
-
-    if updated_task:
-        moved = await move_task_to_in_progress(updated_task.task_id)
-        if moved:
-            return jsonify(
-                {
-                    "message": f"Plan state updated to {new_state}",
-                    "task_id": updated_task.task_id,
-                    "plan_state": updated_task.plan_state,
-                }
-            )
-
-    return jsonify({"error": "Failed to update task"}), 500
+    try:
+        result = await process_plan_review(new_state, rejection_reason)
+        return jsonify(result)
+    except PlanReviewError as exc:
+        return jsonify({"error": str(exc)}), exc.status_code
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.exception("Unexpected error while updating plan state")
+        return jsonify({"error": "Failed to update task"}), 500
