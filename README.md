@@ -60,7 +60,7 @@ The system interacts with several external services to fulfill the end-to-end wo
 
 The following diagram illustrates the high-level architecture of the system, highlighting the separation of concerns between the Agent and the Workbench:
 
-![Architecture](./images/caiase-archiitecture.png)
+![Architecture](./images/cleankoda-architecture.png)
 
 The core system consists of the following key components:
 
