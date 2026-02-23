@@ -78,23 +78,19 @@ The system is built upon a stateful, multi-agent architecture powered by LangGra
 
 ![LangGraph Workflow](./images/workflow_graph.png)
 
-* **Router Node:** The Routing workflows process inputs and then directs them to context-specific agents. It acts as the entry point. It analyzes the incoming ticket context and determines the optimal execution strategy by selecting the appropriate specialist. 
-
-* **Agent Skill Level Node:** The Agent Skill Level Node evaluates the complexity of the task and checks if the skill level of the agent is suitable for the task. This establishes the trust-first strategy, ensuring that agents are only assigned tasks they can handle effectively.
+* **Router Node:** The Routing workflows process inputs and then directs them to context-specific agents. It acts as the entry point. It analyzes the incoming ticket context and determines the optimal execution strategy by selecting the appropriate specialist. Additionally, the Router Node evaluates the complexity of the task and checks if the skill level of the agent is suitable for the task. This establishes the trust-first strategy, ensuring that agents are only assigned tasks they can handle effectively.
 
 * **Specialist Nodes (Agents):**
 
-  - **Coder:** Focuses on implementing new features and writing complex logic. This includes clean code strategies and a focus on modular, readable, and robust code.
-
-  - **Bugfixer:** Diagnoses stack traces and applies targeted, minimal fixes to resolve errors.
+  - **Coder:** Focuses on implementing new features and writing complex logic. This includes clean code strategies and a focus on modular, readable, and robust code. One specific form of this is **Bugfixer:**, who is specialized to fix errors with minimal changes to the codebase.
 
   - **Analyst:** Operates in read-only mode to perform code reviews, answer queries, or map out dependencies.
 
   - **Tester:** Executes unit tests in order to ensure the code is functioning as expected.
 
-* **Hybrid Tool Execution:** The agents utilize a dual-layer toolset: the Model Context Protocol (MCP) for deep analysis and context retrieval, combined with Local Python execution for direct file I/O operations.
+* **The Cognitive Loop** (Reasoning): The innermost circle. The agent "thinks," executes a tool (e.g., read_file), analyzes the output, and plans the next move. This is the classic **ReAct pattern** that makes complex problem-solving possible in the first place.
 
-* **Self-Correction Loop:** A dedicated control node monitors agent behavior. If an agent fails to execute a tool correctly or provides empty responses, this loop intervenes to force a retry and realign the workflow.
+* **Self-Correction Loop** (Quality): This is where true reliability happens. Inspired by TDD (Test-Driven Development), our agent writes code, validates it against tests, and fixes its own bugs—before a human even sees the code. This is CleanKoda’s USP. It distinguishes rigorous Software Engineering from the current "Vibe Coding" approach.
 
 ## Tech Stack
 
