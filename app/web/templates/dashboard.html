@@ -51,7 +51,8 @@
                             {% endif %}
                         </div>
                     </div>
-                    <div id="plan-error" class="alert alert-danger alert-dismissible mx-3 mt-3 mb-0" style="display:none;" role="alert" hx-preserve="true">
+                    <div id="plan-error" class="alert alert-danger alert-dismissible mx-3 mt-3 mb-0"
+                        style="display:none;" role="alert" hx-preserve="true">
                         <span id="plan-error-msg"></span>
                         <button type="button" class="btn-close" id="btn-close-error" aria-label="Close"></button>
                     </div>
@@ -60,8 +61,10 @@
                         <textarea id="rejection-reason" class="form-control mb-2" rows="3"
                             placeholder="Describe why the plan is being rejected..."></textarea>
                         <div class="d-flex gap-2 justify-content-end">
-                            <button type="button" class="btn btn-secondary btn-sm" id="btn-cancel-reject">Cancel</button>
-                            <button type="button" class="btn btn-danger btn-sm" id="btn-confirm-reject">Confirm Rejection</button>
+                            <button type="button" class="btn btn-secondary btn-sm"
+                                id="btn-cancel-reject">Cancel</button>
+                            <button type="button" class="btn btn-danger btn-sm" id="btn-confirm-reject">Confirm
+                                Rejection</button>
                         </div>
                     </div>
                     <div class="card-body">
@@ -98,6 +101,10 @@
                         <br><br>
                         <span class="fw-bold">{{ agent_task.user_message }}</span>
                         <br>
+                        {% if agent_task.pr_url %}
+                        <a href="{{ agent_task.pr_url }}" target="_blank">Pull Request</a>
+                        <br>
+                        {% endif %}
                         <span>Waiting for user response...</span>
                         {% endif %}
                     </div>
