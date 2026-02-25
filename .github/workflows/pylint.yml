@@ -16,3 +16,22 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - run: uv sync --locked
     - run: uv run --with pylint -- pylint app/
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv and set Python version
+      uses: astral-sh/setup-uv@v7
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - run: uv sync --locked
+
+    - name: Run unit tests
+      run: uv run pytest
