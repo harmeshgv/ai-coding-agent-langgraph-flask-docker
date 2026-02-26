@@ -185,9 +185,20 @@ def test_create_workflow_registers_all_nodes(workflow_mocks):
         )  # type: ignore[stop-iteration]
     )
     assert router_mapping == {
+        "coding | analyzing": "checkout",
         "reject": "task_update",
-        "coder": "coder",
-        "analyst": "analyst",
+    }
+
+    checkout_mapping = dict(
+        next(
+            mapping.items()
+            for source, mapping in workflow.conditional_edges
+            if source == "checkout"
+        )
+    )
+    assert checkout_mapping == {
+        "coding": "coder",
+        "analyzing": "analyst",
     }
 
     tools_coder_mapping = dict(
