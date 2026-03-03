@@ -254,7 +254,7 @@ async def test_task_fetch_node_with_comments(agent_settings, mock_task_provider)
         branch_name="feature/test",
     )
 
-    # Mock board provider to return task in "In Progress" state
+    # Mock task provider to return task in "In Progress" state
     mock_task_provider.get_task = AsyncMock(
         return_value=ProviderTask(
             id="card1",

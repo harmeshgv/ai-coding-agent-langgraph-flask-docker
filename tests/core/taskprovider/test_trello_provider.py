@@ -1,5 +1,5 @@
 """
-Tests for the Trello board provider implementation.
+Tests for the Trello task provider implementation.
 """
 
 from datetime import datetime
@@ -38,7 +38,7 @@ def trello_provider(agent_settings):
 
 @pytest.mark.asyncio
 async def test_get_states(trello_provider):
-    """Test getting states (Trello lists) from board."""
+    """Test getting states (Trello lists) from task system."""
     mock_lists = [
         {"id": "list1", "name": "To Do"},
         {"id": "list2", "name": "In Progress"},

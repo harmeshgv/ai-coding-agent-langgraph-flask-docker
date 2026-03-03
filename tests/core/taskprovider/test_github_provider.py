@@ -1,4 +1,4 @@
-"""Tests for the GitHub board provider implementation."""
+"""Tests for the GitHub task provider implementation."""
 
 from unittest.mock import AsyncMock, patch
 

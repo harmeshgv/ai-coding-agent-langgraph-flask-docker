@@ -143,7 +143,7 @@ def test_add_task_comment_tool_handles_none_agent_settings():
 
 
 def test_add_task_comment_tool_handles_value_error():
-    """Test that the tool handles ValueError from board provider gracefully."""
+    """Test that the tool handles ValueError from task provider gracefully."""
 
     async def _test():
         mock_agent_settings = MagicMock()
@@ -194,7 +194,7 @@ def test_add_task_comment_tool_handles_value_error():
 
 
 def test_add_task_comment_tool_handles_runtime_error():
-    """Test that the tool handles RuntimeError from board provider gracefully."""
+    """Test that the tool handles RuntimeError from task provider gracefully."""
 
     async def _test():
         mock_agent_settings = MagicMock()
