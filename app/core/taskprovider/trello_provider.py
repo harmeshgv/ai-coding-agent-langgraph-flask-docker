@@ -1,22 +1,22 @@
 """
-Trello implementation of the BoardProvider interface.
+Trello implementation of the TaskProvider interface.
 
 This adapter wraps the existing Trello client functions and adapts them
-to the BoardProvider interface, allowing Trello to be used interchangeably
-with other board systems.
+to the TaskProvider interface, allowing Trello to be used interchangeably
+with other task systems.
 """
 
 import logging
 from datetime import datetime, timezone
 from typing import Optional
 
-from app.core.taskboard.board_provider import (
-    BoardComment,
-    BoardProvider,
-    BoardStateMove,
+from app.core.taskprovider.task_provider import (
+    TaskProvider,
     ProviderTask,
+    ProviderTaskComment,
+    ProviderTaskStateMove,
 )
-from app.core.taskboard.trello_client import (
+from app.core.taskprovider.trello_client import (
     add_comment_to_trello_card,
     create_trello_card,
     get_all_trello_cards,
@@ -32,12 +32,12 @@ from app.core.localdb.models import AgentSettings, TaskSystem
 logger = logging.getLogger(__name__)
 
 
-class TrelloProvider(BoardProvider):
+class TrelloProvider(TaskProvider):
     """
-    Trello implementation of the BoardProvider interface.
+    Trello implementation of the TaskProvider interface.
 
     This class wraps the existing Trello client functions and provides
-    a consistent interface for board operations.
+    a consistent interface for task operations.
     """
 
     def __init__(self, agent_settings: AgentSettings):
@@ -118,12 +118,12 @@ class TrelloProvider(BoardProvider):
         """Add a comment to a Trello task."""
         await add_comment_to_trello_card(task_id, comment, self.agent_settings)
 
-    async def get_comments(self, task_id: str) -> list[BoardComment]:
+    async def get_comments(self, task_id: str) -> list[ProviderTaskComment]:
         """Fetch all comments for a Trello task."""
         comments = await get_trello_card_comments(task_id, self.agent_settings)
 
         return [
-            BoardComment(
+            ProviderTaskComment(
                 id=comment["id"],
                 text=comment["text"],
                 author=comment["member_creator"],
@@ -132,12 +132,12 @@ class TrelloProvider(BoardProvider):
             for comment in comments
         ]
 
-    async def get_state_moves(self, task_id: str) -> list[BoardStateMove]:
+    async def get_state_moves(self, task_id: str) -> list[ProviderTaskStateMove]:
         """Fetch the history of state moves (Trello list moves) for a task."""
         moves = await get_trello_card_list_moves(task_id, self.agent_settings)
 
         return [
-            BoardStateMove(
+            ProviderTaskStateMove(
                 id=move["id"],
                 date=self._parse_timestamp(move["date"]),
                 state_before=move["list_before"],

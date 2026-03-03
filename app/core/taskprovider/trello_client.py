@@ -37,7 +37,7 @@ def get_safe_url(url: str, params: dict) -> str:
 
 
 async def get_all_trello_lists(agent_settings: AgentSettings) -> list[dict]:
-    """Fetches all lists for the configured Trello board."""
+    """Fetches all lists for the configured Trello task system."""
     task_system = agent_settings.get_task_system("trello")
     board_id = task_system.board_id if task_system else None
 

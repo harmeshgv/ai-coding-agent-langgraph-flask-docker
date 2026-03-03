@@ -149,7 +149,7 @@ def _get_or_create_task_system(settings: AgentSettings, provider: str) -> TaskSy
         return existing
 
     task_system = TaskSystem()
-    task_system.board_provider = provider
+    task_system.task_provider = provider
     task_system.task_system_type = provider.upper()
     settings.task_systems.append(task_system)
     return task_system

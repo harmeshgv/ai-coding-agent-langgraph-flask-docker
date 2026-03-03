@@ -60,7 +60,7 @@ class AgentSettings(db.Model):
         """Get TaskSystem by provider name."""
         if self.task_systems and isinstance(self.task_systems, list):
             for ts in self.task_systems:
-                if ts.board_provider == provider:
+                if ts.task_provider == provider:
                     return ts
         return None
 
@@ -93,7 +93,7 @@ class TaskSystem(db.Model):
         index=True,
     )
     task_system_type = db.Column(db.String(50), nullable=False, default="TRELLO")
-    board_provider = db.Column(db.String(50), nullable=False)
+    task_provider = db.Column(db.String(50), nullable=False)
     api_key = db.Column(EncryptedString, nullable=True)
     token = db.Column(EncryptedString, nullable=True)
     base_url = db.Column(db.String(200), nullable=True)
@@ -114,12 +114,12 @@ class TaskSystem(db.Model):
 
     __table_args__ = (
         db.UniqueConstraint(
-            "agent_settings_id", "board_provider", name="uq_agent_settings_provider"
+            "agent_settings_id", "task_provider", name="uq_agent_settings_provider"
         ),
     )
 
     def __repr__(self):
-        return f"<TaskSystem {self.id} provider={self.board_provider}>"
+        return f"<TaskSystem {self.id} provider={self.task_provider}>"
 
 
 # pylint: disable=too-few-public-methods

@@ -5,8 +5,8 @@ from datetime import datetime
 from typing import Optional
 
 
-from app.core.taskboard.board_provider import (  # pylint: disable=unused-import
-    BoardProvider,
+from app.core.taskprovider.task_provider import (  # pylint: disable=unused-import
+    TaskProvider,
     ProviderTask,
 )
 from app.agent.services.pull_request import check_pr_exists_for_branch
@@ -15,11 +15,13 @@ from app.core.localdb.agent_tasks_utils import read_db_task
 logger = logging.getLogger(__name__)
 
 
-async def fetch_task_from_state(board_provider: BoardProvider, state_name: str) -> ProviderTask | None:
-    """Fetch a task from a board state."""
-    board_states = await board_provider.get_states()
+async def fetch_task_from_state(
+    task_provider: TaskProvider, state_name: str
+) -> ProviderTask | None:
+    """Fetch a task from with a state."""
+    task_states = await task_provider.get_states()
     target_state = next(
-        (data for data in board_states if data["name"] == state_name),
+        (data for data in task_states if data["name"] == state_name),
         None,
     )
 
@@ -30,7 +32,7 @@ async def fetch_task_from_state(board_provider: BoardProvider, state_name: str) 
     state_id = target_state["id"]
     logger.info("Found %s state id: %s", state_name, state_id)
 
-    tasks = await board_provider.get_tasks_from_state(state_id)
+    tasks = await task_provider.get_tasks_from_state(state_id)
     if not tasks:
         logger.info("No open tasks found in %s.", state_name)
         return None
@@ -39,7 +41,7 @@ async def fetch_task_from_state(board_provider: BoardProvider, state_name: str) 
 
 
 async def move_task_to_state(
-    board_provider: BoardProvider,
+    task_provider: TaskProvider,
     task: ProviderTask,
     task_state_name: str,
 ) -> ProviderTask:
@@ -57,8 +59,8 @@ async def move_task_to_state(
         )
 
         try:
-            await board_provider.move_task_to_named_state(task.id, task_state_name)
-            modified_task = await board_provider.get_task(task.id)
+            await task_provider.move_task_to_named_state(task.id, task_state_name)
+            modified_task = await task_provider.get_task(task.id)
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Failed to move task to in-progress state: %s", e)
 
@@ -70,7 +72,7 @@ async def move_task_to_state(
 
 
 async def fetch_review_comments(
-    board_provider: BoardProvider,
+    task_provider: TaskProvider,
     task_id: str,
     in_progress_state_name: str,
     in_review_state_name: str,
@@ -79,7 +81,7 @@ async def fetch_review_comments(
     Fetch comments from review if task was returned from review to in-progress.
 
     Args:
-        board_provider: BoardProvider
+        task_provider: TaskProvider
         task_id: id of task
         original_state_name: name of state before task was moved to in-progress
         task_in_progress_state_name: name of in-progress state
@@ -91,9 +93,9 @@ async def fetch_review_comments(
     comments = []
     # if task was in review and returned to in-progress,
     # fetch comments between review and move to in-progress
-    all_comments = await board_provider.get_comments(task_id)
+    all_comments = await task_provider.get_comments(task_id)
 
-    if board_provider.get_type() == "github":
+    if task_provider.get_type() == "github":
         # For GitHub, only return last comment if a PR exists for the branch
         db_task = read_db_task(task_id=task_id)
         branch_name = db_task.branch_name
@@ -102,7 +104,7 @@ async def fetch_review_comments(
         return []
 
     latest_move = await get_latest_move_to_in_progress(
-        board_provider, task_id, in_review_state_name, in_progress_state_name
+        task_provider, task_id, in_review_state_name, in_progress_state_name
     )
     logger.info("Latest move: %s", latest_move)
     if latest_move:
@@ -126,7 +128,7 @@ async def fetch_review_comments(
 
 
 async def get_latest_move_to_in_progress(
-    board_provider: BoardProvider,
+    task_provider: TaskProvider,
     task_id: str,
     review_state_name: str,
     in_progress_state_name: str,
@@ -138,7 +140,7 @@ async def get_latest_move_to_in_progress(
         was from review to in-progress, None otherwise.
     """
     try:
-        state_moves = await board_provider.get_state_moves(task_id)
+        state_moves = await task_provider.get_state_moves(task_id)
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.warning(
             "Failed to fetch state moves for task %s: %s.",

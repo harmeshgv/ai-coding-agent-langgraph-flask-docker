@@ -28,18 +28,18 @@ def create_task_provider(agent_settings: AgentSettings) -> TaskProvider:
         agent_settings: Agent settings containing system configuration details
 
     Returns:
-        An instance of a BoardProvider implementation
+        An instance of a TaskProvider implementation
 
     Raises:
         ValueError: If an unknown provider type is specified
 
     Example:
         >>> agent_settings = AgentSettings(task_system_type="TRELLO", ...})
-        >>> provider = create_board_provider(agent_settings)
+        >>> provider = create_task_provider(agent_settings)
     """
     provider_type = agent_settings.task_system_type.lower()
 
-    logger.info("Creating board provider: %s", provider_type)
+    logger.info("Creating task provider: %s", provider_type)
 
     if provider_type == "trello":
         return TrelloProvider(agent_settings)
@@ -47,6 +47,4 @@ def create_task_provider(agent_settings: AgentSettings) -> TaskProvider:
     if provider_type == "github":
         return GitHubProvider(agent_settings)
 
-    raise ValueError(
-        f"Unknown board provider: {provider_type}. Supported providers: trello, github"
-    )
+    raise ValueError(f"Unknown task provider: {provider_type}. Supported providers: trello, github")

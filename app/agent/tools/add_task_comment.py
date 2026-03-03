@@ -5,7 +5,7 @@ import logging
 from langchain.tools import ToolRuntime, tool
 
 from app.core.localdb.models import AgentSettings
-from app.core.taskboard.board_factory import create_board_provider
+from app.core.taskprovider.task_factory import create_task_provider
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ async def add_task_comment(
     runtime: ToolRuntime[AgentSettings, dict],
 ) -> str:
     """
-    Adds a comment to the current task in the board system.
+    Adds a comment to the current task in the task system.
 
     Args:
         comment: The comment text to add to the task.
@@ -33,13 +33,13 @@ async def add_task_comment(
         task_id = current_task.id
         task_name = current_task.name
 
-        # Create board provider and add comment
+        # Create task provider and add comment
         agent_settings = runtime.context
         if not agent_settings:
             return "Error: No agent settings found in runtime context"
 
-        board_provider = create_board_provider(agent_settings)
-        await board_provider.add_comment(task_id, comment)
+        task_provider = create_task_provider(agent_settings)
+        await task_provider.add_comment(task_id, comment)
 
         logger.info(
             "Added comment to task '%s' (%s): %s",
@@ -56,5 +56,5 @@ async def add_task_comment(
         logger.error("Failed to add comment: %s", str(e))
         return f"Error: {str(e)}"
     except Exception as e:  # pylint: disable=broad-exception-caught
-        logger.error("Board provider error: %s", str(e))
+        logger.error("Task provider error: %s", str(e))
         return f"Failed to add comment: {str(e)}"

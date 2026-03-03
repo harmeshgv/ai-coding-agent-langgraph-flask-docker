@@ -3,7 +3,7 @@ Abstract interface for external task system integrations.
 
 This module defines the contract that all task providers (Trello, GitHub, Jira, etc.)
 must implement. It provides domain models that are independent of any specific
-board system implementation.
+task system implementation.
 """
 
 from abc import ABC, abstractmethod
@@ -17,7 +17,7 @@ from app.core.localdb.models import TaskSystem
 @dataclass
 class ProviderTask:
     """
-    Domain model for a task, independent of the board system.
+    Domain model for a task, independent of the task system.
 
     Attributes:
         id: Unique identifier for the task
@@ -25,7 +25,7 @@ class ProviderTask:
         description: Detailed description of the task
         state_id: ID of the state/column containing this task
         state_name: Name of the state/column containing this task
-        url: URL to view the task in the board system
+        url: URL to view the task in the task system
     """
 
     id: str
@@ -86,7 +86,7 @@ class TaskProvider(ABC):
     @abstractmethod
     async def get_states(self) -> list[dict]:
         """
-        Fetch all states/columns from the board.
+        Fetch all states/columns from the task system.
 
         Returns:
             List of dictionaries with 'id' and 'name' keys
@@ -95,7 +95,7 @@ class TaskProvider(ABC):
     @abstractmethod
     async def get_task(self, task_id: str) -> Optional[ProviderTask]:
         """
-        Fetch a specific task from the board.
+        Fetch a specific task from the task system.
 
         Args:
             task_id: The ID of the task to fetch
@@ -171,7 +171,7 @@ class TaskProvider(ABC):
             task_id: The ID of the task
 
         Returns:
-            List of BoardComment objects
+            List of ProviderTaskComment objects
 
         Raises:
             RuntimeError: If fetching comments fails
@@ -186,7 +186,7 @@ class TaskProvider(ABC):
             task_id: The ID of the task
 
         Returns:
-            List of BoardStateMove objects
+            List of ProviderTaskStateMove objects
 
         Raises:
             RuntimeError: If fetching move history fails

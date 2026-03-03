@@ -7,7 +7,7 @@ from typing import Any, Dict
 from flask import current_app
 from git import Repo
 
-from app.core.taskboard.board_provider import ProviderTask
+from app.core.taskprovider.task_provider import ProviderTask
 from app.agent.services.git_workspace import checkout_branch, get_current_branch
 from app.agent.state import AgentState, TaskType
 from app.agent.utils import get_workspace

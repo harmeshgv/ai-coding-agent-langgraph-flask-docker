@@ -1,7 +1,7 @@
 """
 Defines the task update node for the agent graph.
 
-This node is responsible for finalizing a task on the board. It adds a summary
+This node is responsible for finalizing a task on the task system. It adds a summary
 comment to the task and moves it to a "done" or "completed" list,
 based on the agent's configuration.
 """
@@ -11,8 +11,8 @@ from time import sleep
 
 from langchain_core.messages import AIMessage, ToolMessage
 
-from app.core.taskboard.board_factory import create_board_provider
-from app.core.taskboard.board_provider import BoardProvider, ProviderTask
+from app.core.taskprovider.task_factory import create_task_provider
+from app.core.taskprovider.task_provider import TaskProvider, ProviderTask
 from app.agent.services.summaries import get_agent_summary_entries
 from app.agent.state import AgentState
 from app.core.localdb.models import AgentSettings
@@ -27,7 +27,7 @@ def create_task_update_node(agent_settings: AgentSettings):
     Factory function that creates the task update node.
 
     Args:
-        agent_settings: Agent configuration containing board provider credentials
+        agent_settings: Agent configuration containing task provider credentials
             and settings.
 
     Returns:
@@ -45,25 +45,25 @@ def create_task_update_node(agent_settings: AgentSettings):
             logger.warning("No task found in state")
             return {}
 
-        logger.info("Updating task in board %s", provider_task)
+        logger.info("Updating task in task system %s", provider_task)
 
-        board_provider: BoardProvider = create_board_provider(agent_settings)
+        task_provider: TaskProvider = create_task_provider(agent_settings)
 
         try:
             final_comments = _build_agent_comments(state)
             for comment in final_comments:
-                await board_provider.add_comment(provider_task.id, comment)
+                await task_provider.add_comment(provider_task.id, comment)
                 sleep(0.1)
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Failed to add comment to task: %s", e)
 
         try:
-            task_moveto_state = board_provider.get_task_system().state_in_review
+            task_moveto_state = task_provider.get_task_system().state_in_review
             if not task_moveto_state:
-                logger.warning("state_in_review not configured for provider %s", board_provider)
+                logger.warning("state_in_review not configured for provider %s", task_provider)
                 return
 
-            await board_provider.move_task_to_named_state(
+            await task_provider.move_task_to_named_state(
                 task_id=provider_task.id, state_name=task_moveto_state
             )
 
