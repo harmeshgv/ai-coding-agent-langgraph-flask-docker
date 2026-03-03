@@ -15,7 +15,7 @@ from app.core.localdb.models import TaskSystem
 
 
 @dataclass
-class BoardTask:
+class ProviderTask:
     """
     Domain model for a task, independent of the board system.
 
@@ -37,7 +37,7 @@ class BoardTask:
 
 
 @dataclass
-class BoardTaskComment:
+class ProviderTaskComment:
     """
     Domain model for a comment on a task.
 
@@ -58,7 +58,7 @@ class BoardTaskComment:
 
 
 @dataclass
-class BoardTaskStateMove:
+class ProviderTaskStateMove:
     """
     Domain model for tracking when a task moves between states.
 
@@ -93,7 +93,7 @@ class TaskProvider(ABC):
         """
 
     @abstractmethod
-    async def get_task(self, task_id: str) -> Optional[BoardTask]:
+    async def get_task(self, task_id: str) -> Optional[ProviderTask]:
         """
         Fetch a specific task from the board.
 
@@ -101,14 +101,14 @@ class TaskProvider(ABC):
             task_id: The ID of the task to fetch
 
         Returns:
-            The BoardTask object
+            The ProviderTask object
 
         Raises:
             RuntimeError: If task fetching fails
         """
 
     @abstractmethod
-    async def get_tasks_from_state(self, state_id: str) -> list[BoardTask]:
+    async def get_tasks_from_state(self, state_id: str) -> list[ProviderTask]:
         """
         Fetch all tasks from a specific state.
 
@@ -116,7 +116,7 @@ class TaskProvider(ABC):
             state_id: The ID of the state to fetch tasks from
 
         Returns:
-            List of BoardTask objects
+            List of ProviderTask objects
         """
 
     @abstractmethod
@@ -163,7 +163,7 @@ class TaskProvider(ABC):
         """
 
     @abstractmethod
-    async def get_comments(self, task_id: str) -> list[BoardTaskComment]:
+    async def get_comments(self, task_id: str) -> list[ProviderTaskComment]:
         """
         Fetch all comments for a task.
 
@@ -178,7 +178,7 @@ class TaskProvider(ABC):
         """
 
     @abstractmethod
-    async def get_state_moves(self, task_id: str) -> list[BoardTaskStateMove]:
+    async def get_state_moves(self, task_id: str) -> list[ProviderTaskStateMove]:
         """
         Fetch the history of state moves for a task.
 
@@ -193,7 +193,7 @@ class TaskProvider(ABC):
         """
 
     @abstractmethod
-    async def create_task(self, name: str, description: str, state_name: str) -> BoardTask:
+    async def create_task(self, name: str, description: str, state_name: str) -> ProviderTask:
         """
         Create a new task in the specified state.
 
@@ -203,7 +203,7 @@ class TaskProvider(ABC):
             state_name: The name of the state to create the task in
 
         Returns:
-            The created BoardTask object
+            The created ProviderTask object
 
         Raises:
             ValueError: If the state name is not found

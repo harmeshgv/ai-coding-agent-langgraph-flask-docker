@@ -14,7 +14,7 @@ from app.core.taskboard.board_provider import (
     BoardComment,
     BoardProvider,
     BoardStateMove,
-    BoardTask,
+    ProviderTask,
 )
 from app.core.taskboard.github_client import (
     add_comment_to_issue,
@@ -54,7 +54,7 @@ class GitHubProvider(BoardProvider):
         """Fetch all states (columns) from the GitHub Project."""
         return await get_project_columns(self.agent_settings)
 
-    async def get_task(self, task_id: str) -> Optional[BoardTask]:
+    async def get_task(self, task_id: str) -> Optional[ProviderTask]:
         """Fetch a specific task (project item) by ID."""
         item = await get_project_item(task_id, self.agent_settings)
 
@@ -62,7 +62,7 @@ class GitHubProvider(BoardProvider):
             logger.warning("GitHub Issue %s not found", task_id)
             return None
 
-        return BoardTask(
+        return ProviderTask(
             id=item["id"],
             name=item.get("title", ""),
             description=item.get("body", ""),
@@ -71,7 +71,7 @@ class GitHubProvider(BoardProvider):
             url=item.get("url", ""),
         )
 
-    async def get_tasks_from_state(self, state_id: str) -> list[BoardTask]:
+    async def get_tasks_from_state(self, state_id: str) -> list[ProviderTask]:
         """
         Fetch all tasks from a specific state (column).
 
@@ -88,7 +88,7 @@ class GitHubProvider(BoardProvider):
         items = await get_items_from_column(target_column["name"], self.agent_settings)
 
         return [
-            BoardTask(
+            ProviderTask(
                 id=item["id"],
                 name=item["title"],
                 description=item["body"] or "",
@@ -150,7 +150,7 @@ class GitHubProvider(BoardProvider):
             for move in moves
         ]
 
-    async def create_task(self, name: str, description: str, state_name: str) -> BoardTask:
+    async def create_task(self, name: str, description: str, state_name: str) -> ProviderTask:
         """Create a new task (draft issue) in the specified state (column)."""
         result = await create_draft_issue(
             name,
@@ -159,7 +159,7 @@ class GitHubProvider(BoardProvider):
             self.agent_settings,
         )
 
-        return BoardTask(
+        return ProviderTask(
             id=result["id"],
             name=result["title"],
             description=description,

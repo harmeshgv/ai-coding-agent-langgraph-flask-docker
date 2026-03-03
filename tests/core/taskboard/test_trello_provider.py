@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.core.taskboard.board_provider import BoardTask, BoardComment, BoardStateMove
+from app.core.taskboard.board_provider import ProviderTask, BoardComment, BoardStateMove
 from app.core.taskboard.trello_provider import TrelloProvider
 from app.core.localdb.models import AgentSettings, TaskSystem
 
@@ -68,7 +68,7 @@ async def test_get_task(trello_provider):
         task = await trello_provider.get_task("card123")
 
         mock_get.assert_called_once_with("card123", trello_provider.agent_settings)
-        assert isinstance(task, BoardTask)
+        assert isinstance(task, ProviderTask)
         assert task.id == "card123"
         assert task.name == "Test Card"
         assert task.description == "Details"
@@ -92,7 +92,7 @@ async def test_get_tasks_from_state(trello_provider):
         tasks = await trello_provider.get_tasks_from_state("list1")
 
         assert len(tasks) == 2
-        assert all(isinstance(task, BoardTask) for task in tasks)
+        assert all(isinstance(task, ProviderTask) for task in tasks)
         assert tasks[0].id == "card1"
         assert tasks[0].name == "Task 1"
         assert tasks[0].description == "Description 1"
@@ -202,7 +202,7 @@ async def test_create_card(trello_provider):
     ):
         task = await trello_provider.create_task("New Task", "Description", "To Do")
 
-        assert isinstance(task, BoardTask)
+        assert isinstance(task, ProviderTask)
         assert task.id == "new_card"
         assert task.name == "New Task"
         assert task.state_name == "To Do"

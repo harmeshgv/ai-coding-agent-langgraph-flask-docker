@@ -6,7 +6,7 @@ import pytest
 
 from app.agent.nodes import pull_request as pr_module
 from app.core.localdb.models import AgentTask
-from app.core.taskboard.board_provider import BoardTask
+from app.core.taskboard.board_provider import ProviderTask
 
 
 @pytest.fixture
@@ -14,7 +14,7 @@ def base_state():
     """Provide a default agent state structure."""
     return {
         "agent_summary": ["Initial summary"],
-        "board_task": BoardTask(
+        "provider_task": ProviderTask(
             id="task-123",
             name="Improve testing",
             description="Ensure PR node is covered",

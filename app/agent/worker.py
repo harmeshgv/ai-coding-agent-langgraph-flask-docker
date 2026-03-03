@@ -66,8 +66,8 @@ async def run_agent_cycle(runtime: RuntimeSetting) -> None:
         inputs = {
             "messages": [],
             "next_step": "",
-            "board_task": None,
-            "board_task_comments": [],
+            "provider_task": None,
+            "provider_task_comments": [],
             "agent_task": read_db_task(),
             "agent_stack": runtime.agent_stack,
             "agent_skill_level": runtime.agent_settings.agent_skill_level,
@@ -88,12 +88,12 @@ async def run_agent_cycle(runtime: RuntimeSetting) -> None:
         async for current_state in app_graph.astream(
             inputs, config=thread_config, stream_mode="values", context=runtime.agent_settings
         ):
-            if current_state["board_task"] and current_state["agent_task"]:
+            if current_state["provider_task"] and current_state["agent_task"]:
                 save_state_to_instance(current_state)
                 update_db_task(
-                    task_id=current_state["board_task"].id,
-                    task_name=current_state["board_task"].name,
-                    task_description=current_state["board_task"].description,
+                    task_id=current_state["provider_task"].id,
+                    task_name=current_state["provider_task"].name,
+                    task_description=current_state["provider_task"].description,
                     task_type=current_state["agent_task"].task_type,
                     task_skill_level=current_state["agent_task"].task_skill_level,
                     task_skill_level_reasoning=current_state[

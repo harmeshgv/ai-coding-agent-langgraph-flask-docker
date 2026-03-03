@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
-from app.core.taskboard.board_provider import BoardTask
+from app.core.taskboard.board_provider import ProviderTask
 from app.agent.nodes.task_update_node import (
     AGENT_DEFAULT_COMMENT,
     _build_agent_comments,
@@ -47,7 +47,7 @@ def mock_board_provider():
 async def test_task_update_node_success(agent_settings, mock_board_provider, monkeypatch):
     """Test successful task update."""
     state = {
-        "board_task": BoardTask(
+        "provider_task": ProviderTask(
             id="card1",
             name="Task Name",
             description="Desc",
@@ -74,7 +74,7 @@ async def test_task_update_node_success(agent_settings, mock_board_provider, mon
 @pytest.mark.asyncio
 async def test_task_update_node_no_task_id(agent_settings, mock_board_provider, monkeypatch):
     """Test task update with no task ID."""
-    state = {"board_task": None, "messages": [], "current_node": "any_node"}
+    state = {"provider_task": None, "messages": [], "current_node": "any_node"}
 
     monkeypatch.setattr(
         "app.agent.nodes.task_update_node.create_board_provider",
@@ -91,7 +91,7 @@ async def test_task_update_node_no_task_id(agent_settings, mock_board_provider, 
 async def test_task_update_node_move_fails(agent_settings, mock_board_provider, monkeypatch):
     """Test task update when move operation fails."""
     state = {
-        "board_task": BoardTask(
+        "provider_task": ProviderTask(
             id="card1",
             name="Task Name",
             description="Desc",

@@ -8,7 +8,7 @@ preparing them for processing by the agent.
 import logging
 
 from app.core.taskboard.board_factory import create_board_provider
-from app.core.taskboard.board_provider import BoardProvider, BoardTask
+from app.core.taskboard.board_provider import BoardProvider, ProviderTask
 from app.agent.services.pull_request import (
     format_pr_review_message,
     get_latest_open_pr_for_branch,
@@ -42,33 +42,33 @@ def create_task_fetch_node(agent_settings: AgentSettings):
             logger.info("--- TASK FETCH node ---")
 
         try:
-            board_task, agent_task, task_is_new = await _resolve_task(
+            provider_task, agent_task, task_is_new = await _resolve_task(
                 state["agent_task"], board_provider
             )
 
-            if not board_task:
+            if not provider_task:
                 logger.info("There is no current task to work on.")
-                return {"board_task": None}
+                return {"provider_task": None}
 
             comments = []
             pr_review_message = ""
             if task_is_new:
                 # if the task is new and has the state "todo" then clean up the workspace
-                board_task = await _cleanup_new_task(board_task, board_provider)
+                provider_task = await _cleanup_new_task(provider_task, board_provider)
             else:
                 # otherwise fetch revie comments from board and pr, in order
                 # to give further user information
                 comments = await fetch_review_comments(
                     board_provider,
-                    board_task.id,
+                    provider_task.id,
                     board_provider.get_task_system().state_in_progress,
                     board_provider.get_task_system().state_in_review,
                 )
-                pr_review_message = _fetch_pr_review_info(board_task.id)
+                pr_review_message = _fetch_pr_review_info(provider_task.id)
 
             return {
-                "board_task": board_task,
-                "board_task_comments": comments,
+                "provider_task": provider_task,
+                "provider_task_comments": comments,
                 "pr_review_message": pr_review_message,
                 "agent_task": agent_task,
                 "current_node": "task_fetch",
@@ -76,12 +76,12 @@ def create_task_fetch_node(agent_settings: AgentSettings):
 
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Error fetching tasks: %s", e)
-            return {"board_task": None}
+            return {"provider_task": None}
 
     return task_fetch
 
 
-async def _cleanup_new_task(task: BoardTask, board_provider: BoardProvider) -> BoardTask:
+async def _cleanup_new_task(task: ProviderTask, board_provider: BoardProvider) -> ProviderTask:
     """
     Process the task and prepare the return value.
     """
@@ -96,7 +96,7 @@ async def _cleanup_new_task(task: BoardTask, board_provider: BoardProvider) -> B
 
 async def _resolve_task(
     agent_task: AgentTask | None, board_provider: BoardProvider
-) -> tuple[BoardTask | None, AgentTask | None, bool]:
+) -> tuple[ProviderTask | None, AgentTask | None, bool]:
     """
     Get the last task (with task_id) or create a new task.
     See specification in task_management.md.
@@ -109,33 +109,33 @@ async def _resolve_task(
         logger.info("Fetching tasks from board: %s", agent_task.task_id)
 
         try:
-            board_task = await board_provider.get_task(agent_task.task_id)
+            provider_task = await board_provider.get_task(agent_task.task_id)
         except Exception:  # pylint: disable=broad-exception-caught
-            board_task = None
+            provider_task = None
 
-        if board_task:
+        if provider_task:
             # check if task in review or in progress
-            if board_task.state_name == board_provider.get_task_system().state_in_review:
+            if provider_task.state_name == board_provider.get_task_system().state_in_review:
                 logger.info("Task is in review. Wait for user action.")
                 return None, agent_task, False
 
-            if board_task.state_name == board_provider.get_task_system().state_in_progress:
+            if provider_task.state_name == board_provider.get_task_system().state_in_progress:
                 logger.info("Task is in progress. Add review comments.")
-                return board_task, agent_task, False
+                return provider_task, agent_task, False
 
             logger.info("Last task found but it is not in review or in progress.")
 
     # Get a new task from todo
     logger.info("Fetching new task from todo.")
-    board_task = await fetch_task_from_state(
+    provider_task = await fetch_task_from_state(
         board_provider, board_provider.get_task_system().state_todo
     )
     # update local db: remove the old task and insert the new task
-    if board_task:
+    if provider_task:
         if agent_task:
             delete_db_task(agent_task.task_id)
-        agent_task = create_db_task(board_task.id, board_task.name)
-    return board_task, agent_task, True
+        agent_task = create_db_task(provider_task.id, provider_task.name)
+    return provider_task, agent_task, True
 
 
 def _fetch_pr_review_info(task_id: str) -> str:

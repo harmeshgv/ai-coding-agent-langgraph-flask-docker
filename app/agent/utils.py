@@ -65,7 +65,7 @@ def save_state_to_instance(state: dict, filename: str = "agent_state.json") -> s
             for msg in serializable_state["messages"]
         ]
 
-    serializable_state["board_task"] = asdict(serializable_state["board_task"])
+    serializable_state["provider_task"] = asdict(serializable_state["provider_task"])
     serializable_state["agent_task"] = serializable_state["agent_task"].to_dict()
     serializable_state["last_update"] = datetime.now().astimezone().isoformat()
     temp_path = file_path + ".tmp"

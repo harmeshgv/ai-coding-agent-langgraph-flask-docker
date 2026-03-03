@@ -7,7 +7,7 @@ from typing import Any, Dict
 from flask import current_app
 from git import Repo
 
-from app.core.taskboard.board_provider import BoardTask
+from app.core.taskboard.board_provider import ProviderTask
 from app.agent.services.git_workspace import checkout_branch, get_current_branch
 from app.agent.state import AgentState, TaskType
 from app.agent.utils import get_workspace
@@ -28,17 +28,17 @@ def create_checkout_node(agent_settings: AgentSettings):
     async def checkout_node(state: AgentState) -> Dict[str, Any]:  # pylint: disable=unused-argument
         if state["current_node"] != "checkout":
             logger.info("--- CHECKOUT node ---")
-        board_task: BoardTask | None = state["board_task"]
+        provider_task: ProviderTask | None = state["provider_task"]
 
         task_type = TaskType.from_string(
             state.get("agent_task").task_type
             if state.get("agent_task") and state.get("agent_task").task_type
             else "coding"
         )
-        if board_task:
+        if provider_task:
             await checkout_task_branch(
-                board_task.id,
-                board_task.name,
+                provider_task.id,
+                provider_task.name,
                 task_type,
                 agent_settings,
             )

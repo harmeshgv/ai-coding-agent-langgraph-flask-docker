@@ -7,7 +7,7 @@ from typing import Optional
 
 from app.core.taskboard.board_provider import (  # pylint: disable=unused-import
     BoardProvider,
-    BoardTask,
+    ProviderTask,
 )
 from app.agent.services.pull_request import check_pr_exists_for_branch
 from app.core.localdb.agent_tasks_utils import read_db_task
@@ -15,7 +15,7 @@ from app.core.localdb.agent_tasks_utils import read_db_task
 logger = logging.getLogger(__name__)
 
 
-async def fetch_task_from_state(board_provider: BoardProvider, state_name: str) -> BoardTask | None:
+async def fetch_task_from_state(board_provider: BoardProvider, state_name: str) -> ProviderTask | None:
     """Fetch a task from a board state."""
     board_states = await board_provider.get_states()
     target_state = next(
@@ -40,13 +40,13 @@ async def fetch_task_from_state(board_provider: BoardProvider, state_name: str) 
 
 async def move_task_to_state(
     board_provider: BoardProvider,
-    task: BoardTask,
+    task: ProviderTask,
     task_state_name: str,
-) -> BoardTask:
+) -> ProviderTask:
     """
     Moves the task to the in-progress state before task processing begins.
     """
-    modified_task: Optional[BoardTask] = task
+    modified_task: Optional[ProviderTask] = task
     if not task_state_name:
         logger.warning("task_in_progress_state not configured, skipping move to in-progress state")
     else:
@@ -63,7 +63,7 @@ async def move_task_to_state(
             logger.error("Failed to move task to in-progress state: %s", e)
 
     match modified_task:
-        case BoardTask():
+        case ProviderTask():
             return modified_task
         case None:
             raise RuntimeError("modified_task is none")

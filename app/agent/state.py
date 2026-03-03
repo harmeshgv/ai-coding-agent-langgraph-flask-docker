@@ -14,7 +14,7 @@ from typing import Annotated, TypedDict
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
 
-from app.core.taskprovider.task_provider import BoardTask, BoardTaskComment
+from app.core.taskprovider.task_provider import ProviderTask, ProviderTaskComment
 from app.core.localdb.models import AgentTask
 
 
@@ -73,8 +73,8 @@ class AgentState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
     next_step: str
     # information from the external task system
-    board_task: BoardTask | None
-    board_task_comments: list[BoardTaskComment]
+    provider_task: ProviderTask | None
+    provider_task_comments: list[ProviderTaskComment]
     # information from the table agent_tasks of the local database
     agent_task: AgentTask | None
     # agent information from settings

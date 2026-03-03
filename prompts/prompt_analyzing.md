@@ -2,12 +2,12 @@
 Analyze the following task:
 Task: {{agent_task.task_name}}
 Description: {{agent_task.task_description}}
-{% if board_task_comments %}
+{% if provider_task_comments %}
 # REVIEW COMMENTS
 The Pull Request was rejected with the following review comments: 
 NOTE: The task description shows the current implementation. 
 The comments below indicate ADDITIONAL work that needs to be done.
-{% for comment in board_task_comments %}
+{% for comment in provider_task_comments %}
   - {{ comment.text }}
 {% endfor %}
 {% endif %}

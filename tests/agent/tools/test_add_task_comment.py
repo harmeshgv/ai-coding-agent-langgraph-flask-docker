@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import anyio
 from langchain.tools import ToolRuntime
 
-from app.core.taskboard.board_provider import BoardTask
+from app.core.taskboard.board_provider import ProviderTask
 from app.agent.tools.add_task_comment import add_task_comment
 
 # Suppress Pydantic serialization warnings in tests
@@ -23,7 +23,7 @@ def test_add_task_comment_tool_adds_comment_successfully():
         mock_agent_settings = MagicMock()
 
         # Mock current task
-        mock_task = BoardTask(
+        mock_task = ProviderTask(
             id="task123",
             name="Test Task",
             description="Test description",
@@ -34,7 +34,7 @@ def test_add_task_comment_tool_adds_comment_successfully():
         # Mock runtime with state and context
         mock_runtime = ToolRuntime(
             state={
-                "board_task": mock_task,
+                "provider_task": mock_task,
                 "messages": [],
                 "current_node": "analyst",
             },
@@ -105,7 +105,7 @@ def test_add_task_comment_tool_handles_none_agent_settings():
 
     async def _test():
         # Mock current task
-        mock_task = BoardTask(
+        mock_task = ProviderTask(
             id="task123",
             name="Test Task",
             description="Test description",
@@ -116,7 +116,7 @@ def test_add_task_comment_tool_handles_none_agent_settings():
         # Mock runtime with None context
         mock_runtime = ToolRuntime(
             state={
-                "board_task": mock_task,
+                "provider_task": mock_task,
                 "messages": [],
                 "current_node": "analyst",
             },
@@ -149,7 +149,7 @@ def test_add_task_comment_tool_handles_value_error():
         mock_agent_settings = MagicMock()
 
         # Mock current task
-        mock_task = BoardTask(
+        mock_task = ProviderTask(
             id="task123",
             name="Test Task",
             description="Test description",
@@ -160,7 +160,7 @@ def test_add_task_comment_tool_handles_value_error():
         # Mock runtime with state and context
         mock_runtime = ToolRuntime(
             state={
-                "board_task": mock_task,
+                "provider_task": mock_task,
                 "messages": [],
                 "current_node": "analyst",
             },
@@ -200,7 +200,7 @@ def test_add_task_comment_tool_handles_runtime_error():
         mock_agent_settings = MagicMock()
 
         # Mock current task
-        mock_task = BoardTask(
+        mock_task = ProviderTask(
             id="task123",
             name="Test Task",
             description="Test description",
@@ -211,7 +211,7 @@ def test_add_task_comment_tool_handles_runtime_error():
         # Mock runtime with state and context
         mock_runtime = ToolRuntime(
             state={
-                "board_task": mock_task,
+                "provider_task": mock_task,
                 "messages": [],
                 "current_node": "analyst",
             },
@@ -259,7 +259,7 @@ def test_add_task_comment_tool_logs_long_comment():
         mock_agent_settings = MagicMock()
 
         # Mock current task
-        mock_task = BoardTask(
+        mock_task = ProviderTask(
             id="task123",
             name="Test Task",
             description="Test description",
@@ -270,7 +270,7 @@ def test_add_task_comment_tool_logs_long_comment():
         # Mock runtime with state and context
         mock_runtime = ToolRuntime(
             state={
-                "board_task": mock_task,
+                "provider_task": mock_task,
                 "messages": [],
                 "current_node": "analyst",
             },

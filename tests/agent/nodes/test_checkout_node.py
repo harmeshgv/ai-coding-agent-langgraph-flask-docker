@@ -12,7 +12,7 @@ from app.agent.nodes.checkout import (
 )
 from app.agent.state import TaskType
 from app.core.localdb.models import AgentSettings
-from app.core.taskboard.board_provider import BoardTask
+from app.core.taskboard.board_provider import ProviderTask
 
 
 @pytest.fixture
@@ -22,8 +22,8 @@ def agent_settings():
 
 
 @pytest.fixture
-def board_task():
-    return BoardTask(
+def provider_task():
+    return ProviderTask(
         id="abc123",
         name="Fix login bug",
         description="Users cannot log in",
@@ -224,19 +224,19 @@ class TestCheckoutTaskBranch:
 
 class TestCheckoutNode:
     @pytest.mark.asyncio
-    async def test_raises_when_board_task_missing(self, agent_settings):
+    async def test_raises_when_provider_task_missing(self, agent_settings):
         node = checkout_module.create_checkout_node(agent_settings)
-        state = {"current_node": "checkout", "board_task": None, "agent_task": None}
+        state = {"current_node": "checkout", "provider_task": None, "agent_task": None}
 
         with pytest.raises(ValueError, match="Missing task_id or task_name"):
             await node(state)
 
     @pytest.mark.asyncio
-    async def test_returns_current_node_on_success(self, agent_settings, board_task):
+    async def test_returns_current_node_on_success(self, agent_settings, provider_task):
         node = checkout_module.create_checkout_node(agent_settings)
         state = {
             "current_node": "checkout",
-            "board_task": board_task,
+            "provider_task": provider_task,
             "agent_task": None,
         }
 
@@ -249,11 +249,11 @@ class TestCheckoutNode:
         assert result == {"current_node": "checkout"}
 
     @pytest.mark.asyncio
-    async def test_unknown_task_type_when_agent_task_is_none(self, agent_settings, board_task):
+    async def test_unknown_task_type_when_agent_task_is_none(self, agent_settings, provider_task):
         node = checkout_module.create_checkout_node(agent_settings)
         state = {
             "current_node": "checkout",
-            "board_task": board_task,
+            "provider_task": provider_task,
             "agent_task": None,
         }
 
@@ -267,13 +267,13 @@ class TestCheckoutNode:
         assert called_task_type == TaskType.CODING
 
     @pytest.mark.asyncio
-    async def test_task_type_resolved_from_agent_task(self, agent_settings, board_task):
+    async def test_task_type_resolved_from_agent_task(self, agent_settings, provider_task):
         from app.core.localdb.models import AgentTask
 
         node = checkout_module.create_checkout_node(agent_settings)
         state = {
             "current_node": "checkout",
-            "board_task": board_task,
+            "provider_task": provider_task,
             "agent_task": AgentTask(task_type="bugfixing"),
         }
 

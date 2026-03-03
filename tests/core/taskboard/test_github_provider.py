@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.core.taskboard.board_provider import BoardTask
+from app.core.taskboard.board_provider import ProviderTask
 from app.core.taskboard.github_provider import GitHubProvider
 from app.core.localdb.models import AgentSettings, TaskSystem
 
@@ -32,7 +32,7 @@ def github_provider(agent_settings):
 
 @pytest.mark.asyncio
 async def test_get_task(github_provider):
-    """Ensure get_task maps project item fields into BoardTask."""
+    """Ensure get_task maps project item fields into ProviderTask."""
     mock_item = {
         "id": "item123",
         "title": "Example Task",
@@ -49,7 +49,7 @@ async def test_get_task(github_provider):
         task = await github_provider.get_task("item123")
 
         mock_get.assert_called_once_with("item123", github_provider.agent_settings)
-        assert isinstance(task, BoardTask)
+        assert isinstance(task, ProviderTask)
         assert task.id == "item123"
         assert task.name == "Example Task"
         assert task.description == "Details"

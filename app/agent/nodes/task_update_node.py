@@ -12,7 +12,7 @@ from time import sleep
 from langchain_core.messages import AIMessage, ToolMessage
 
 from app.core.taskboard.board_factory import create_board_provider
-from app.core.taskboard.board_provider import BoardProvider, BoardTask
+from app.core.taskboard.board_provider import BoardProvider, ProviderTask
 from app.agent.services.summaries import get_agent_summary_entries
 from app.agent.state import AgentState
 from app.core.localdb.models import AgentSettings
@@ -40,19 +40,19 @@ def create_task_update_node(agent_settings: AgentSettings):
         """
         if state["current_node"] != "task_update":
             logger.info("--- TASK UPDATE node ---")
-        board_task: BoardTask | None = state["board_task"]
-        if not board_task:
+        provider_task: ProviderTask | None = state["provider_task"]
+        if not provider_task:
             logger.warning("No task found in state")
             return {}
 
-        logger.info("Updating task in board %s", board_task)
+        logger.info("Updating task in board %s", provider_task)
 
         board_provider: BoardProvider = create_board_provider(agent_settings)
 
         try:
             final_comments = _build_agent_comments(state)
             for comment in final_comments:
-                await board_provider.add_comment(board_task.id, comment)
+                await board_provider.add_comment(provider_task.id, comment)
                 sleep(0.1)
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Failed to add comment to task: %s", e)
@@ -64,7 +64,7 @@ def create_task_update_node(agent_settings: AgentSettings):
                 return
 
             await board_provider.move_task_to_named_state(
-                task_id=board_task.id, state_name=task_moveto_state
+                task_id=provider_task.id, state_name=task_moveto_state
             )
 
             return {

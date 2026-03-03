@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.core.taskboard.board_provider import BoardComment, BoardTask
+from app.core.taskboard.board_provider import BoardComment, ProviderTask
 from app.agent.nodes.task_fetch_node import (
     create_task_fetch_node,
     fetch_task_from_state,
@@ -48,7 +48,7 @@ def mock_board_provider():
     )
     provider.get_tasks_from_state = AsyncMock(
         return_value=[
-            BoardTask(
+            ProviderTask(
                 id="card1",
                 name="Test Task",
                 description="Test Description",
@@ -61,7 +61,7 @@ def mock_board_provider():
     provider.get_state_moves = AsyncMock(return_value=[])
     provider.move_task_to_named_state = AsyncMock(return_value="list2")
     provider.get_task = AsyncMock(
-        return_value=BoardTask(
+        return_value=ProviderTask(
             id="card1",
             name="Test Task",
             description="Moved Description",
@@ -98,7 +98,7 @@ async def test_task_fetch_node_success(agent_settings, mock_board_provider):
         patch(
             "app.core.task_utils.fetch_task_from_state",
             new=AsyncMock(
-                return_value=BoardTask(
+                return_value=ProviderTask(
                     id="card1",
                     name="Test Task",
                     description="Test Description",
@@ -110,7 +110,7 @@ async def test_task_fetch_node_success(agent_settings, mock_board_provider):
         patch(
             "app.core.task_utils.move_task_to_state",
             new=AsyncMock(
-                return_value=BoardTask(
+                return_value=ProviderTask(
                     id="card1",
                     name="Test Task",
                     description="Test Description",
@@ -135,11 +135,11 @@ async def test_task_fetch_node_success(agent_settings, mock_board_provider):
             }
         )
 
-        assert result["board_task"].id == "card1"
-        assert result["board_task"].name == "Test Task"
-        assert result["board_task"].state_id == "list2"  # Moved to in-progress state
+        assert result["provider_task"].id == "card1"
+        assert result["provider_task"].name == "Test Task"
+        assert result["provider_task"].state_id == "list2"  # Moved to in-progress state
         assert result["current_node"] == "task_fetch"
-        assert result["board_task_comments"] == []
+        assert result["provider_task_comments"] == []
         assert result["pr_review_message"] == ""
 
 
@@ -169,7 +169,7 @@ async def test_task_fetch_node_no_review_list(agent_settings, mock_board_provide
         patch(
             "app.core.task_utils.fetch_task_from_state",
             new=AsyncMock(
-                return_value=BoardTask(
+                return_value=ProviderTask(
                     id="card1",
                     name="Test Task",
                     description="Test Description",
@@ -181,7 +181,7 @@ async def test_task_fetch_node_no_review_list(agent_settings, mock_board_provide
         patch(
             "app.core.task_utils.move_task_to_state",
             new=AsyncMock(
-                return_value=BoardTask(
+                return_value=ProviderTask(
                     id="card1",
                     name="Test Task",
                     description="Test Description",
@@ -207,9 +207,9 @@ async def test_task_fetch_node_no_review_list(agent_settings, mock_board_provide
         )
 
         # Should still fetch task from To Do even without review list
-        assert result["board_task"] is not None
-        assert result["board_task"].id == "card1"
-        assert result["board_task"].state_id == "list2"  # Moved to in-progress
+        assert result["provider_task"] is not None
+        assert result["provider_task"].id == "card1"
+        assert result["provider_task"].state_id == "list2"  # Moved to in-progress
 
 
 @pytest.mark.asyncio
@@ -239,7 +239,7 @@ async def test_task_fetch_node_no_cards(agent_settings, mock_board_provider):
             }
         )
 
-        assert result["board_task"] is None
+        assert result["provider_task"] is None
 
 
 @pytest.mark.asyncio
@@ -256,7 +256,7 @@ async def test_task_fetch_node_with_comments(agent_settings, mock_board_provider
 
     # Mock board provider to return task in "In Progress" state
     mock_board_provider.get_task = AsyncMock(
-        return_value=BoardTask(
+        return_value=ProviderTask(
             id="card1",
             name="Test Task",
             description="Test Description",
@@ -302,9 +302,9 @@ async def test_task_fetch_node_with_comments(agent_settings, mock_board_provider
         )
 
         # Comments should be included since task was already in In Progress (returned from review)
-        assert result["board_task_comments"] is not None
-        assert len(result["board_task_comments"]) == 1
-        assert result["board_task_comments"][0].text == "Please fix the bug"
+        assert result["provider_task_comments"] is not None
+        assert len(result["provider_task_comments"]) == 1
+        assert result["provider_task_comments"][0].text == "Please fix the bug"
 
 
 @pytest.mark.asyncio
@@ -315,7 +315,7 @@ async def test_task_fetch_node_no_comments_from_todo(agent_settings, mock_board_
     # Task is in "To Do" state (not returned from review)
     mock_board_provider.get_tasks_from_state = AsyncMock(
         return_value=[
-            BoardTask(
+            ProviderTask(
                 id="card1",
                 name="Test Task",
                 description="Test Description",
@@ -358,7 +358,7 @@ async def test_task_fetch_node_no_comments_from_todo(agent_settings, mock_board_
         patch(
             "app.core.task_utils.fetch_task_from_state",
             new=AsyncMock(
-                return_value=BoardTask(
+                return_value=ProviderTask(
                     id="card1",
                     name="Test Task",
                     description="Test Description",
@@ -384,8 +384,8 @@ async def test_task_fetch_node_no_comments_from_todo(agent_settings, mock_board_
         )
 
         # Comments should NOT be included since task was picked from To Do
-        assert result["board_task_comments"] is not None
-        assert len(result["board_task_comments"]) == 0
+        assert result["provider_task_comments"] is not None
+        assert len(result["provider_task_comments"]) == 0
 
 
 @pytest.mark.asyncio

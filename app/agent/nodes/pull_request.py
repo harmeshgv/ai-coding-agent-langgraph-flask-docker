@@ -118,7 +118,7 @@ def _create_or_update_pr(state: AgentState):
         )
         return False, summary_entries
 
-    task_id = state.get("board_task").id if state.get("board_task") else None
+    task_id = state.get("provider_task").id if state.get("provider_task") else None
     if task_id and pr_url:
         pr_number = _extract_pr_number_from_url(pr_url)
         if pr_number:
@@ -245,7 +245,7 @@ def _build_pr_inputs(state: AgentState) -> tuple[str, str]:
     )
     pr_body_summary = aggregated_summary
 
-    task = state.get("board_task")
+    task = state.get("provider_task")
     task_title = task.name
     pr_title = task_title or "Automated Fix"
     pr_body = "Automated changes after successful tests."
