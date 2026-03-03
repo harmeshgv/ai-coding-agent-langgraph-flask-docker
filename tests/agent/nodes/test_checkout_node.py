@@ -12,7 +12,7 @@ from app.agent.nodes.checkout import (
 )
 from app.agent.state import TaskType
 from app.core.localdb.models import AgentSettings
-from app.core.taskboard.board_provider import ProviderTask
+from app.core.taskprovider.task_provider import ProviderTask
 
 
 @pytest.fixture
@@ -167,11 +167,10 @@ class TestCheckoutTaskBranch:
                 "app.agent.nodes.checkout.get_existing_branch_for_task",
                 new=AsyncMock(return_value="agent/feature/abc-my-task"),
             ),
+            patch("app.agent.nodes.checkout.checkout_branch") as mock_checkout,
             patch(
-                "app.agent.nodes.checkout.checkout_branch"
-            ) as mock_checkout,
-            patch(
-                "app.agent.nodes.checkout.get_current_branch", return_value="agent/feature/abc-my-task"
+                "app.agent.nodes.checkout.get_current_branch",
+                return_value="agent/feature/abc-my-task",
             ),
             patch("app.agent.nodes.checkout.get_workspace", return_value="/workspace"),
         ):
@@ -208,7 +207,8 @@ class TestCheckoutTaskBranch:
             ),
             patch("app.agent.nodes.checkout.checkout_branch") as mock_checkout,
             patch(
-                "app.agent.nodes.checkout.get_current_branch", return_value="agent/feature/abc-my-task"
+                "app.agent.nodes.checkout.get_current_branch",
+                return_value="agent/feature/abc-my-task",
             ),
             patch("app.agent.nodes.checkout.get_workspace", return_value="/workspace"),
         ):

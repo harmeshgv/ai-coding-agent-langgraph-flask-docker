@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.core.taskboard.board_provider import ProviderTask
-from app.core.taskboard.github_provider import GitHubProvider
+from app.core.taskprovider.task_provider import ProviderTask
+from app.core.taskprovider.github_provider import GitHubProvider
 from app.core.localdb.models import AgentSettings, TaskSystem
 
 
@@ -13,7 +13,7 @@ from app.core.localdb.models import AgentSettings, TaskSystem
 def agent_settings():
     """Fixture with GitHub task system configuration."""
     task_system = TaskSystem(
-        board_provider="github",
+        task_provider="github",
         api_key="token",
         token="token",
         board_id="proj_123",
@@ -43,7 +43,7 @@ async def test_get_task(github_provider):
     }
 
     with patch(
-        "app.core.taskboard.github_provider.get_project_item",
+        "app.core.taskprovider.github_provider.get_project_item",
         new=AsyncMock(return_value=mock_item),
     ) as mock_get:
         task = await github_provider.get_task("item123")

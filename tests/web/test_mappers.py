@@ -98,13 +98,13 @@ class TestConfigMapperSchemaToModel:
 
         trello_ts = result.get_task_system("trello")
         assert trello_ts is not None
-        assert trello_ts.board_provider == "trello"
+        assert trello_ts.task_provider == "trello"
 
     def test_reuses_existing_task_system(self, app):
         """Existing TaskSystem should be reused."""
         existing_task_system = TaskSystem(
             task_system_type="TRELLO",
-            board_provider="trello",
+            task_provider="trello",
             board_id="old-board",
         )
         trello_config = TrelloConfigSchema(board_id="new-board")
@@ -135,7 +135,7 @@ class TestConfigMapperModelToFormData:
             llm_temperature="0.5",
         )
         trello_ts = TaskSystem(
-            board_provider="trello",
+            task_provider="trello",
             api_key="key",
             token="token",
             board_id="board",
@@ -155,7 +155,7 @@ class TestConfigMapperModelToFormData:
         """Trello fields should be extracted from model."""
         config = AgentSettings()
         trello_ts = TaskSystem(
-            board_provider="trello",
+            task_provider="trello",
             api_key="api-key",
             token="api-token",
             board_id="board-id",
@@ -276,7 +276,7 @@ class TestConfigMapperGitHub:
         assert github_ts.state_todo == "Todo"
         assert github_ts.state_in_progress == "In Progress"
         assert github_ts.state_in_review == "Done"
-        assert github_ts.board_provider == "github"
+        assert github_ts.task_provider == "github"
         assert github_ts.token == "ghp_test_token"
         assert github_ts.project_owner == "octocat"
         assert github_ts.project_number == "1"
@@ -297,13 +297,13 @@ class TestConfigMapperGitHub:
 
         github_ts = result.get_task_system("github")
         assert github_ts is not None
-        assert github_ts.board_provider == "github"
+        assert github_ts.task_provider == "github"
 
     def test_extracts_github_fields(self, app):
         """GitHub fields should be extracted from model."""
         settings = AgentSettings(task_system_type="GITHUB")
         github_ts = TaskSystem(
-            board_provider="github",
+            task_provider="github",
             token="ghp_test_token",
             project_owner="octocat",
             project_number=1,

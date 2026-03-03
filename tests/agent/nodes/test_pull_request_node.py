@@ -6,7 +6,7 @@ import pytest
 
 from app.agent.nodes import pull_request as pr_module
 from app.core.localdb.models import AgentTask
-from app.core.taskboard.board_provider import ProviderTask
+from app.core.taskprovider.task_provider import ProviderTask
 
 
 @pytest.fixture
@@ -144,8 +144,7 @@ class TestGenerateCommitMessage:
         result = pr_module._generate_commit_message(state)  # pylint: disable=protected-access
 
         assert (
-            result
-            == "feat: Implement persistence layer\n\n"
+            result == "feat: Implement persistence layer\n\n"
             "- Implement persistence layer\n- Document storage contract"
         )
 
@@ -162,8 +161,7 @@ class TestGenerateCommitMessage:
         result = pr_module._generate_commit_message(state)  # pylint: disable=protected-access
 
         assert (
-            result
-            == "fix: Resolve race condition\n\n"
+            result == "fix: Resolve race condition\n\n"
             "- Resolve race condition\n- Add regression test"
         )
 

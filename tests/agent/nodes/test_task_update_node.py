@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
-from app.core.taskboard.board_provider import ProviderTask
+from app.core.taskprovider.task_provider import ProviderTask
 from app.agent.nodes.task_update_node import (
     AGENT_DEFAULT_COMMENT,
     _build_agent_comments,
@@ -24,7 +24,7 @@ def agent_settings():
     settings = AgentSettings(task_system_type="TRELLO")
     task_system = TaskSystem(
         task_system_type="TRELLO",
-        board_provider="trello",
+        task_provider="trello",
         state_in_review="Done",
     )
     settings.task_systems.append(task_system)
@@ -32,8 +32,8 @@ def agent_settings():
 
 
 @pytest.fixture
-def mock_board_provider():
-    """Fixture for mock board provider."""
+def mock_task_provider():
+    """Fixture for mock task provider."""
     provider = MagicMock()
     provider.add_comment = AsyncMock()
     provider.move_task_to_named_state = AsyncMock(return_value="list3")
@@ -44,7 +44,7 @@ def mock_board_provider():
 
 
 @pytest.mark.asyncio
-async def test_task_update_node_success(agent_settings, mock_board_provider, monkeypatch):
+async def test_task_update_node_success(agent_settings, mock_task_provider, monkeypatch):
     """Test successful task update."""
     state = {
         "provider_task": ProviderTask(
@@ -60,35 +60,37 @@ async def test_task_update_node_success(agent_settings, mock_board_provider, mon
     }
 
     monkeypatch.setattr(
-        "app.agent.nodes.task_update_node.create_board_provider",
-        lambda *_: mock_board_provider,
+        "app.agent.nodes.task_update_node.create_task_provider",
+        lambda *_: mock_task_provider,
     )
     task_update = create_task_update_node(agent_settings)
     result = await task_update(state)
 
     assert result["current_node"] == "task_update"
-    mock_board_provider.add_comment.assert_called()
-    mock_board_provider.move_task_to_named_state.assert_called_once_with(task_id="card1", state_name="Done")
+    mock_task_provider.add_comment.assert_called()
+    mock_task_provider.move_task_to_named_state.assert_called_once_with(
+        task_id="card1", state_name="Done"
+    )
 
 
 @pytest.mark.asyncio
-async def test_task_update_node_no_task_id(agent_settings, mock_board_provider, monkeypatch):
+async def test_task_update_node_no_task_id(agent_settings, mock_task_provider, monkeypatch):
     """Test task update with no task ID."""
     state = {"provider_task": None, "messages": [], "current_node": "any_node"}
 
     monkeypatch.setattr(
-        "app.agent.nodes.task_update_node.create_board_provider",
-        lambda *_: mock_board_provider,
+        "app.agent.nodes.task_update_node.create_task_provider",
+        lambda *_: mock_task_provider,
     )
     task_update = create_task_update_node(agent_settings)
     result = await task_update(state)
 
     assert result == {}
-    mock_board_provider.add_comment.assert_not_called()
+    mock_task_provider.add_comment.assert_not_called()
 
 
 @pytest.mark.asyncio
-async def test_task_update_node_move_fails(agent_settings, mock_board_provider, monkeypatch):
+async def test_task_update_node_move_fails(agent_settings, mock_task_provider, monkeypatch):
     """Test task update when move operation fails."""
     state = {
         "provider_task": ProviderTask(
@@ -102,13 +104,13 @@ async def test_task_update_node_move_fails(agent_settings, mock_board_provider, 
         "agent_summary": [],
         "current_node": "any_node",
     }
-    mock_board_provider.move_task_to_named_state = AsyncMock(
+    mock_task_provider.move_task_to_named_state = AsyncMock(
         side_effect=ValueError("State not found")
     )
 
     monkeypatch.setattr(
-        "app.agent.nodes.task_update_node.create_board_provider",
-        lambda *_: mock_board_provider,
+        "app.agent.nodes.task_update_node.create_task_provider",
+        lambda *_: mock_task_provider,
     )
     task_update = create_task_update_node(agent_settings)
     result = await task_update(state)

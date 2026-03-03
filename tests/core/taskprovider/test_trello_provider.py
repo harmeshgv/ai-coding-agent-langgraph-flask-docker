@@ -7,8 +7,12 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.core.taskboard.board_provider import ProviderTask, BoardComment, BoardStateMove
-from app.core.taskboard.trello_provider import TrelloProvider
+from app.core.taskprovider.task_provider import (
+    ProviderTask,
+    ProviderTaskComment,
+    ProviderTaskStateMove,
+)
+from app.core.taskprovider.trello_provider import TrelloProvider
 from app.core.localdb.models import AgentSettings, TaskSystem
 
 
@@ -16,7 +20,7 @@ from app.core.localdb.models import AgentSettings, TaskSystem
 def agent_settings():
     """Fixture for agent configuration."""
     task_system = TaskSystem(
-        board_provider="trello",
+        task_provider="trello",
         api_key="test_key",
         token="test_token",
         board_id="test_board_id",
@@ -41,7 +45,7 @@ async def test_get_states(trello_provider):
     ]
 
     with patch(
-        "app.core.taskboard.trello_provider.get_all_trello_lists",
+        "app.core.taskprovider.trello_provider.get_all_trello_lists",
         new=AsyncMock(return_value=mock_lists),
     ):
         states = await trello_provider.get_states()
@@ -62,7 +66,7 @@ async def test_get_task(trello_provider):
     }
 
     with patch(
-        "app.core.taskboard.trello_provider.get_trello_card",
+        "app.core.taskprovider.trello_provider.get_trello_card",
         new=AsyncMock(return_value=mock_card),
     ) as mock_get:
         task = await trello_provider.get_task("card123")
@@ -86,7 +90,7 @@ async def test_get_tasks_from_state(trello_provider):
     ]
 
     with patch(
-        "app.core.taskboard.trello_provider.get_all_trello_cards",
+        "app.core.taskprovider.trello_provider.get_all_trello_cards",
         new=AsyncMock(return_value=mock_cards),
     ):
         tasks = await trello_provider.get_tasks_from_state("list1")
@@ -102,7 +106,7 @@ async def test_get_tasks_from_state(trello_provider):
 async def test_move_task_to_state(trello_provider):
     """Test moving a task to a different state (Trello list)."""
     with patch(
-        "app.core.taskboard.trello_provider.move_trello_card_to_list",
+        "app.core.taskprovider.trello_provider.move_trello_card_to_list",
         new=AsyncMock(),
     ) as mock_move:
         await trello_provider.move_task_to_state("card1", "list2")
@@ -114,7 +118,7 @@ async def test_move_task_to_state(trello_provider):
 async def test_move_task_to_named_state(trello_provider):
     """Test moving a task to a state by name (Trello list)."""
     with patch(
-        "app.core.taskboard.trello_provider.move_trello_card_to_named_list",
+        "app.core.taskprovider.trello_provider.move_trello_card_to_named_list",
         new=AsyncMock(return_value="list2"),
     ) as mock_move:
         state_id = await trello_provider.move_task_to_named_state("card1", "In Progress")
@@ -127,7 +131,7 @@ async def test_move_task_to_named_state(trello_provider):
 async def test_add_comment(trello_provider):
     """Test adding a comment to a card."""
     with patch(
-        "app.core.taskboard.trello_provider.add_comment_to_trello_card",
+        "app.core.taskprovider.trello_provider.add_comment_to_trello_card",
         new=AsyncMock(),
     ) as mock_add:
         await trello_provider.add_comment("card1", "Test comment")
@@ -148,13 +152,13 @@ async def test_get_comments(trello_provider):
     ]
 
     with patch(
-        "app.core.taskboard.trello_provider.get_trello_card_comments",
+        "app.core.taskprovider.trello_provider.get_trello_card_comments",
         new=AsyncMock(return_value=mock_comments),
     ):
         comments = await trello_provider.get_comments("card1")
 
         assert len(comments) == 1
-        assert all(isinstance(comment, BoardComment) for comment in comments)
+        assert all(isinstance(comment, ProviderTaskComment) for comment in comments)
         assert comments[0].id == "comment1"
         assert comments[0].text == "Great work!"
         assert comments[0].author == "John Doe"
@@ -174,13 +178,13 @@ async def test_get_state_moves(trello_provider):
     ]
 
     with patch(
-        "app.core.taskboard.trello_provider.get_trello_card_list_moves",
+        "app.core.taskprovider.trello_provider.get_trello_card_list_moves",
         new=AsyncMock(return_value=mock_moves),
     ):
         moves = await trello_provider.get_state_moves("card1")
 
         assert len(moves) == 1
-        assert all(isinstance(move, BoardStateMove) for move in moves)
+        assert all(isinstance(move, ProviderTaskStateMove) for move in moves)
         assert moves[0].id == "move1"
         assert moves[0].state_before == "To Do"
         assert moves[0].state_after == "In Progress"
@@ -197,7 +201,7 @@ async def test_create_card(trello_provider):
     }
 
     with patch(
-        "app.core.taskboard.trello_provider.create_trello_card",
+        "app.core.taskprovider.trello_provider.create_trello_card",
         new=AsyncMock(return_value=mock_result),
     ):
         task = await trello_provider.create_task("New Task", "Description", "To Do")

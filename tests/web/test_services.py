@@ -23,7 +23,7 @@ class TestSettingsService:
             existing = AgentSettings(task_system_type="TRELLO")
             trello_ts = TaskSystem(
                 task_system_type="TRELLO",
-                board_provider="trello",
+                task_provider="trello",
             )
             existing.task_systems.append(trello_ts)
             db.session.add(existing)
