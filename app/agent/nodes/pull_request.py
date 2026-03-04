@@ -3,6 +3,7 @@
 import logging
 from typing import Any, Dict
 
+from app.agent.models import AgentSummary
 from app.agent.services.git_workspace import (
     commit as git_commit,
     has_changes as git_has_changes,
@@ -49,8 +50,8 @@ def create_pull_request_node():
 
 
 def _append_summary(
-    summary_entries: list[str], state: AgentState, title: str, message: str
-) -> list[str]:
+    summary_entries: list[AgentSummary], state: AgentState, title: str, message: str
+) -> list[AgentSummary]:
     summary_entries = append_agent_summary(summary_entries, title, message)
     state["agent_summary"] = summary_entries
     return summary_entries
@@ -137,22 +138,15 @@ def _create_or_update_pr(state: AgentState):
 def _generate_commit_message(state: AgentState) -> str:
     """Generate a concise commit message from the latest agent summary."""
     summaries = state.get("agent_summary") or []
-    parsed_entries: list[tuple[str | None, str]] = []
-
-    for entry in summaries:
-        role, text = _parse_summary_entry(entry)
-        cleaned_text = text.strip()
-        if cleaned_text:
-            parsed_entries.append((role, cleaned_text))
 
     summary_text = ""
     summary_role: str | None = None
 
-    for role, text in parsed_entries:
-        if (role or "").lower() == "tester":
+    for entry in summaries:
+        if entry.role.lower() == "tester":
             continue
-        summary_text = text
-        summary_role = role
+        summary_text = entry.summary
+        summary_role = entry.role
         break
 
     if not summary_text:
@@ -169,9 +163,9 @@ def _generate_commit_message(state: AgentState) -> str:
 
     if task_type in {TaskType.CODING, TaskType.BUGFIXING} and summary_role:
         role_entries = [
-            text
-            for entry_role, text in parsed_entries
-            if (entry_role or "").lower() == summary_role
+            entry.summary
+            for entry in summaries
+            if entry.role.lower() == summary_role.lower()
         ]
         details = _build_role_details(role_entries)
         if details:
@@ -198,20 +192,6 @@ def _build_role_details(role_entries: list[str]) -> str | None:
     return "\n".join(f"- {text}" for text in filtered_entries)
 
 
-def _parse_summary_entry(entry: str) -> tuple[str | None, str]:
-    """Return (role, summary_text) from a formatted summary entry."""
-    if not entry:
-        return None, ""
-
-    trimmed = entry.strip()
-    if trimmed.startswith("**["):
-        closing = trimmed.find("]**")
-        if closing != -1:
-            role = trimmed[3:closing].strip() or None
-            summary_text = trimmed[closing + 3 :].strip()
-            return (role.lower() if role else None), summary_text
-
-    return None, trimmed
 
 
 def _extract_pr_number_from_url(pr_url: str) -> int | None:

@@ -16,6 +16,7 @@ from langgraph.graph.message import add_messages
 
 from app.core.taskprovider.task_provider import ProviderTask, ProviderTaskComment
 from app.core.localdb.models import AgentTask
+from app.agent.models import AgentSummary
 
 
 class PlanState(StrEnum):
@@ -81,7 +82,7 @@ class AgentState(TypedDict):
     agent_stack: AgentStack
     tech_stack: dict | None
     agent_skill_level: str | None
-    agent_summary: list[str] | None
+    agent_summary: list[AgentSummary] | None
     retry_count: int  # Attempts: how often switched between coder and tester
     test_result: str | None
     error_log: str | None  # Optional: Stores the last error explicitly

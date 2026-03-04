@@ -136,7 +136,7 @@ def _build_agent_comments(state: AgentState) -> list[str]:
     else:
         summary_list = []
         for entry in entries:
-            summary_list.append(f"**Agent Update:**\n\n {entry}")
+            summary_list.append(f"**Agent Update:**\n\n {entry.to_markdown()}")
 
     task_created, task_info = _check_for_task_creation(state)
 

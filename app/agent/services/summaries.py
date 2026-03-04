@@ -4,11 +4,12 @@ from typing import Optional, Sequence, Tuple
 
 from langchain_core.messages import AIMessage, BaseMessage
 
+from app.agent.models import AgentSummary
 from app.agent.state import AgentState
 
 
-def _format_agent_summary_entry(role: str, summary: str) -> Optional[str]:
-    """Build a normalized summary entry for a specific role."""
+def _create_agent_summary(role: str, summary: str) -> Optional[AgentSummary]:
+    """Create an AgentSummary instance for a specific role."""
     if summary is None:
         return None
 
@@ -16,17 +17,16 @@ def _format_agent_summary_entry(role: str, summary: str) -> Optional[str]:
     if not clean_summary:
         return None
 
-    role_prefix = role.capitalize()
-    return f"**[{role_prefix}]** {clean_summary}"
+    return AgentSummary(role=role, summary=clean_summary)
 
 
 def append_agent_summary(
-    summary_entries: list[str],
+    summary_entries: list[AgentSummary],
     role: str,
     summary: str,
-) -> list[str]:
+) -> list[AgentSummary]:
     """Append a normalized summary entry for the given role to the provided list."""
-    entry = _format_agent_summary_entry(role, summary)
+    entry = _create_agent_summary(role, summary)
     if not entry:
         return summary_entries
 
@@ -38,7 +38,7 @@ def record_finish_task_summary(
     state: AgentState,
     role: str,
     ai_message: BaseMessage,
-) -> Tuple[bool, list[str]]:
+) -> Tuple[bool, list[AgentSummary]]:
     """
     Store any finish_task summaries emitted by the given role.
 
@@ -51,7 +51,7 @@ def record_finish_task_summary(
         A tuple containing a boolean indicating whether a summary was recorded
         and the updated summary entries.
     """
-    summary_entries = list(state.get("agent_summary") or [])
+    summary_entries = list[AgentSummary](state.get("agent_summary") or [])
     if not isinstance(ai_message, AIMessage) or not getattr(ai_message, "tool_calls", None):
         return False, summary_entries
 
@@ -111,7 +111,7 @@ def build_agent_summary_text(state: AgentState, separator: str = "\n\n") -> Opti
     entries = get_agent_summary_entries(state)
     if not entries:
         return None
-    return separator.join(entries)
+    return separator.join(entry.to_markdown() for entry in entries)
 
 
 def build_agent_summary_markdown(
@@ -126,7 +126,7 @@ def build_agent_summary_markdown(
     if not entries:
         return None
 
-    bullet_lines = [f"{bullet_prefix}{entry}" for entry in entries]
+    bullet_lines = [f"{bullet_prefix}{entry.to_markdown()}" for entry in entries]
     body = line_separator.join(bullet_lines)
 
     if heading:
@@ -137,10 +137,10 @@ def build_agent_summary_markdown(
     return body
 
 
-def get_agent_summary_entries(state: AgentState) -> list[str]:
+def get_agent_summary_entries(state: AgentState) -> list[AgentSummary]:
     """Return the list of cached summary entries, with message-based fallback."""
     cached_entries = [
-        entry for entry in (state.get("agent_summary") or []) if isinstance(entry, str)
+        entry for entry in (state.get("agent_summary") or []) if isinstance(entry, AgentSummary)
     ]
     if cached_entries:
         return _deduplicate_consecutive(cached_entries)
@@ -148,24 +148,24 @@ def get_agent_summary_entries(state: AgentState) -> list[str]:
     return _deduplicate_consecutive(_derive_summaries_from_messages(state.get("messages") or []))
 
 
-def _deduplicate_consecutive(entries: list[str]) -> list[str]:
+def _deduplicate_consecutive(entries: list[AgentSummary]) -> list[AgentSummary]:
     """Remove consecutive duplicate entries while preserving order."""
-    deduplicated: list[str] = []
-    previous: str | None = None
+    deduplicated: list[AgentSummary] = []
+    previous: AgentSummary | None = None
     for entry in entries:
-        if entry != previous:
+        if previous is None or entry.role != previous.role or entry.summary != previous.summary:
             deduplicated.append(entry)
         previous = entry
     return deduplicated
 
 
-def _derive_summaries_from_messages(messages: Sequence[BaseMessage]) -> list[str]:
+def _derive_summaries_from_messages(messages: Sequence[BaseMessage]) -> list[AgentSummary]:
     """Build summary entries by scanning the message history for finish_task calls."""
-    derived: list[str] = []
+    derived: list[AgentSummary] = []
     for message in messages:
         summaries = collect_finish_task_summaries(message)
         for role, summary in summaries:
-            entry = _format_agent_summary_entry(role or "agent", summary)
+            entry = _create_agent_summary(role or "agent", summary)
             if entry:
                 derived.append(entry)
     return derived
