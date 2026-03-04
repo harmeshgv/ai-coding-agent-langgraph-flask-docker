@@ -6,12 +6,12 @@ from itertools import count
 
 from langchain_core.messages import AIMessage
 
-from app.agent.models import AgentSummary
 from app.agent.services.summaries import (
     append_agent_summary,
     get_agent_summary_entries,
     record_finish_task_summary,
 )
+from app.agent.state import AgentSummary
 
 _TOOL_CALL_COUNTER = count()
 
@@ -47,23 +47,6 @@ def test_record_finish_task_summary_updates_state_and_tool_args():
     assert summary_entries[0].summary == "All done"
     assert state["agent_summary"] == summary_entries
     assert ai_message.tool_calls[0]["args"]["agent_role"] == "coder"
-
-
-def test_get_agent_summary_entries_derives_from_messages_when_cache_empty():
-    ai_message = AIMessage(
-        content="",
-        tool_calls=[
-            _tool_call(
-                "finish_task", {"summary": "Task complete", "agent_role": "tester"}
-            ),
-        ],
-    )
-    state = {"messages": [ai_message]}
-
-    entries = get_agent_summary_entries(state)
-    assert len(entries) == 1
-    assert entries[0].role == "tester"
-    assert entries[0].summary == "Task complete"
 
 
 def test_get_agent_summary_entries_deduplicates_consecutive_entries():

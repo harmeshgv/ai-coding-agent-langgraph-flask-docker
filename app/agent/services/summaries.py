@@ -1,11 +1,11 @@
 """Utility helpers for tracking agent summaries and finish_task metadata."""
 
-from typing import Optional, Sequence, Tuple
+from typing import Optional, Tuple
 
 from langchain_core.messages import AIMessage, BaseMessage
 
-from app.agent.models import AgentSummary
-from app.agent.state import AgentState
+
+from app.agent.state import AgentState, AgentSummary
 
 
 def _create_agent_summary(role: str, summary: str) -> Optional[AgentSummary]:
@@ -116,7 +116,6 @@ def build_agent_summary_text(state: AgentState, separator: str = "\n\n") -> Opti
 
 def build_agent_summary_markdown(
     state: AgentState,
-    *,
     heading: Optional[str] = None,
     bullet_prefix: str = "- ",
     line_separator: str = "\n",
@@ -142,10 +141,8 @@ def get_agent_summary_entries(state: AgentState) -> list[AgentSummary]:
     cached_entries = [
         entry for entry in (state.get("agent_summary") or []) if isinstance(entry, AgentSummary)
     ]
-    if cached_entries:
-        return _deduplicate_consecutive(cached_entries)
+    return _deduplicate_consecutive(cached_entries)
 
-    return _deduplicate_consecutive(_derive_summaries_from_messages(state.get("messages") or []))
 
 
 def _deduplicate_consecutive(entries: list[AgentSummary]) -> list[AgentSummary]:
@@ -157,15 +154,3 @@ def _deduplicate_consecutive(entries: list[AgentSummary]) -> list[AgentSummary]:
             deduplicated.append(entry)
         previous = entry
     return deduplicated
-
-
-def _derive_summaries_from_messages(messages: Sequence[BaseMessage]) -> list[AgentSummary]:
-    """Build summary entries by scanning the message history for finish_task calls."""
-    derived: list[AgentSummary] = []
-    for message in messages:
-        summaries = collect_finish_task_summaries(message)
-        for role, summary in summaries:
-            entry = _create_agent_summary(role or "agent", summary)
-            if entry:
-                derived.append(entry)
-    return derived
