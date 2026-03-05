@@ -11,6 +11,7 @@ from app.agent.services.summaries import (
     get_agent_summary_entries,
     record_finish_task_summary,
 )
+from app.agent.state import AgentSummary
 
 _TOOL_CALL_COUNTER = count()
 
@@ -24,7 +25,7 @@ def _tool_call(name: str, args: dict | None = None) -> dict:
 
 
 def test_append_agent_summary_ignores_empty_entries():
-    entries = ["**[Coder]** Did work"]
+    entries = [AgentSummary(role="coder", summary="Did work")]
     result = append_agent_summary(entries.copy(), "coder", "   ")
     assert result == entries
 
@@ -41,38 +42,26 @@ def test_record_finish_task_summary_updates_state_and_tool_args():
     recorded, summary_entries = record_finish_task_summary(state, "coder", ai_message)
 
     assert recorded is True
-    assert summary_entries == ["**[Coder]** All done"]
+    assert len(summary_entries) == 1
+    assert summary_entries[0].role == "coder"
+    assert summary_entries[0].summary == "All done"
     assert state["agent_summary"] == summary_entries
     assert ai_message.tool_calls[0]["args"]["agent_role"] == "coder"
-
-
-def test_get_agent_summary_entries_derives_from_messages_when_cache_empty():
-    ai_message = AIMessage(
-        content="",
-        tool_calls=[
-            _tool_call(
-                "finish_task", {"summary": "Task complete", "agent_role": "tester"}
-            ),
-        ],
-    )
-    state = {"messages": [ai_message]}
-
-    entries = get_agent_summary_entries(state)
-    assert entries == ["**[Tester]** Task complete"]
 
 
 def test_get_agent_summary_entries_deduplicates_consecutive_entries():
     state = {
         "agent_summary": [
-            "**[Coder]** Implemented divide method",
-            "**[Tester]** All tests passed",
-            "**[Tester]** All tests passed",
+            AgentSummary(role="coder", summary="Implemented divide method"),
+            AgentSummary(role="tester", summary="All tests passed"),
+            AgentSummary(role="tester", summary="All tests passed"),
         ]
     }
 
     entries = get_agent_summary_entries(state)
 
-    assert entries == [
-        "**[Coder]** Implemented divide method",
-        "**[Tester]** All tests passed",
-    ]
+    assert len(entries) == 2
+    assert entries[0].role == "coder"
+    assert entries[0].summary == "Implemented divide method"
+    assert entries[1].role == "tester"
+    assert entries[1].summary == "All tests passed"

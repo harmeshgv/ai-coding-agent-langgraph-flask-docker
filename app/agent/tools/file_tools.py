@@ -367,7 +367,7 @@ def _validate_directory_access(directory: str, workspace: str) -> str | None:
 
 
 @tool
-def read_file(filepath: str):
+def read_file(filepath: str) -> str:
     """
     Reads the content of a file.
     """
@@ -381,7 +381,7 @@ def list_files(
     max_depth: int | None = None,
     summary: bool = False,
     pattern: str | None = None
-):
+) -> str:
     """
     Lists files in a directory (recursive).
 
@@ -393,7 +393,7 @@ def list_files(
         pattern: Optional glob pattern to filter files (e.g., "*.py", "src/**/*.java")
     """
     try:
-        logger.info(
+        logger.debug(
             "Listing files: directory=%s, max_files=%d, max_depth=%s, summary=%s, pattern=%s",
             directory,
             max_files,

@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
+from app.agent.state import AgentSummary
 from app.core.taskprovider.task_provider import ProviderTask
 from app.agent.nodes.task_update_node import (
     AGENT_DEFAULT_COMMENT,
@@ -55,7 +56,7 @@ async def test_task_update_node_success(agent_settings, mock_task_provider, monk
             state_name="In Progress",
         ),
         "messages": [],
-        "agent_summary": ["Task completed successfully"],
+        "agent_summary": [AgentSummary(role="agent", summary="Task completed successfully")],
         "current_node": "any_node",
     }
 
@@ -185,7 +186,10 @@ def test_build_agent_comments_with_summary():
     """Test building agent comments with summary entries."""
     state = {
         "messages": [],
-        "agent_summary": ["Analysis complete", "Code updated"],
+        "agent_summary": [
+            AgentSummary(role="analyst", summary="Analysis complete"),
+            AgentSummary(role="coder", summary="Code updated"),
+        ],
     }
 
     comments = _build_agent_comments(state)
@@ -206,7 +210,7 @@ def test_build_agent_comments_no_summary():
 def test_build_agent_comments_with_card_creation():
     """Test building agent comments when a new task was created."""
     state = {
-        "agent_summary": ["Analysis complete"],
+        "agent_summary": [AgentSummary(role="analyst", summary="Analysis complete")],
         "messages": [
             AIMessage(
                 content="",

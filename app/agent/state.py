@@ -7,6 +7,7 @@ all the necessary information for the agent to function, such as message history
 task details, and internal counters.
 """
 
+from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, TypedDict
@@ -16,6 +17,29 @@ from langgraph.graph.message import add_messages
 
 from app.core.taskprovider.task_provider import ProviderTask, ProviderTaskComment
 from app.core.localdb.models import AgentTask
+
+
+@dataclass
+class AgentSummary:
+    """Represents a summary entry from an agent role."""
+
+    role: str
+    summary: str
+
+    def __post_init__(self):
+        """Validate and normalize the fields."""
+        if not isinstance(self.role, str):
+            raise TypeError("role must be a string")
+        if not isinstance(self.summary, str):
+            raise TypeError("summary must be a string")
+
+        self.role = self.role.strip()
+        self.summary = self.summary.strip()
+
+    def to_markdown(self) -> str:
+        """Format the summary as a markdown entry with role prefix."""
+        role_prefix = self.role.capitalize()
+        return f"**[{role_prefix}]** {self.summary}"
 
 
 class PlanState(StrEnum):
@@ -81,7 +105,7 @@ class AgentState(TypedDict):
     agent_stack: AgentStack
     tech_stack: dict | None
     agent_skill_level: str | None
-    agent_summary: list[str] | None
+    agent_summary: list[AgentSummary] | None
     retry_count: int  # Attempts: how often switched between coder and tester
     test_result: str | None
     error_log: str | None  # Optional: Stores the last error explicitly

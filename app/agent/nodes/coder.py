@@ -36,8 +36,10 @@ def create_coder_node(llm, tools, agent_stack):
         result: dict[str, Any] = {}
 
         if has_finish_task_call(message=response):
+            role = "coder" if state["agent_task"].task_type == "bugfix" else "coder"
+
             recorded, agent_summary = record_finish_task_summary(
-                state=state, role="coder", ai_message=response
+                state=state, role=role, ai_message=response
             )
             if recorded:
                 result["agent_summary"] = agent_summary
