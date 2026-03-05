@@ -132,6 +132,7 @@ def workflow_mocks(monkeypatch):
         "create_analyst_node",
         "create_checkout_node",
         "create_coder_node",
+        "create_explainer_node",
         "create_pull_request_node",
         "create_router_node",
         "create_tester_node",
@@ -177,6 +178,7 @@ def test_create_workflow_registers_all_nodes(workflow_mocks):
         "tools_coder",
         "tools_analyst",
         "tools_tester",
+        "explainer",
         "pull_request",
         "task_update",
     }
@@ -224,8 +226,9 @@ def test_create_workflow_registers_all_nodes(workflow_mocks):
         )
     )
     assert tools_tester_mapping["error"] == "task_update"
-    assert tools_tester_mapping["pass"] == "pull_request"
+    assert tools_tester_mapping["pass"] == "explainer"
     assert tools_tester_mapping["failed"] == "coder"
 
     assert ("tester", "tools_tester") in workflow.edges
+    assert ("explainer", "pull_request") in workflow.edges
     assert ("pull_request", "task_update") in workflow.edges

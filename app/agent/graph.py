@@ -14,6 +14,7 @@ from langgraph.prebuilt import ToolNode
 from app.agent.nodes.analyst import create_analyst_node
 from app.agent.nodes.checkout import create_checkout_node
 from app.agent.nodes.coder import create_coder_node
+from app.agent.nodes.explainer import create_explainer_node
 from app.agent.nodes.pull_request import create_pull_request_node
 from app.agent.nodes.router import create_router_node
 from app.agent.nodes.task_fetch_node import create_task_fetch_node
@@ -152,6 +153,7 @@ def create_workflow(runtime: RuntimeSetting) -> StateGraph:
         "tester",
         create_tester_node(runtime.llm_large, tester_tools),
     )
+    workflow.add_node("explainer", create_explainer_node(runtime.llm_large))
 
     # Tool Nodes
     workflow.add_node("tools_coder", ToolNode(coder_tools))
@@ -235,12 +237,13 @@ def create_workflow(runtime: RuntimeSetting) -> StateGraph:
         route_after_tools_tester,
         {
             "tester": "tester",  # Loop (for git, mvn)
-            "pass": "pull_request",  # Success
+            "pass": "explainer",  # Success
             "failed": "coder",  # Tests failed back to coder
             "error": "task_update",  # Environment issue -> surface to user
         },
     )
 
+    workflow.add_edge("explainer", "pull_request")
     workflow.add_edge("pull_request", "task_update")
     workflow.add_edge("task_update", END)
 

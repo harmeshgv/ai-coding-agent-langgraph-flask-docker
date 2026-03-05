@@ -227,8 +227,14 @@ def _build_pr_inputs(state: AgentState) -> tuple[str, str]:
     task = state.get("provider_task")
     task_title = task.name
     pr_title = task_title or "Automated Fix"
-    pr_body = "Automated changes after successful tests."
-    if pr_body_summary:
-        pr_body += f"\n\n{pr_body_summary}"
+    pr_description = (state.get("pr_description") or "").strip()
+    if pr_description:
+        pr_body = pr_description
+        if pr_body_summary:
+            pr_body += f"\n\n{pr_body_summary}"
+    else:
+        pr_body = "Automated changes after successful tests."
+        if pr_body_summary:
+            pr_body += f"\n\n{pr_body_summary}"
 
     return pr_title, pr_body

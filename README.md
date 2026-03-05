@@ -27,8 +27,9 @@ Here is a [short Video that explains the vision and strategy](https://weyrath.co
 
 As a **Proof of Concept (POC)**, the system demonstrates the following advanced capabilities:
 
-- **Multi-Agent Architecture:** Uses **LangGraph** to route tasks to specialized sub-agents (`Coder`, `Bugfixer`, `Analyst`, `Tester`).
+- **Multi-Agent Architecture:** Uses **LangGraph** to route tasks to specialized sub-agents (`Coder`, `Bugfixer`, `Analyst`, `Tester`, `Explainer`).
 - **Autonomous Git Operations:** Manages the full Git lifecycle—cloning, branching, committing, pushing, and pull requests—using the **Model Context Protocol (MCP)**.
+- **Explainable PR Descriptions (XAI):** On successful tests, an Explainer node synthesizes the implementation plan with thought and tool-action history from the database to generate a structured PR description.
 - **Task Management Integration:** Connects to external task/issue management systems (e.g. Trello, JIRA) to retrieve assignments and report status updates automatically. This also controls the **Human in the Loop** process.
 - **Resilient AI Logic:** Features advanced **self-healing mechanisms** with retry loops and iterative prompting to prevent stalling and minimize hallucinations.
 - **Dockerized & Scalable:** Runs in secure, isolated containers, allowing for effortless horizontal scaling—simply spin up additional instances to expand your virtual workforce on demand.
@@ -69,14 +70,14 @@ The core system consists of the following key components:
 1. **AI Coding Agent (Docker Container):** This container acts as the "brain" of the operation. It orchestrates the entire workflow and manages the decision-making process.
     - Web Application (Flask): Provides a user interface for configuring the agent. It uses SQLAlchemy for persistent data management (e.g., storing configuration states and history).
     - APScheduler: A background scheduler that triggers the agent's workflow periodically and handles asynchronous task execution, ensuring continuous operation without manual intervention.
-    - LangGraph Workflow with specialist agents: A state machine that routes the development process from the initial task to the final Pull Request. It manages the state and transitions between different agents. A team of distinct AI agents (Coder, Bugfixer, Analyst, Tester), each equipped with specific tools to perform granular tasks such as code analysis, writing syntax, or running tests.
+    - LangGraph Workflow with specialist agents: A state machine that routes the development process from the initial task to the final Pull Request. It manages the state and transitions between different agents. A team of distinct AI agents (Coder, Bugfixer, Analyst, Tester, Explainer), each equipped with specific tools to perform granular tasks such as code analysis, writing syntax, test execution, and PR explanation.
 
 2. **Workbench (Docker Container):** This container serves as the "sandbox" or execution environment. It contains all necessary development tools (e.g., Java JDK, Maven) required to build and test the target application. By isolating the build environment, the system ensures that arbitrary code execution does not affect the core agent logic.
 
 3. **Shared Workspace (Docker Volume):** A shared storage volume mounted into both the AI Coding Agent and the Workbench containers. This allows the Agent to write code and the Workbench to compile and test that same code immediately.
 
 ### LangGraph Workflow
-The system is built upon a stateful, multi-agent architecture powered by LangGraph. Instead of a monolithic process, the execution flow is intelligently orchestrated across specialized nodes.
+The system is built upon a stateful, multi-agent architecture powered by LangGraph. Instead of a monolithic process, the execution flow is intelligently orchestrated across specialized nodes. After successful test execution, the workflow routes through an Explainer node before Pull Request creation so that the generated PR body includes intent, reasoning, and verification context. The shared AgentState now carries `pr_description` for this handoff into PR creation.
 
 ![LangGraph Workflow](./images/workflow_graph_new.png)
 
@@ -89,6 +90,8 @@ The system is built upon a stateful, multi-agent architecture powered by LangGra
   - **Analyst:** Operates in read-only mode to perform code reviews, answer queries, or map out dependencies.
 
   - **Tester:** Executes unit tests in order to ensure the code is functioning as expected.
+
+  - **Explainer:** Builds a structured PR description from the implementation plan plus the task-linked thought and tool-action history stored in SQLAlchemy (`AgentAction`). It uses `prompts/systemprompt_explainer.md` with the variables `plan`, `thoughts`, and `tools_used`, and intentionally does not consume git diff data in this MVP.
 
 * **The Cognitive Loop** (Reasoning): The innermost circle. The agent "thinks," executes a tool (e.g., read_file), analyzes the output, and plans the next move. This is the classic **ReAct pattern** that makes complex problem-solving possible in the first place.
 
@@ -181,7 +184,7 @@ Create new Cards at your Trello board in the list "Backlog" and move one into th
 ![Trello Board](./images/trello-board.png)
 
 #### 7. Agent runs automatically
-The agent runs automatically when a new card is created in the "Sprint Backlog" list. It moves the card to the list "In Progress" and starts the workflow. It will generate or change the code based on the card description and create a pull request to your GitHub repository.
+The agent runs automatically when a new card is created in the "Sprint Backlog" list. It moves the card to the list "In Progress" and starts the workflow. It will generate or change the code based on the card description and create a pull request to your GitHub repository with a structured markdown description (Objective & Architecture, Developer's Journey, Quality Assurance).
 After the PR creation it creates a comment in the card with the link to the pull request and move it to the list "In Review".
 
 #### 8. Check the Results

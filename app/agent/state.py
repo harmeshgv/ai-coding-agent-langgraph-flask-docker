@@ -123,3 +123,5 @@ class AgentState(TypedDict):
     # message from the system to the user
     user_message: str | None
     last_update: datetime | None
+    #
+    pr_description: str | None
