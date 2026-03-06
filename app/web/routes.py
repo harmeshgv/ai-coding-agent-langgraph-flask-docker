@@ -29,13 +29,13 @@ from app.web.services.dashboard_service import PlanReviewError, process_plan_rev
 
 logger = logging.getLogger(__name__)
 
-web_bp = Blueprint("web", __name__, template_folder="templates", static_folder="../static")
+web_bp = Blueprint("web", __name__, template_folder="templates", static_folder="static")
 
 
 @web_bp.route("/", methods=["GET"])
 def landing():
     """Handles the landing page."""
-    return render_template("landing.html")
+    return render_template("index.html")
 
 
 @web_bp.route("/dashboard", methods=["GET"])

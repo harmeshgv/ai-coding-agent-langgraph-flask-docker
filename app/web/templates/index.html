@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CleanKoda | Autonomous Coding Agents for Reliable Software Engineering</title>
+    <!-- Bootstrap 5.3 CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts: Inter (UI) & JetBrains Mono (Code) -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f19;
+        }
+
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+            color: #0d6efd;
+        }
+
+        .hero-section {
+            padding: 100px 0 60px;
+            background: radial-gradient(circle at top, #1a233a, #0b0f19);
+        }
+
+        .feature-card {
+            background-color: #151a28;
+            border: 1px solid #2a324b;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: #0d6efd;
+        }
+
+        .terminal-box {
+            background-color: #000;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: #a9b7c6;
+        }
+
+        .vision-section {
+            border-left: 4px solid #0d6efd;
+            background-color: rgba(13, 110, 253, 0.05);
+        }
+
+        .image-placeholder-container {
+            background-color: #151a28;
+            border: 1px dashed #2a324b;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            color: #6c757d;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent pt-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">
+                <span class="text-primary">&lt;/&gt;</span> CleanKoda
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <div class="d-flex align-items-center">
+                    <a href="#" class="btn text-light fw-semibold me-3"><i
+                            class="fa-brands fa-github me-2"></i>Github</a>
+                    <a href="#" class="btn text-light btn-outline-light fw-semibold me-3">Sign In</a>
+                    <a href="/dashboard" class="btn btn-primary fw-semibold">Start your project</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Bereich -->
+    <section class="hero-section text-center">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-9">
+                    <h1 class="display-4 fw-extrabold mb-4 text-white">
+                        Autonomous Coding Agents to scale <span style="color: #4ade80;">reliable Software
+                            Engineering</span>
+                    </h1>
+                    <p class="lead text-secondary mb-5">
+                        As AI takes over routine coding, the traditional path from junior to expert is disrupted,
+                        causing a critical loss of tacit knowledge. CleanKoda is the autonomous agent that steps in as
+                        your tireless junior colleague—safely maintaining complex brownfield enterprise systems and
+                        freeing your team to become true system architects.
+                    </p>
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="/dashboard" class="btn btn-primary btn-lg fw-semibold px-4">Start your project</a>
+                        <button type="button" class="btn btn-outline-light btn-lg fw-semibold px-4"
+                            data-bs-toggle="modal" data-bs-target="#demoModal">Request a demo</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Video Showcase -->
+            <div class="row justify-content-center mt-5 pt-4">
+                <div class="col-lg-10">
+                    <div class="shadow-lg rounded-4 overflow-hidden border border-secondary bg-black">
+                        <video class="w-100 d-block" autoplay loop muted playsinline controls>
+                            <source src="{{ url_for('web.static', filename='cleankoda-landingpage-showcase.mp4') }}"
+                                type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features / Fähigkeiten Sektion -->
+    <section id="features" class="py-5 mt-4">
+        <div class="container">
+            <h2 class="text-center fw-bold mb-5 text-white">
+                The CleanKoda Approach: From assistance Tool to autonomous Colleague</h2>
+            <div class="row g-4 justify-content-center">
+                <!-- Feature 1: Self-healing -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card feature-card h-100 p-4 border-0 rounded-4 shadow-sm">
+                        <div class="card-body">
+                            <h3 class="h1 mb-3">🔄</h3>
+                            <h5 class="card-title fw-bold text-white">Self-Healing & Quality Gates</h5>
+                            <p class="card-text text-secondary">If a build or unit test fails, the agent reads the
+                                error, corrects the code, and re-tests autonomously. CleanKoda never submits untested
+                                code, creating necessary trust for production.</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Feature 2: Review Resilience -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card feature-card h-100 p-4 border-0 rounded-4 shadow-sm">
+                        <div class="card-body">
+                            <h3 class="h1 mb-3">💬</h3>
+                            <h5 class="card-title fw-bold text-white">Review Resilience</h5>
+                            <p class="card-text text-secondary">If a pull request is rejected by a human reviewer,
+                                CleanKoda doesn't start from scratch. It perfectly understands the feedback and
+                                integrates it into the existing codebase.</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Feature 3: Sandboxing -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card feature-card h-100 p-4 border-0 rounded-4 shadow-sm">
+                        <div class="card-body">
+                            <h3 class="h1 mb-3">🛡️</h3>
+                            <h5 class="card-title fw-bold text-white">Sandboxing & IT Security</h5>
+                            <p class="card-text text-secondary">CleanKoda operates in its own strictly isolated
+                                container environment. It can execute code and use tools without modifying your
+                                company's host infrastructure or creating security vulnerabilities.</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Feature 4: Contextual awareness -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card feature-card h-100 p-4 border-0 rounded-4 shadow-sm">
+                        <div class="card-body">
+                            <h3 class="h1 mb-3">🧠</h3>
+                            <h5 class="card-title fw-bold text-white">Contextual Awareness</h5>
+                            <p class="card-text text-secondary">CleanKoda doesn't just read isolated tickets. Through
+                                "learning by doing", the agent builds implicit architectural and domain knowledge with
+                                each resolved ticket.</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Feature 5: Quality over quantity -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card feature-card h-100 p-4 border-0 rounded-4 shadow-sm">
+                        <div class="card-body">
+                            <h3 class="h1 mb-3">💎</h3>
+                            <h5 class="card-title fw-bold text-white">Quality Over Quantity</h5>
+                            <p class="card-text text-secondary">No "AI slop". CleanKoda delivers precise, maintainable,
+                                and architecturally sound code changes. The aim is for maintainers to accept the PR with
+                                absolute confidence.</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Feature 6: Methodical planning -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card feature-card h-100 p-4 border-0 rounded-4 shadow-sm">
+                        <div class="card-body">
+                            <h3 class="h1 mb-3">📐</h3>
+                            <h5 class="card-title fw-bold text-white">Methodical Planning</h5>
+                            <p class="card-text text-secondary">Before the first line of code is written, CleanKoda
+                                analyzes complex tickets, designs an implementation plan, and breaks down the
+                                architecture into manageable, logical steps.</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Feature 7: Asynchronous scalability -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card feature-card h-100 p-4 border-0 rounded-4 shadow-sm">
+                        <div class="card-body">
+                            <h3 class="h1 mb-3">🚀</h3>
+                            <h5 class="card-title fw-bold text-white">Asynchronous Scalability</h5>
+                            <p class="card-text text-secondary">CleanKoda's autonomy decouples development progress from
+                                human work time. The agent handles complex refactorings while the human team tackles
+                                other strategic tasks.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-4 text-center text-secondary border-top border-secondary mt-5">
+        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center">
+            <p class="mb-2 mb-md-0">&copy; 2026 CleanKoda. Built to avert the next software crisis.</p>
+            <div>
+                <a href="#" class="text-secondary text-decoration-none me-3">Privacy</a>
+                <a href="#" class="text-secondary text-decoration-none me-3">Terms</a>
+                <a href="#" class="text-secondary text-decoration-none">GitHub</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Demo Modal -->
+    <div class="modal fade" id="demoModal" tabindex="-1" aria-labelledby="demoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark border-secondary shadow-lg">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title fw-bold text-white" id="demoModalLabel">Let's talk about your architecture.
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 text-start">
+
+                    <!-- Formular Bereich -->
+                    <div id="formContainer">
+                        <p class="text-secondary mb-4">Book a 15-minute discovery call to discuss how CleanKoda can
+                            safely integrate into your enterprise brownfield projects.</p>
+                        <form id="demoForm">
+                            <div class="mb-3">
+                                <label for="nameInput" class="form-label text-light fw-semibold">Name</label>
+                                <input type="text" class="form-control bg-black border-secondary text-white"
+                                    id="nameInput" placeholder="Jane Doe" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="emailInput" class="form-label text-light fw-semibold">Work Email</label>
+                                <input type="email" class="form-control bg-black border-secondary text-white"
+                                    id="emailInput" placeholder="jane@company.com" required>
+                            </div>
+                            <div class="mb-4">
+                                <label for="challengeInput" class="form-label text-light fw-semibold">Biggest Challenge
+                                    (Optional)</label>
+                                <textarea class="form-control bg-black border-secondary text-white" id="challengeInput"
+                                    rows="2" placeholder="e.g., Test coverage in legacy modules..."></textarea>
+                            </div>
+                            <button type="submit" id="submitBtn" class="btn btn-primary w-100 fw-semibold">Request
+                                Discovery Call</button>
+                        </form>
+                        <div class="text-center mt-3 pt-3 border-top border-secondary">
+                            <small class="text-muted">Or book directly via <a href="#"
+                                    class="text-primary text-decoration-none fw-semibold">Calendly &rarr;</a></small>
+                        </div>
+                    </div>
+
+                    <!-- Erfolgsmeldung (Initial versteckt) -->
+                    <div id="successMessage" class="d-none text-center py-4">
+                        <div class="mb-3">
+                            <i class="fa-solid fa-circle-check text-success" style="font-size: 3rem;"></i>
+                        </div>
+                        <h4 class="text-white fw-bold mb-2">Request Received!</h4>
+                        <p class="text-secondary mb-0">Thank you. We will review your architecture notes and reach out
+                            to you within 24 hours to schedule the call.</p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Formular Logic & Supabase Vorbereitung -->
+    <script>
+        document.getElementById('demoForm').addEventListener('submit', function (e) {
+            e.preventDefault(); // Verhindert das Neuladen der Seite
+
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.innerHTML;
+
+            // 1. UI auf "Laden" setzen
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Sending...';
+
+            // Formulardaten auslesen (für Supabase vorbereitet)
+            const formData = {
+                name: document.getElementById('nameInput').value,
+                email: document.getElementById('emailInput').value,
+                challenge: document.getElementById('challengeInput').value
+            };
+
+            // 2. Netzwerk-Request simulieren (Hier kommt später SUPABASE rein!)
+            setTimeout(() => {
+                /*
+                // --- ZUKÜNFTIGER SUPABASE CODE ---
+                const { data, error } = await supabase
+                    .from('leads')
+                    .insert([
+                        { name: formData.name, email: formData.email, challenge: formData.challenge }
+                    ]);
+                
+                if(error) { // Error Handling... }
+                */
+
+                // 3. Nach erfolgreichem Senden: Formular ausblenden, Erfolgsmeldung zeigen
+                document.getElementById('formContainer').classList.add('d-none');
+                document.getElementById('successMessage').classList.remove('d-none');
+
+            }, 1500); // 1.5 Sekunden Verzögerung für realistische UX
+        });
+
+        // Optional: Reset des Modals, wenn es geschlossen wird (für wiederholte Tests)
+        const demoModal = document.getElementById('demoModal')
+        demoModal.addEventListener('hidden.bs.modal', event => {
+            document.getElementById('demoForm').reset();
+            document.getElementById('submitBtn').disabled = false;
+            document.getElementById('submitBtn').innerHTML = 'Request Discovery Call';
+            document.getElementById('formContainer').classList.remove('d-none');
+            document.getElementById('successMessage').classList.add('d-none');
+        })
+    </script>
+</body>
+
+</html>
