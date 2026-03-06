@@ -79,7 +79,7 @@ The core system consists of the following key components:
 ### LangGraph Workflow
 The system is built upon a stateful, multi-agent architecture powered by LangGraph. Instead of a monolithic process, the execution flow is intelligently orchestrated across specialized nodes. After successful test execution, the workflow routes through an Explainer node before Pull Request creation so that the generated PR body includes intent, reasoning, and verification context. The shared AgentState now carries `pr_description` for this handoff into PR creation.
 
-![LangGraph Workflow](./images/workflow_graph_new.png)
+![LangGraph Workflow](./images/workflow_graph.png)
 
 * **Router Node:** The Routing workflows process inputs and then directs them to context-specific agents. It acts as the entry point. It analyzes the incoming ticket context and determines the optimal execution strategy by selecting the appropriate specialist. Additionally, the Router Node evaluates the complexity of the task and checks if the skill level of the agent is suitable for the task. This establishes the trust-first strategy, ensuring that agents are only assigned tasks they can handle effectively.
 

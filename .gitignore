@@ -214,7 +214,7 @@ __marimo__/
 .env-local
 .local/keys.env
 workflow_graph.mmd
-workflow_graph.png
+/workflow_graph.png
 .zed
 .vscode
 .docker-home/
